@@ -31,6 +31,7 @@ model User {
   id       Int    @id @default(autoincrement())
   username String
   email    String
-  Password String
+  password String
   role     RoleType
+  isVerified Boolean
 }
