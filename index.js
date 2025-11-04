@@ -18,13 +18,27 @@ const port = (() => {
     return num;
 })();
 
+require('dotenv').config();
 const express = require("express");
+const jwt = require('jsonwebtoken');
 const app = express();
-const env = require('dotenv').config(); // process.env.JWT_SECRET
-
+const SECRET_KEY = process.env.JWT_SECRET
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 app.use(express.json());
 
 // A2 Functions
+function generateToken(utorid, time) {
+  const token = jwt.sign(
+    { username: utorid },
+    SECRET_KEY,
+    { expiresIn: time }
+  )
+
+  return token
+}
+
+
 app.post('/users', async (req, res) => {
     /*
     · Method: POST
@@ -38,13 +52,94 @@ app.post('/users', async (req, res) => {
 
     · Response:
     o 201 Created on success { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "verified": false, "expiresAt": "2025-03-10T01:41:47.000Z", "resetToken": "ad71d4e1-8614-46aa-b96f-cb894e346506" }
-
     o 409 Conflict if the user with that utorid already exists
 
     Upon account creation, an email with an activation link will be sent to the provided email address (see POST /auth/resets/:resetId). The activation link expires in 7 days, after which, the user can request for a password reset to attempt activation again.
 
     For this assignment, you are not expected to send emails, so the response body also contains the token that can be used to activate the account.
+
+    DUMMY PAYLOAD:
+    {
+        "utorid": "clive123",
+        "name": "Clive Thompson",
+        "email": "clive.thompson@mail.utoronto.ca"
+    }
     */
+   const {utorid, name, email} = req.body;
+
+    // Check fields exist
+    if (!utorid || !name || !email) {
+        return res.status(400).json({ error: "Payload fields incorrect" });
+    }
+
+    let RegEx = /^[a-z0-9]+$/i; 
+    let Valid = RegEx.test(utorid);
+
+    // Validate length and alphanumeric-ness of utorid
+    if (utorid.length < 7 || utorid.length > 8 || !Valid) {
+        return res.status(400).json({ error: "utorid entered incorrect" });
+    }
+
+    // Validate name
+    if (name.length == 0 || name.length > 50) {
+        return res.status(400).json({ error: "name must be between 1 and 50 characters" });
+    }
+
+    // Validate email is from UofT
+    if (!email.includes("@mail.utoronto.ca")) {
+        return res.status(400).json({ error: "Email not proper format" });
+    }
+
+    try {
+        // Check if user already exists
+        const existing = await prisma.user.findUnique({
+            where: { utorid }
+        });
+
+        if (existing) {
+            return res.status(400).json({ message: "A user with that utorid already exists" });
+        }
+
+        const resetToken = generateToken(utorid, '7d');
+        const now = new Date().toISOString();
+        let week_later = new Date();
+        week_later.setDate(week_later.getDate() + 7);
+
+        const user = await prisma.user.create({
+            data: { 
+                utorid,
+                name,
+                email,
+                points: 0,
+                suspicious: false,
+                verified: false
+            },
+        });
+
+        const token = await prisma.token.create({
+            data: {
+                resetToken,
+                createdAt: now,
+                expiresAt: week_later.toISOString(),
+                lastLogin: now,
+                user: { connect: { id: user.id } }
+            },
+        });
+
+        // Respond with updated note
+        return res.status(200).json({
+            id: user.id,
+            utorid: user.utorid,
+            name: user.name,
+            email: user.email,
+            verified: user.verified,
+            expiresAt: token.expiresAt,
+            resetToken: token.resetToken
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error"});
+    }
 });
 
 app.get('/users', async (req, res) => {
@@ -64,6 +159,14 @@ app.get('/users', async (req, res) => {
     · Response: count, which stores the total number of results (after applying all filters), and results, which contains a list of users { "count": 51,
     "results": [ { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": null, "verified": false, "avatarUrl": null }, // More user objects... ] }
     */
+   const { name, role, verified, activated, page, limit} = req.body;
+   const where = {}
+
+  if (name)  where.name  = name
+  if (email) where.email = email
+  if (age)   where.age   = age
+
+  return prisma.user.findMany({ where })
 });
 
 app.get('/users/:userId', async (req, res) => {
@@ -139,6 +242,7 @@ app.get('/users/me', async (req, res) => {
     · Description: Retrieve the current logged-in user's information
     · Clearance: Regular or higher
     · Payload: None
+    
     · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
     */
 });
