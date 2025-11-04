@@ -42,7 +42,7 @@ model User {
   resetToken  String
   createdAt   DateTime
   expiresAt   DateTime
-  lastLogin   DateTime
+  lastLogin   DateTime?
   promotions  Promotion[]
   buyers      Transaction[] @relation("buyer")
   cashiers Transaction[] @relation("cashier")

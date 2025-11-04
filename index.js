@@ -58,11 +58,17 @@ app.post('/users', async (req, res) => {
 
     For this assignment, you are not expected to send emails, so the response body also contains the token that can be used to activate the account.
 
-    DUMMY PAYLOAD:
+    DUMMY PAYLOADS:
     {
         "utorid": "clive123",
         "name": "Clive Thompson",
         "email": "clive.thompson@mail.utoronto.ca"
+    }
+
+    {
+        "utorid": "dimitri9",
+        "name": "dimi",
+        "email": "dimi@mail.utoronto.ca"
     }
     */
    const {utorid, name, email} = req.body;
@@ -101,7 +107,7 @@ app.post('/users', async (req, res) => {
         }
 
         const resetToken = generateToken(utorid, '7d');
-        const now = new Date().toISOString();
+        const curr_time = new Date().toISOString();
         let week_later = new Date();
         week_later.setDate(week_later.getDate() + 7);
 
@@ -114,9 +120,8 @@ app.post('/users', async (req, res) => {
                 suspicious: false,
                 verified: false,
                 resetToken,
-                createdAt: now,
-                expiresAt: week_later.toISOString(),
-                lastLogin: null
+                createdAt: curr_time,
+                expiresAt: week_later.toISOString()
             },
         });
 
@@ -152,15 +157,70 @@ app.get('/users', async (req, res) => {
 
     · Response: count, which stores the total number of results (after applying all filters), and results, which contains a list of users { "count": 51,
     "results": [ { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": null, "verified": false, "avatarUrl": null }, // More user objects... ] }
+
+    DUMMY PAYLOADS:
+    {
+        "name": "Clive Thompson",
+        "verified": "false"
+    }
+
+    {
+        "verified": "false"
+    }
     */
-   const { name, role, verified, activated, page, limit} = req.body;
-   const where = {}
+    const { name, role, verified, activated, page, limit} = req.body;
+    const where = {};
+    let response_size = 1;
 
-  if (name)  where.name  = name
-  if (email) where.email = email
-  if (age)   where.age   = age
+    if (name) where.name  = name;
+    if (role) where.role = role;
+    if (verified) where.verified = verified === "true";
 
-  return prisma.user.findMany({ where })
+    if (activated) {
+        if (activated === "true") {
+            where.lastLogin = {not: null};
+        } 
+        
+        if (activated === "false") {
+            where.lastLogin = null;
+        }
+    }
+
+    if (page) {
+        response_size = page;
+    }
+    
+    if (limit) {
+        response_size = response_size * limit;
+    } else {
+        response_size = response_size * 10;
+    }
+
+    try {
+        const data = await prisma.user.findMany({
+            where,
+            take: response_size,
+            select: {
+                id: true,
+                utorid: true,
+                name: true,
+                email: true,
+                birthday: true,
+                role: true,
+                points: true,
+                createdAt: true,
+                lastLogin: true,
+                verified: true,
+                avatarUrl: true
+            }
+        });
+
+        // Respond with updated note
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error"});
+    }
 });
 
 app.get('/users/:userId', async (req, res) => {
