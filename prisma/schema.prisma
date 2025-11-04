@@ -27,7 +27,6 @@ enum PromotionType {
   onetime
 }
 
-
 model User {
   id          Int    @id @default(autoincrement())
   utorid      String  @unique
@@ -40,23 +39,15 @@ model User {
   avatarUrl   String?
   suspicious  Boolean
   verified    Boolean
-  promotions  Promotion[]
-  transactions Transaction[]
-  transfersSent     Transfer[] @relation("SentTransfers")
-  transfersReceived Transfer[] @relation("ReceivedTransfers")
-  organizer    Event[] @relation("eventOrganizer")
-  guest    Event[] @relation("eventGuest")
-  token    Token?
-}
-
-model Token {
-  id           Int      @id @default(autoincrement())
   resetToken  String
   createdAt   DateTime
   expiresAt   DateTime
   lastLogin   DateTime
-  user   User @relation(fields: [userId], references: [id])
-  userId Int  @unique
+  promotions  Promotion[]
+  buyers      Transaction[] @relation("buyer")
+  cashiers Transaction[] @relation("cashier")
+  organizer    Event[] @relation("eventOrganizer")
+  guest    Event[] @relation("eventGuest")
 }
 
 model Promotion {
@@ -74,33 +65,25 @@ model Promotion {
 }
 
 model Transaction {
-  id         Int   @id @default(autoincrement())
-  type       TransactionType
-  relatedId  Int
-  spent      Float
-  earned     Int
-  amount     Int?
-  remark     String?
-  redeemed   Int?
-  suspicious Boolean
-  promotionIds  Promotion[]
-  transferIds   Transfer[]
-  user       User @relation(fields: [createdBy], references: [utorid])
-  createdBy   String
-  // utorid of user???
-  // processedBy???
-}
-
-model Transfer {
-  id         Int @id @default(autoincrement())
-  type       TransactionType
-  sent       Int
-  senderId   String
-  sender     User     @relation("SentTransfers", fields: [senderId], references: [utorid])
-  recipientId String
-  recipient   User     @relation("ReceivedTransfers", fields: [recipientId], references: [utorid])
-  transactionId Int
-  transaction   Transaction @relation(fields: [transactionId], references: [id])
+	id Int @id @default(autoincrement())
+	utorid String //@unique
+	type String
+	spent Float
+	date String
+	earned Int
+	amount Int
+	sender String
+	recipient String
+	sent Int
+	redeemed Int
+	remark String
+	relatedId Int
+	processedBy String?
+	suspicious Boolean
+	user User @relation("buyer", fields: [utorid], references: [utorid])
+	createdBy String //cashier id?
+	cashier User @relation("cashier",fields: [createdBy], references: [utorid])
+	promotionIds Promotion[]
 }
 
 model Event {
@@ -111,11 +94,11 @@ model Event {
   startTime   DateTime
   endTime     DateTime
   capacity    Int?
-  points      Int
+  pointsRemaining Int
+  pointsTotal Int
   published   Boolean
   organizerId String
-  organizers  User @relation("eventOrganizer", fields: [organizerId], references: [utorid])
+  organizers  User @relation("eventOrganizer", fields: [organizerId], references: [utorid]) // change to utorid list
   guestId String
-  guests  User @relation("eventGuest", fields: [guestId], references: [utorid])
+  guests  User @relation("eventGuest", fields: [guestId], references: [utorid]) // change to utorid list
 }
-

@@ -112,17 +112,11 @@ app.post('/users', async (req, res) => {
                 email,
                 points: 0,
                 suspicious: false,
-                verified: false
-            },
-        });
-
-        const token = await prisma.token.create({
-            data: {
+                verified: false,
                 resetToken,
                 createdAt: now,
                 expiresAt: week_later.toISOString(),
-                lastLogin: now,
-                user: { connect: { id: user.id } }
+                lastLogin: null
             },
         });
 
@@ -133,8 +127,8 @@ app.post('/users', async (req, res) => {
             name: user.name,
             email: user.email,
             verified: user.verified,
-            expiresAt: token.expiresAt,
-            resetToken: token.resetToken
+            expiresAt: user.expiresAt,
+            resetToken: user.resetToken
         });
     } catch (error) {
         console.error(error);
