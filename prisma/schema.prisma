@@ -27,6 +27,7 @@ enum PromotionType {
   onetime
 }
 
+
 model User {
   id          Int    @id @default(autoincrement())
   utorid      String  @unique
