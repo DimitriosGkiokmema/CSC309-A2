@@ -29,13 +29,13 @@ app.use(express.json());
 
 // A2 Functions
 function generateToken(utorid, time) {
-  const token = jwt.sign(
-    { username: utorid },
-    SECRET_KEY,
-    { expiresIn: time }
-  )
+    const token = jwt.sign(
+        { username: utorid },
+        SECRET_KEY,
+        { expiresIn: time }
+    )
 
-  return token
+    return token
 }
 
 
@@ -65,14 +65,14 @@ app.post('/users', async (req, res) => {
         "email": "clive.thompson@mail.utoronto.ca"
     }
     */
-   const {utorid, name, email} = req.body;
+    const { utorid, name, email } = req.body;
 
     // Check fields exist
     if (!utorid || !name || !email) {
         return res.status(400).json({ error: "Payload fields incorrect" });
     }
 
-    let RegEx = /^[a-z0-9]+$/i; 
+    let RegEx = /^[a-z0-9]+$/i;
     let Valid = RegEx.test(utorid);
 
     // Validate length and alphanumeric-ness of utorid
@@ -106,7 +106,7 @@ app.post('/users', async (req, res) => {
         week_later.setDate(week_later.getDate() + 7);
 
         const user = await prisma.user.create({
-            data: { 
+            data: {
                 utorid,
                 name,
                 email,
@@ -138,7 +138,7 @@ app.post('/users', async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Database error"});
+        res.status(500).json({ message: "Database error" });
     }
 });
 
@@ -159,14 +159,14 @@ app.get('/users', async (req, res) => {
     · Response: count, which stores the total number of results (after applying all filters), and results, which contains a list of users { "count": 51,
     "results": [ { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": null, "verified": false, "avatarUrl": null }, // More user objects... ] }
     */
-   const { name, role, verified, activated, page, limit} = req.body;
-   const where = {}
+    const { name, role, verified, activated, page, limit } = req.body;
+    const where = {}
 
-  if (name)  where.name  = name
-  if (email) where.email = email
-  if (age)   where.age   = age
+    if (name) where.name = name
+    if (email) where.email = email
+    if (age) where.age = age
 
-  return prisma.user.findMany({ where })
+    return prisma.user.findMany({ where })
 });
 
 app.get('/users/:userId', async (req, res) => {
@@ -759,6 +759,50 @@ app.post('/promotions', async (req, res) => {
     "minSpending": 50, "rate": 0.01, // for every dollar spent, 1 extra point is added 
     "points": 0 }
     */
+
+    // TODO: clearance
+    try {
+
+        const { name, description, startTime, endTime, type, minSpending, rate, points, userId } = req.body;
+
+        if (!name || !description || !startTime || !endTime) {
+            return res.status(400).json({ error: "Name, description, start time and end time are required." });
+        }
+
+        const today = new Date();
+
+        if (startTime < today) {
+            return res.status(400).json({ error: "Date must be in the future." });
+        }
+
+        if (endTime <= startTime) {
+            return res.status(400).json({ error: "Invalid time." });
+        }
+
+        if (Number(minSpending) <= 0 || Number(rate) <= 0 || Number(points) <= 0) {
+            return res.status(400).json({ error: "min spending, rate and points must be positive numberic value." });
+        }
+
+        const newPromotion = await prisma.promotion.create({
+            data: {
+                name,
+                description,
+                startTime,
+                endTime,
+                type,
+                minSpending,
+                rate,
+                points,
+                userId
+            }
+        })
+
+        return res.status(200).json(newPromotion);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error" });
+    }
+
 });
 
 app.get('/promotions', async (req, res) => {
@@ -794,6 +838,29 @@ app.get('/promotions', async (req, res) => {
 
     Note that for both versions of GET /promotions, the descriptions of the returned promotions are omitted.
     */
+
+    // TODO: dynamic user, limits, page numbers
+    try {
+        const existingPromotions = await prisma.promotion.findMany({
+            where: {
+                userId: 1
+            }
+        })
+
+        const formattedResponse = {
+            count: existingPromotions.length,
+            results: existingPromotions.filter(promotion => promotion.type == "automatic")
+        };
+
+        return res.status(200).json(formattedResponse);
+
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error" });
+    }
+
+
 });
 
 app.get('/promotions/:promotionId', async (req, res) => {
@@ -807,6 +874,23 @@ app.get('/promotions/:promotionId', async (req, res) => {
     o 200 OK on success { "id": 3, "name": "Start of Summer Celebration", "description": "A simple promotion", "type": "automatic", "endTime": "2025-11-10T17:00:00Z", "minSpending": 50, "rate": 0.01, "points": 0 }
     o 404 Not Found if the promotion is currently inactive (not started yet, or have ended).
     */
+
+    // TODO: clearance
+    try {
+        const promotionId = Number(req.params.promotionId);
+        const existingPromotion = await prisma.promotion.findUnique({
+            where: {
+                id: promotionId
+            }
+        })
+
+        return res.status(200).json(existingPromotion);
+
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error" });
+    }
 });
 
 app.patch('/promotions/:promotionId', async (req, res) => {

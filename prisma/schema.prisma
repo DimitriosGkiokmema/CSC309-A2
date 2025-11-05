@@ -62,6 +62,7 @@ model Promotion {
   id           Int      @id @default(autoincrement())
   name         String
   description  String
+  type         PromotionType @default(automatic)
   startTime    DateTime
   endTime      DateTime
   minSpending  Float? 
