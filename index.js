@@ -20,14 +20,19 @@ const port = (() => {
 
 require('dotenv').config();
 const express = require("express");
+const { v4: uuidv4 } = require("uuid");
 const jwt = require('jsonwebtoken');
 const app = express();
-const SECRET_KEY = process.env.JWT_SECRET
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const SECRET_KEY = process.env.JWT_SECRET
 app.use(express.json());
 
 // A2 Functions
+function get_curr_id() {
+    return LOGGED_IN;
+}
+
 function generateToken(utorid, time) {
   const token = jwt.sign(
     { username: utorid },
@@ -58,7 +63,7 @@ app.post('/users', async (req, res) => {
 
     For this assignment, you are not expected to send emails, so the response body also contains the token that can be used to activate the account.
 
-    DUMMY PAYLOADS:
+    TESTING:
     {
         "utorid": "clive123",
         "name": "Clive Thompson",
@@ -75,7 +80,7 @@ app.post('/users', async (req, res) => {
 
     // Check fields exist
     if (!utorid || !name || !email) {
-        return res.status(400).json({ error: "Payload fields incorrect" });
+        return res.status(400).json({ error: "Payload field missing" });
     }
 
     let RegEx = /^[a-z0-9]+$/i; 
@@ -106,7 +111,7 @@ app.post('/users', async (req, res) => {
             return res.status(400).json({ message: "A user with that utorid already exists" });
         }
 
-        const resetToken = generateToken(utorid, '7d');
+        const resetToken = uuidv4();
         const curr_time = new Date().toISOString();
         let week_later = new Date();
         week_later.setDate(week_later.getDate() + 7);
@@ -120,6 +125,7 @@ app.post('/users', async (req, res) => {
                 suspicious: false,
                 verified: false,
                 resetToken,
+                token: '',
                 createdAt: curr_time,
                 expiresAt: week_later.toISOString()
             },
@@ -158,7 +164,7 @@ app.get('/users', async (req, res) => {
     · Response: count, which stores the total number of results (after applying all filters), and results, which contains a list of users { "count": 51,
     "results": [ { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": null, "verified": false, "avatarUrl": null }, // More user objects... ] }
 
-    DUMMY PAYLOADS:
+    TESTING:
     {
         "name": "Clive Thompson",
         "verified": "false"
@@ -229,7 +235,14 @@ app.get('/users/:userId', async (req, res) => {
     · Description: Retrieve a specific user
     · Clearance: Cashier or higher
     · Payload: None
-    · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "points": 0, "verified": false, "promotions": [ { "id" : 2, "name" : "Buy a pack of Pepsi", "minSpending": null, "rate": null, "points": 20 } ] }
+
+    · Response: {
+    "id": 1, 
+    "utorid": "johndoe1", 
+    "name": "John Doe", 
+    "points": 0, 
+    "verified": false, 
+    "promotions": [ { "id" : 2, "name" : "Buy a pack of Pepsi", "minSpending": null, "rate": null, "points": 20 } ] }
 
     Note that the cashier can only see limited information regarding the user. promotions should only show one-time promotions that are still available to the user, i.e., they have not used those promotions yet.
     */
@@ -239,10 +252,12 @@ app.get('/users/:userId', async (req, res) => {
     · Description: Retrieve a specific user
     · Clearance: Manager or higher
     · Payload: None
+
     Response: {
     "id": 1,
     "utorid": "johndoe1",
-    "name": "John Doe", "email": "john.doe@mail.utoronto.ca",
+    "name": "John Doe", 
+    "email": "john.doe@mail.utoronto.ca",
     "birthday": "2000-01-01",
     "role": "regular",
     "points": 0,
@@ -252,7 +267,62 @@ app.get('/users/:userId', async (req, res) => {
     "avatarUrl": null,
     "promotions": [ { "id" : 2, "name" : "Buy a pack of Pepsi", "minSpending": null, "rate": null, "points": 20 } ]
     }
+
+    TESTING:
+    http://localhost:3000/users/1
+    http://localhost:3000/users/2
     */
+    // TODO: how to get clearance level
+    const clearance = "Manager";
+    const high_clearance = clearance === "Manager" || clearance === "Superuser"; 
+    const target_id = parseInt(req.params.userId, 10);
+
+    if (isNaN(target_id)) {
+        console.log(req.params.userId)
+        return res.status(400).json({ error: "?userId must be positive number" });
+    }
+
+    try {
+        let data;
+        
+        if (high_clearance) {
+            data = await prisma.user.findUnique({
+                where: {id: target_id},
+                select: {
+                    id: true,
+                    utorid: true,
+                    name: true,
+                    email: true,
+                    birthday: true,
+                    role: true,
+                    points: true,
+                    createdAt: true,
+                    lastLogin: true,
+                    verified: true,
+                    avatarUrl: true,
+                    promotions: true
+                }
+            });
+        } else {
+            data = await prisma.user.findUnique({
+                where: {id: target_id},
+                select: {
+                    id: true,
+                    utorid: true,
+                    name: true,
+                    points: true,
+                    verified: true,
+                    promotions: true
+                }
+            });
+        }
+
+        // Respond with updated note
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error"});
+    }
 });
 
 app.patch('/users/:userId', async (req, res) => {
@@ -267,10 +337,66 @@ app.patch('/users/:userId', async (req, res) => {
     suspicious No boolean true or false
     role No string As Manager: Either "cashier" or "regular" As Superuser: Any of "regular", "cashier", "manager", or "superuser"
 
-    · Response: only the field(s) that were updated will be returned, e.g., when the suspicious field is updated: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "suspicious": true, }
+    · Response: only the field(s) that were updated will be returned, e.g., when the suspicious field is updated: { 
+    "id": 1, 
+    "utorid": "johndoe1", 
+    "name": "John Doe", 
+    "suspicious": true, 
+    }
 
     When promoting a user to a cashier, the initial value for suspicious must be false, meaning that a suspicious user can not be a cashier.
+
+    TESTING:
+    http://localhost:3000/users/2
+    {
+        "verified": "true",
+        "email": "dimi67@mail.utoronto.ca"
+    }
     */
+    const target_id = parseInt(req.params.userId, 10);
+    const {email, verified, suspicious, role} = req.body;
+    const data = {};
+
+    if (isNaN(target_id)) {
+        console.log(req.params.userId)
+        return res.status(400).json({ error: "?userId must be positive number" });
+    }
+
+    if (email) {
+        // Validate email is from UofT
+        if (!email.includes("@mail.utoronto.ca")) {
+            return res.status(400).json({ error: "Email not proper format" });
+        }
+        
+        data.email  = email;
+    }
+    if (verified) data.verified = verified === "true";
+    if (suspicious) data.suspicious = suspicious;
+    if (role) data.role = role;
+
+    const select = {
+        id: true,
+        utorid: true,
+        name: true,
+    };
+
+    Object.keys(data).forEach(key => {
+        select[key] = true
+    })
+
+    try {
+        const updated_user = await prisma.user.update({
+            where: { id: target_id },
+            data,
+            select
+        })
+
+        // Respond with updated note
+        return res.status(200).json(updated_user);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error"});
+    }
 });
 
 app.patch('/users/me', async (req, res) => {
@@ -319,6 +445,7 @@ app.patch('/users/me/password', async (req, res) => {
 
 app.post('/auth/tokens', async (req, res) => {
     /*
+    // LOG IN USER
     · Method: POST
     · Description: Authenticate a user and generate a JWT token
     · Clearance: Any
@@ -329,6 +456,51 @@ app.post('/auth/tokens', async (req, res) => {
 
     · Response: { "token": "jwt_token_here", "expiresAt": "2025-03-10T01:41:47.000Z" }
     */
+    const {utorid, password} = req.body;
+
+    if (!utorid || !password) {
+        return res.status(400).json({ error: "Utorid or password missing" });
+    }
+
+    const jwt = generateToken(utorid, '7d');
+    let curr_time = new Date().toISOString();
+    let week_later = new Date();
+    week_later.setDate(week_later.getDate() + 7);
+    week_later = week_later.toISOString();
+
+    try {
+        const existing = await prisma.user.findUnique({
+            where: { utorid }
+        });
+
+        if (existing.password !== password) {
+            return res.status(410).json({ message: "Incorrect password" });
+        }
+
+        let data = {};
+        data.resetToken = '';
+        data.token = jwt;
+        data.createdAt = curr_time;
+        data.lastLogin = curr_time;
+        data.expiresAt = week_later;
+
+        const updated_user = await prisma.user.update({
+            where: { utorid: utorid,
+                password: password
+             },
+            data,
+            select: {
+                token: true,
+                expiresAt: true
+            }
+        });
+
+        // Respond with updated note
+        return res.status(200).json(updated_user);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error"});
+    }
 });
 
 app.post('/auth/resets', async (req, res) => {
@@ -366,6 +538,50 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     o 404 Not Found if the reset token does not exist.
     o 410 Gone if the reset token expired.
     */
+    const resetToken = req.params.resetToken;
+    const {utorid, password} = req.body;
+
+    if (!resetToken || !utorid || !password) {
+        return res.status(404).json({ error: "Must provide a reset token" });
+    }
+    
+    let RegEx = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
+
+    if (password.length < 8 || password.length > 20 || !RegEx.test(password)) {
+        return res.status(400).json({ error: "password given was incorrect" });
+    }
+
+    try {
+        const curr_time = new Date().toISOString();
+        const existing = await prisma.user.findUnique({
+            where: { utorid }
+        });
+
+        if (!existing) {
+            return res.status(404).json({ message: "A user with that utorid does not exist" });
+        }
+
+        if (existing.lastLogin < curr_time) {
+            return res.status(410).json({ message: "Token has expired" });
+        }
+
+        if (existing.resetToken !== resetToken) {
+            return res.status(400).json({ message: "A user with that token and utorid combination does not exist" });
+        }
+
+        const updated_user = await prisma.user.update({
+            where: { utorid: utorid },
+            data: {
+                password: password
+            }
+        });
+        
+        // Respond with updated note
+        return res.status(200).json({})
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error"});
+    }
 });
 
 app.post('/transactions', async (req, res) => {
