@@ -25,22 +25,11 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const get_logged_in = require("./middleware/auth.js");
 const SECRET_KEY = process.env.JWT_SECRET
-const sessionStore = new Map()
 app.use(express.json());
 
 // A2 Functions
-function get_logged_in(req, res, next) {
-    const sid = req.cookies.sessionId;
-    if (!sid) return res.sendStatus(401);
-
-    const userId = sessionStore.get(sid);
-    if (!userId) return res.sendStatus(401);
-
-    req.userId = userId;
-    return next()
-}
-
 function generateToken(utorid, time) {
   const token = jwt.sign(
     { username: utorid },
@@ -129,11 +118,11 @@ app.post('/users', async (req, res) => {
                 utorid,
                 name,
                 email,
+                role: "regular",
                 points: 0,
                 suspicious: false,
                 verified: false,
-                resetToken,
-                token: '',
+                token: resetToken,
                 createdAt: curr_time,
                 expiresAt: week_later.toISOString()
             },
@@ -147,7 +136,7 @@ app.post('/users', async (req, res) => {
             email: user.email,
             verified: user.verified,
             expiresAt: user.expiresAt,
-            resetToken: user.resetToken
+            "resetToken": user.token
         });
     } catch (error) {
         console.error(error);
@@ -237,6 +226,67 @@ app.get('/users', async (req, res) => {
     }
 });
 
+app.patch('/users/me', get_logged_in, async (req, res) => {
+    /*
+    · Method: PATCH
+    · Description: Update the current logged-in user's information
+    · Clearance: Regular or higher
+    · Payload:
+    Field Required Type Description
+    name No string 1-50 characters
+    email No string Unique, Valid UofT email
+    birthday No string A date in the format of YYYY-MM-DD
+    avatar No file Image file for the user's avatar
+
+    · Response:
+    { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png" }
+    */
+    return res.status(200).json(req.user);
+});
+
+app.get('/users/me', get_logged_in, async (req, res) => {
+    /*
+    · Method: GET
+    · Description: Retrieve the current logged-in user's information
+    · Clearance: Regular or higher
+    · Payload: None
+    
+    · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
+    */
+    const user = req.user;
+
+    return res.status(200).json({
+            id: user.id,
+            utorid: user.utorid,
+            name: user.name,
+            email: user.email,
+            birthday: user.birthday,
+            role: user.role,
+            points: user.points,
+            createdAt: user.createdAt,
+            lastLogin: user.lastLogin,
+            verified: user.verified,
+            avatarUrl: user.avatarUrl,
+            promotions: user.promotions
+        });
+});
+
+app.patch('/users/me/password', async (req, res) => {
+    /*
+    · Method: PATCH
+    · Description: Update the current logged-in user's password
+    · Clearance: Regular or higher
+    · Payload:
+    Field Required Type Description
+    old Yes string The user's current password
+    new Yes string 8-20 characters, at least one uppercase, one lowercase, one number, one special character
+
+    · Response:
+    o 200 OK on success
+    o 403 Forbidden if the provided current password is incorrect
+    */
+});
+
 app.get('/users/:userId', async (req, res) => {
     /*
     · Method: GET
@@ -286,7 +336,6 @@ app.get('/users/:userId', async (req, res) => {
     const target_id = parseInt(req.params.userId, 10);
 
     if (isNaN(target_id)) {
-        console.log(req.params.userId)
         return res.status(400).json({ error: "?userId must be positive number" });
     }
 
@@ -366,7 +415,6 @@ app.patch('/users/:userId', async (req, res) => {
     const data = {};
 
     if (isNaN(target_id)) {
-        console.log(req.params.userId)
         return res.status(400).json({ error: "?userId must be positive number" });
     }
 
@@ -407,62 +455,6 @@ app.patch('/users/:userId', async (req, res) => {
     }
 });
 
-app.patch('/users/me', async (req, res) => {
-    /*
-    · Method: PATCH
-    · Description: Update the current logged-in user's information
-    · Clearance: Regular or higher
-    · Payload:
-    Field Required Type Description
-    name No string 1-50 characters
-    email No string Unique, Valid UofT email
-    birthday No string A date in the format of YYYY-MM-DD
-    avatar No file Image file for the user's avatar
-
-    · Response:
-    { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png" }
-    */
-});
-
-app.get('/users/me', get_logged_in, async (req, res) => {
-    /*
-    · Method: GET
-    · Description: Retrieve the current logged-in user's information
-    · Clearance: Regular or higher
-    · Payload: None
-    
-    · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
-    */
-    // get_logged_in(req, res, ()=> {});
-    console.log(req.userId);
-    console.log("hi")
-
-    const userId = req.userId;
-    console.log(userId);
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { promotions: true }
-    });
-
-    return res.json(user);
-});
-
-app.patch('/users/me/password', async (req, res) => {
-    /*
-    · Method: PATCH
-    · Description: Update the current logged-in user's password
-    · Clearance: Regular or higher
-    · Payload:
-    Field Required Type Description
-    old Yes string The user's current password
-    new Yes string 8-20 characters, at least one uppercase, one lowercase, one number, one special character
-
-    · Response:
-    o 200 OK on success
-    o 403 Forbidden if the provided current password is incorrect
-    */
-});
-
 app.post('/auth/tokens', async (req, res) => {
     /*
     // LOG IN USER
@@ -500,7 +492,6 @@ app.post('/auth/tokens', async (req, res) => {
         }
 
         let data = {};
-        data.resetToken = '';
         data.token = jwt;
         data.createdAt = curr_time;
         data.lastLogin = curr_time;
@@ -516,11 +507,6 @@ app.post('/auth/tokens', async (req, res) => {
                 expiresAt: true
             }
         });
-
-        const sessionId = uuidv4()
-        sessionStore.set(sessionId, updated_user.id)
-
-        res.cookie("sessionId", sessionId, { httpOnly: true })
 
         // Respond with updated note
         return res.status(200).json(updated_user);
@@ -570,7 +556,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     const {utorid, password} = req.body;
 
     if (!resetToken || !utorid || !password) {
-        return res.status(404).json({ error: "Must provide a reset token" });
+        return res.status(404).json({ error: "Must provide a reset token,utorid, and password" });
     }
     
     let RegEx = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
@@ -593,7 +579,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
             return res.status(410).json({ message: "Token has expired" });
         }
 
-        if (existing.resetToken !== resetToken) {
+        if (existing.token !== resetToken) {
             return res.status(400).json({ message: "A user with that token and utorid combination does not exist" });
         }
 
@@ -605,7 +591,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
         });
         
         // Respond with updated note
-        return res.status(200).json({})
+        return res.status(200).json({"success": "password created"})
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Database error"});

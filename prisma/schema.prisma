@@ -39,7 +39,6 @@ model User {
   avatarUrl   String?
   suspicious  Boolean
   verified    Boolean
-  resetToken  String
   token       String 
   createdAt   DateTime
   expiresAt   DateTime
