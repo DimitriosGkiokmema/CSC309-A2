@@ -26,11 +26,19 @@ const app = express();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET
+const sessionStore = new Map()
 app.use(express.json());
 
 // A2 Functions
-function get_curr_id() {
-    return LOGGED_IN;
+function get_logged_in(req, res, next) {
+    const sid = req.cookies.sessionId;
+    if (!sid) return res.sendStatus(401);
+
+    const userId = sessionStore.get(sid);
+    if (!userId) return res.sendStatus(401);
+
+    req.userId = userId;
+    return next()
 }
 
 function generateToken(utorid, time) {
@@ -416,7 +424,7 @@ app.patch('/users/me', async (req, res) => {
     */
 });
 
-app.get('/users/me', async (req, res) => {
+app.get('/users/me', get_logged_in, async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve the current logged-in user's information
@@ -425,6 +433,18 @@ app.get('/users/me', async (req, res) => {
     
     · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
     */
+    // get_logged_in(req, res, ()=> {});
+    console.log(req.userId);
+    console.log("hi")
+
+    const userId = req.userId;
+    console.log(userId);
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { promotions: true }
+    });
+
+    return res.json(user);
 });
 
 app.patch('/users/me/password', async (req, res) => {
@@ -473,7 +493,9 @@ app.post('/auth/tokens', async (req, res) => {
             where: { utorid }
         });
 
-        if (existing.password !== password) {
+        if (!existing) {
+            return res.status(410).json({ message: "User with provided utorid and password does not exist." });
+        } else if (existing && existing.password !== password) {
             return res.status(410).json({ message: "Incorrect password" });
         }
 
@@ -485,8 +507,8 @@ app.post('/auth/tokens', async (req, res) => {
         data.expiresAt = week_later;
 
         const updated_user = await prisma.user.update({
-            where: { utorid: utorid,
-                password: password
+            where: {
+                utorid: utorid
              },
             data,
             select: {
@@ -495,6 +517,11 @@ app.post('/auth/tokens', async (req, res) => {
             }
         });
 
+        const sessionId = uuidv4()
+        sessionStore.set(sessionId, updated_user.id)
+
+        res.cookie("sessionId", sessionId, { httpOnly: true })
+
         // Respond with updated note
         return res.status(200).json(updated_user);
     } catch (error) {
@@ -502,6 +529,7 @@ app.post('/auth/tokens', async (req, res) => {
         res.status(500).json({ message: "Database error"});
     }
 });
+
 
 app.post('/auth/resets', async (req, res) => {
     /*
