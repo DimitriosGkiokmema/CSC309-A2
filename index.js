@@ -45,7 +45,7 @@ function generateToken(utorid, time) {
 
 //USER
 app.post('/users', async (req, res) => {
-const {utorid, name, email} = req.body;
+const {utorid, name, email, role} = req.body;
 
     // Check fields exist
     if (!utorid || !name || !email) {
@@ -96,7 +96,8 @@ const {utorid, name, email} = req.body;
                 resetToken,
                 token: '',
                 createdAt: curr_time,
-                expiresAt: week_later.toISOString()
+                expiresAt: week_later.toISOString(),
+                role
             },
         });
 
@@ -170,6 +171,35 @@ app.get('/users', async (req, res) => {
         console.error(error);
         res.status(500).json({ message: "Database error"});
     }
+});
+
+app.patch('/users/me', get_logged_in, async (req, res) => {
+    //TODO
+    return res.status(200).json(req.user);
+});
+
+app.get('/users/me', get_logged_in, async (req, res) => {
+    //TODO
+    const user = req.user;
+
+    return res.status(200).json({
+            id: user.id,
+            utorid: user.utorid,
+            name: user.name,
+            email: user.email,
+            birthday: user.birthday,
+            role: user.role,
+            points: user.points,
+            createdAt: user.createdAt,
+            lastLogin: user.lastLogin,
+            verified: user.verified,
+            avatarUrl: user.avatarUrl,
+            promotions: user.promotions
+        });
+});
+
+app.patch('/users/me/password', async (req, res) => {
+    //TODO
 });
 
 app.get('/users/:userId', async (req, res) => {
@@ -270,35 +300,6 @@ app.patch('/users/:userId', async (req, res) => {
         console.error(error);
         res.status(500).json({ message: "Database error"});
     }
-});
-
-app.patch('/users/me', get_logged_in, async (req, res) => {
-    //TODO
-    return res.status(200).json(req.user);
-});
-
-app.get('/users/me', get_logged_in, async (req, res) => {
-    //TODO
-    const user = req.user;
-
-    return res.status(200).json({
-            id: user.id,
-            utorid: user.utorid,
-            name: user.name,
-            email: user.email,
-            birthday: user.birthday,
-            role: user.role,
-            points: user.points,
-            createdAt: user.createdAt,
-            lastLogin: user.lastLogin,
-            verified: user.verified,
-            avatarUrl: user.avatarUrl,
-            promotions: user.promotions
-        });
-});
-
-app.patch('/users/me/password', async (req, res) => {
-    //TODO
 });
 
 
@@ -681,11 +682,11 @@ app.patch('transactions/:transactionId/processed', async (req, res) => {
 
 //EVENT ROUTES
 app.get('/events', get_logged_in, async (req, res) => {
-    currentUser = req.user;
+    const currentUser = req.user;
     //query = req.query;
     const {name, location, started, ended, showFull, page: qpage, limit, published} = req.query;
     
-    where = {};
+    let where = {};
     const page = 1;
     const take = 10;
     //start filtering
@@ -795,12 +796,15 @@ app.get('/events', get_logged_in, async (req, res) => {
 
 app.post('/events', get_logged_in, async (req, res) => { //checked HTTP requests
     //Check that user is a manager or higher!!
-    //const currentUser = get_logged_in;
+    
     const currentUser = req.user;
+    
     if(!currentUser) {
-        return res.status(401).json({"error": "Unauthorized"}); //passed
+        console.log(currentUser);
+        return res.status(401).json({"error": "Unauthorized"}); //passed, this is actually caught by middleware
     }
-    if(currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    if(currentUser.role !== 'Manager' && currentUser.role !== 'Superuser') {
+        console.log(currentUser.role);
         return res.status(403).json({"error": "Only managers or higher can create events"});
     }
 
@@ -856,7 +860,7 @@ app.get('/events/:eventId', get_logged_in, async (req, res) => {
 
     const eid = req.params.eventId;
     const event = await prisma.event.findUnique( {
-        where: {id: eid}
+        where: {id: parseInt(eid)}
     })
     
     if(!event.published) {
@@ -882,9 +886,14 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
     
     const eid = req.params.eventId;
     //fetch the event we want to update/patch up
-    const event = await prisma.event.findOne( {
-        where: {id: eid}
+    const event = await prisma.event.findUnique( {
+        where: {id: parseInt(eid)},
+        include: {organizers: true, guests: true}
     })
+
+    if(!event) {
+        return res.status(404).json({"error": "Event not found"});
+    }
 
     //general clearance check
     if(!event.organizers.includes(currentUser) && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
@@ -895,31 +904,39 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
   
     //what is the current date?
     const currentDate = new Date();
-    //possible conditions leading to a 400 error
-    if(startTime !== undefined) { //check if theyre defined
-        if(Date(startTime) < currentDate) {
-            return res.status(400).json({"error": "Event times cannot be in the past"});
-        }  
-        else if (currentDate > Date(event.startTime)) {
-            if(name !== undefined || description !== undefined || location !== undefined || startTime !== undefined || capacity !== undefined) {
-                return res.status(400).json({"error": "Cannot update name, description, location, start time, or capacity of an event that has already started"});
-            }
-        } 
-    }
     
-    if (endTime !== undefined) {
-        if(Date(endTime) < currentDate || Date(endTime) < Date(event.startTime) || (Date(event.endTime) < currentDate && currentDate < Date(endTime))) {
-            return res.status(400).json({"error": "Event times cannot be in the past"});
-        } 
+    //possible conditions leading to a 400 error
+    if(startTime !== undefined && startTime !== null) {
+         //check if theyre defined
+
+        if(!isNaN(new Date(startTime).getTime()) && (new Date(startTime) < currentDate)) {
+            return res.status(400).json({"error": "Event times cannot be in the past"}); //passed
+        }  
+    }
+    if (currentDate > new Date(event.startTime)) {
+       if(name !== null || description !== null || location !== null || startTime !== null || (capacity !== undefined && capacity !== event.capacity)) {
+           return res.status(400).json({"error": "Cannot update name, description, location, start time, or capacity of an event that has already started"});
+       }
+   } 
+    
+    if (endTime !== undefined && endTime !== null) {
+        if(!isNaN(new Date(endTime).getTime())) {
+            if(new Date(endTime) < currentDate || new Date(endTime) < new Date(event.startTime) || (new Date(event.endTime) < currentDate && currentDate < new Date(endTime))) {
+                return res.status(400).json({"error": "Event times cannot be in the past"});
+            } 
+        }
+        else {
+            return res.status(400).json({"error": "invalid payload"});
+        }
     }
 
-    if(capacity !== undefined) {
+    if(capacity !== undefined && !isNaN(capacity)) {
         if (event.guests.length > capacity || capacity < 0) {
             return res.status(400).json({"error": "Event capacity not valid"});
         }
     }
 
-    if(points !== undefined) {
+    if(points !== undefined && !isNaN(points)) {
         if(currentUser.role !== 'manager') {
             return res.status(403).json({"error": "Only managers can update event points"});
         }
@@ -935,44 +952,54 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
 
 
     const dataToUpdate = {};
-    if (name !== undefined) {
-        dataToUpdate.name = name;
+    if (name !== undefined && name !== null) {
+        if(event.name !== name) {
+            dataToUpdate.name = name;
+        }
     }
-    if (description !== undefined) {
-        dataToUpdate.description = description;
+    if (description !== undefined && description !== null) {
+        if(event.description !== description) {
+            dataToUpdate.description = description;
+        }
     }
-    if (location !== undefined) {
-        dataToUpdate.location = location;
+    if (location !== undefined && location !== null) {
+        if(event.location !== location) {
+            dataToUpdate.location = location;
+        }
     }
-    if (startTime !== undefined) {
-        dataToUpdate.startTime = startTime;
+    if (startTime !== undefined && startTime !== null) {
+        if(new Date(event.startTime).getTime() !== new Date(startTime).getTime()) {
+            dataToUpdate.startTime = startTime;
+        }
     }
-    if (endTime !== undefined) {
-        dataToUpdate.endTime = endTime;
+    if (endTime !== undefined && endTime !== null) {
+        if(new Date(event.endTime).getTime() !== new Date(endTime).getTime()) {
+            dataToUpdate.endTime = endTime;
+        }
     }
     if (capacity !== undefined) {
-        dataToUpdate.capacity = capacity;
+        if(event.capacity !== capacity) {
+            dataToUpdate.capacity = capacity;
+        }
     }
-    if (points !== undefined) {
-        dataToUpdate.points = points;
+    if (points !== undefined && points !== null) {
+        if(event.points !== points) {
+            dataToUpdate.pointsRemain = points;
+        }
     }
-    if (published !== undefined) {
-        dataToUpdate.published = published;
+    if (published !== undefined && published !== null) {
+        if(event.published !== published) {
+            dataToUpdate.published = published;
+        }
     }
     
-    
+    console.log(dataToUpdate);
+
     //else
     const updatedEvent = await prisma.event.update({
-        where: {id: eid},
+        where: {id: parseInt(eid)},
         data: dataToUpdate,   
     });
-
-    // let otherUpdatedData = {}; //not completely sure about this
-    // keys(dataToUpdate).forEach(key => {
-    //     if(!['name', 'location'].includes(key)) {
-    //         otherUpdatedData.key = updatedEvent.key;
-    //     }
-    // })
 
     let resultEvent = {
         "id": updatedEvent.id,
@@ -980,9 +1007,12 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
         "location": updatedEvent.location,
     };
 
-    keys(dataToUpdate).forEach(key => {
+    Object.keys(dataToUpdate).forEach(key => {
         if(!['name', 'location'].includes(key)) {
-            resultEvent.key = dataToUpdate.key;
+            resultEvent[key] = dataToUpdate[key];
+            if(key === 'pointsRemain') {
+                resultEvent['pointsAwarded'] = updatedEvent.pointsAwarded;
+            }
         }
     })
 
@@ -998,17 +1028,21 @@ app.delete('/events/:eventId', get_logged_in, async (req, res) => { //checked ht
     const eid = req.params.eventId;
 
     const event = await prisma.event.findUnique( {
-        where: {id: eid}
+        where: {id: parseInt(eid)}
     })
 
+    if(!event) {
+        return res.status(404).json({"error": "Not found"});
+    }
+
     if (event.published) {
-        return res.status(400).json({message: "Cannot delete a published event"});
+        return res.status(400).json({"error": "Cannot delete a published event"});
     }
 
     await prisma.event.delete( {
-        where: {id: eid}
+        where: {id: parseInt(eid)}
     })
-    return res.status(204);
+    return res.status(204).send();
 })
 
 app.post('/events/:eventId/organizers', get_logged_in, async (req, res) => { //checked https requests
@@ -1021,6 +1055,10 @@ app.post('/events/:eventId/organizers', get_logged_in, async (req, res) => { //c
     }
 
     const {utorid} = req.body;
+    if(utorid === undefined) {
+        return res.status(400).json({"error": "Invalid payload"});
+    }
+
     const user = await prisma.user.findUnique( {
         where: {utorid: utorid}
     })
@@ -1032,7 +1070,8 @@ app.post('/events/:eventId/organizers', get_logged_in, async (req, res) => { //c
 
     const eid = req.params.eventId;
     const event = await prisma.event.findUnique( {
-        where: {id: eid}
+        where: {id: parseInt(eid)},
+        include: { guests: true, organizers: true }
     })
 
     if(!event) {
@@ -1047,8 +1086,35 @@ app.post('/events/:eventId/organizers', get_logged_in, async (req, res) => { //c
         return res.status(400).json({"error": "User is already a guest of the event"});
     }
     else {
-        event.organizers.push(user);
-        return res.status(201).json(event.id, event.name, event.location, event.organizers);
+
+        const alreadyOrganizer = event.organizers.filter(org => {
+            return org.id === user.id;
+        })
+
+        console.log(event.organizers);
+
+        if(alreadyOrganizer.length === 0) {
+            //console.log(event.organizers);
+            const updatedEvent = await prisma.event.update({
+                where: {id: parseInt(eid)},
+                data: {
+                    organizers: {connect: {id: user.id}}
+                },
+                include: {organizers: true}
+
+            })
+            
+            const result = [];
+            updatedEvent.organizers.forEach(org => {
+                //console.log(org);
+                const {id, utorid, name, ...rest} = org;
+                result.push({id, utorid, name});
+            })
+            return res.status(201).json({id: event.id, name: event.name, location: event.location, organizers: result});
+        }
+        else {
+            return res.status(409).json({"error": "User is already an organizer for this event"});
+        }
     }
 
 })
@@ -1064,20 +1130,105 @@ app.delete('/events/:eventId/organizers/:userId', get_logged_in, async (req, res
     const eid = req.params.eventId;
 
     const user = await prisma.user.findUnique( {
-        where: {id: uid}
+        where: {id: parseInt(uid)}
     })
     
     const event = await prisma.event.findUnique( {
-        where: {id: eid}
+        where: {id: parseInt(eid)},
+        include: {organizers: true}
     })
 
-    event.organizers.filter(organizer => {
-        if(organizer === user) {
-            event.organizers.remove(organizer);
-            return res.status(204);
-        }
+    if(!event || !user) {
+        return res.status(404).json({"error": "Not Found"});
+    }
+
+    const validOrganizer = event.organizers.filter(org => {
+        return org.id === user.id;
     })
+
+    if(validOrganizer.length !== 0) {
+        const deleteUser = validOrganizer[0].id;
+        const updatedEvent = await prisma.event.update({
+            where: {id: parseInt(eid)},
+            data: {
+                organizers: {
+                    disconnect: {id: deleteUser}
+                }},
+        })
+        return res.status(204).send();
+    }
+    return res.status(404).json({"error": "User is not an organizer of this event"});
 })
+
+app.post('/events/:eventId/guests/me', get_logged_in, async (req, res) => { //checked https requests
+    //logged in user
+    const eid = req.params.eventId;
+    const event = await prisma.event.findUnique( {
+        where: {id: parseInt(eid)},
+        include: {guests: true}
+    })
+    
+    const user = req.user; //logged in user, needs middleware
+
+    const validGuest = event.guests.filter(guest => {
+        return guest.id === user.id;
+    })
+
+    if(validGuest.length !== 0) {
+        return res.status(400).json({"error": "User is already a guest of the event"});
+    }
+    else if (event.capacity === event.guests.length || event.endTime < new Date()) {
+        return res.status(410).json({"error": "Event is full or has ended"});
+    }
+
+    const updatedEvent = await prisma.event.update({
+        where: {id: parseInt(eid)},
+        data: {
+            guests: {
+                connect: {id: user.id}
+            }
+        },
+        include: {guests: true}
+    })
+    
+    const {id, utorid, name, ...rest} = user;
+
+    return res.status(201).json({id: event.id, name: event.name, location: event.location, guestAdded: {id, utorid, name}, numGuests: updatedEvent.guests.length});
+
+})
+
+app.delete('/events/:eventId/guests/me', get_logged_in, async (req, res) => { //checked https requests
+    const eid = req.params.eventId;
+    const event = await prisma.event.findUnique( {
+        where: {id: parseInt(eid)},
+        include: {guests: true}
+    })
+
+    const user = req.user; //logged in user, needs basicAuth middleware
+    const validGuest = event.guests.filter(guest => {
+        return guest.id === user.id;
+    })
+
+    if (event.endTime < new Date()) {
+        return res.status(410).json({"error": "Cannot remove guests from an event that has ended"});
+    }
+
+    if(validGuest.length !== 0) {
+        const updatedEvent = await prisma.event.update({
+            where: {id: parseInt(eid)},
+            data: {
+                guests: {
+                    disconnect: {id: user.id}
+                }
+            }
+        })
+        return res.status(204).send();
+    }
+        else {
+            return res.status(404).json({"error": "User is not a guest of the event"});
+        }
+        
+});
 
 app.post('/events/:eventId/guests', get_logged_in, async (req, res) => { //checked https requests
     const currentUser = req.user;
@@ -1086,8 +1237,9 @@ app.post('/events/:eventId/guests', get_logged_in, async (req, res) => { //check
     }
 
     const eid = req.params.eventId;
-    const event = await prisma.event.findOne( {
-        where: {id: eid}
+    const event = await prisma.event.findUnique( {
+        where: {id: parseInt(eid)},
+        include: {organizers: true, guests: true}
     })
 
     if(!event.organizers.includes(currentUser) && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
@@ -1099,11 +1251,18 @@ app.post('/events/:eventId/guests', get_logged_in, async (req, res) => { //check
         where: {utorid: utorid}
     })
 
+    const alreadyOrganizer = event.organizers.filter(org => {
+        return org.id === user.id;
+    })
 
-    if(event.organizers.includes(user)) {
+    const alreadyGuest = event.guests.filter(guest => {
+        return guest.id === user.id;
+    })
+
+    if(alreadyOrganizer.length !== 0) {
         return res.status(400).json({"error": "User is already an organizer of the event"});
     }
-    else if(event.guests.includes(user)) {
+    else if(alreadyGuest.length !== 0) {
         return res.status(409).json({"error": "User is already a guest of this event"});
     }
     else if(!event.published) {
@@ -1113,9 +1272,17 @@ app.post('/events/:eventId/guests', get_logged_in, async (req, res) => { //check
         return res.status(410).json({"error": "Event is full or has ended"});
     }
     else {
-        event.guests.push(user);
+        const updatedEvent = await prisma.event.update({
+            where: {id: parseInt(eid)},
+            data: {
+                guests: {connect: {id: user.id}}
+                },
+                include: {guests: true}
+        })
         
-        return res.status(201).json({id: event.id, name: event.name, location: event.location, guestAdded: user, numGuests: event.guests.length});
+        const {id, utorid, name, ...rest} = user;
+
+        return res.status(201).json({id: event.id, name: event.name, location: event.location, guestAdded: {id, utorid, name}, numGuests: updatedEvent.guests.length});
     }
 })
 
@@ -1129,11 +1296,12 @@ app.delete('/events/:eventId/guests/:userId', get_logged_in, async (req, res) =>
     const eid = req.params.eventId;
 
     const user = await prisma.user.findUnique( {
-        where: {id: uid}
+        where: {id: parseInt(uid)}
     })
     
     const event = await prisma.event.findUnique( {
-        where: {id: eid}
+        where: {id: parseInt(eid)},
+        include: {guests: true}
     })
 
     event.guests.filter(guest => {
@@ -1144,57 +1312,14 @@ app.delete('/events/:eventId/guests/:userId', get_logged_in, async (req, res) =>
     })
 })
 
-app.post('/events/:eventId/guests/me', get_logged_in, async (req, res) => { //checked https requests
-    //logged in user
-    const eid = req.params.eventId;
-    const event = await prisma.event.findUnique( {
-        where: {id: eid}
-    })
-    
-    const user = req.user; //logged in user, needs middleware
-    if(event.guests.includes(user)) {
-        return res.status(400).json({"error": "User is already a guest of the event"});
-    }
-    else if (event.capacity === event.guests.length || event.endTime < new Date()) {
-        return res.status(410).json({message: "Event is full or has ended"});
-    }
-
-    event.guests.push(user);
-        
-    return res.status(201).json({id: event.id, name: event.name, location: event.location, guestAdded: user, numGuests: event.guests.length});
-
-})
-
-app.delete('/events/:eventId/guests/me', get_logged_in, async (req, res) => { //checked https requests
-    const eid = req.params.eventId;
-    const event = await prisma.event.findUnique( {
-        where: {id: eid}
-    })
-
-    const user = req.user; //logged in user, needs basicAuth middleware
-    if(!event.guests.includes(user)) {
-        return res.status(404).json({"error": "User is not a guest of the event"});
-    }
-    else if (event.endTime < new Date()) {
-        return res.status(410).json({"error": "Cannot remove guests from an event that has ended"});
-    }
-    else {
-        event.guests.filter(guest => {
-            if(guest === user) {
-                event.guests.remove(guest);
-                return res.status(204);
-            }
-        })
-    }
-})
-
 app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { //checked https requests
     const currentUser = req.user;
     const {type, utorid, amount, remark} = req.body;
 
     const eid = req.params.eventId;
     const event = await prisma.event.findUnique( {
-        where: {id: eid}
+        where: {id: parseInt(eid)},
+        include: {organizers: true}
     })
 
     if(!event.organizers.includes(currentUser) && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
