@@ -210,20 +210,25 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
         }
     }
 
-    if (page) {
-        response_size = page;
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+
+    if (isNaN(pageNum) || pageNum < 1) {
+        return res.status(200).json({ error: "page not valid" });
     }
-    
-    if (limit) {
-        response_size = response_size * limit;
-    } else {
-        response_size = response_size * 10;
+    if (isNaN(limitNum) || limitNum < 1) {
+        return res.status(200).json({ error: "limit not valid" });
     }
 
+    const skip = (pageNum - 1) * limitNum;
+    const take = limitNum;
+
     try {
+        const total = await prisma.user.findMany({where});
         const data = await prisma.user.findMany({
             where,
-            take: response_size,
+            skip,
+            take,
             select: {
                 id: true,
                 utorid: true,
@@ -240,7 +245,10 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
         });
 
         // Respond with updated note
-        return res.status(200).json(data);
+        return res.status(200).json({
+            count: total.length,
+            data
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Database error"});
