@@ -198,9 +198,9 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
     if (name) where.name  = name;
     if (role) {
         if (ROLE_LEVELS[role] >= 0) {
-        } else {
             where.role = role;
-            return res.status(200).json({ error: "role not valid" });
+        } else {
+            return res.status(400).json({ error: "role not valid" });
         }
     }
     if (verified !== undefined) {
@@ -565,7 +565,13 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
     }
     if (verified) data.verified = verified === "true";
     if (suspicious) data.suspicious = suspicious;
-    if (role) data.role = role;
+    if (role) {
+        if (ROLE_LEVELS[role] >= 0) {
+            data.role = role;
+        } else {
+            return res.status(400).json({ error: "role not valid" });
+        }
+    }
 
     const select = {
         id: true,
