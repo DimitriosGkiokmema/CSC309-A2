@@ -31,13 +31,13 @@ app.use(express.json());
 
 // A2 Functions
 function generateToken(utorid, time) {
-  const token = jwt.sign(
-    { username: utorid },
-    SECRET_KEY,
-    { expiresIn: time }
-  )
+    const token = jwt.sign(
+        { username: utorid },
+        SECRET_KEY,
+        { expiresIn: time }
+    )
 
-  return token
+    return token
 }
 
 
@@ -73,14 +73,14 @@ app.post('/users', async (req, res) => {
         "email": "dimi@mail.utoronto.ca"
     }
     */
-   const {utorid, name, email} = req.body;
+    const { utorid, name, email } = req.body;
 
     // Check fields exist
     if (!utorid || !name || !email) {
         return res.status(400).json({ error: "Payload field missing" });
     }
 
-    let RegEx = /^[a-z0-9]+$/i; 
+    let RegEx = /^[a-z0-9]+$/i;
     let Valid = RegEx.test(utorid);
 
     // Validate length and alphanumeric-ness of utorid
@@ -114,7 +114,7 @@ app.post('/users', async (req, res) => {
         week_later.setDate(week_later.getDate() + 7);
 
         const user = await prisma.user.create({
-            data: { 
+            data: {
                 utorid,
                 name,
                 email,
@@ -140,7 +140,7 @@ app.post('/users', async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Database error"});
+        res.status(500).json({ message: "Database error" });
     }
 });
 
@@ -171,19 +171,19 @@ app.get('/users', async (req, res) => {
         "verified": "false"
     }
     */
-    const { name, role, verified, activated, page, limit} = req.body;
+    const { name, role, verified, activated, page, limit } = req.body;
     const where = {};
     let response_size = 1;
 
-    if (name) where.name  = name;
+    if (name) where.name = name;
     if (role) where.role = role;
     if (verified) where.verified = verified === "true";
 
     if (activated) {
         if (activated === "true") {
-            where.lastLogin = {not: null};
-        } 
-        
+            where.lastLogin = { not: null };
+        }
+
         if (activated === "false") {
             where.lastLogin = null;
         }
@@ -192,7 +192,7 @@ app.get('/users', async (req, res) => {
     if (page) {
         response_size = page;
     }
-    
+
     if (limit) {
         response_size = response_size * limit;
     } else {
@@ -222,7 +222,7 @@ app.get('/users', async (req, res) => {
         return res.status(200).json(data);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Database error"});
+        res.status(500).json({ message: "Database error" });
     }
 });
 
@@ -256,19 +256,19 @@ app.get('/users/me', get_logged_in, async (req, res) => {
     const user = req.user;
 
     return res.status(200).json({
-            id: user.id,
-            utorid: user.utorid,
-            name: user.name,
-            email: user.email,
-            birthday: user.birthday,
-            role: user.role,
-            points: user.points,
-            createdAt: user.createdAt,
-            lastLogin: user.lastLogin,
-            verified: user.verified,
-            avatarUrl: user.avatarUrl,
-            promotions: user.promotions
-        });
+        id: user.id,
+        utorid: user.utorid,
+        name: user.name,
+        email: user.email,
+        birthday: user.birthday,
+        role: user.role,
+        points: user.points,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+        verified: user.verified,
+        avatarUrl: user.avatarUrl,
+        promotions: user.promotions
+    });
 });
 
 app.patch('/users/me/password', async (req, res) => {
@@ -332,7 +332,7 @@ app.get('/users/:userId', async (req, res) => {
     */
     // TODO: how to get clearance level
     const clearance = "Manager";
-    const high_clearance = clearance === "Manager" || clearance === "Superuser"; 
+    const high_clearance = clearance === "Manager" || clearance === "Superuser";
     const target_id = parseInt(req.params.userId, 10);
 
     if (isNaN(target_id)) {
@@ -341,10 +341,10 @@ app.get('/users/:userId', async (req, res) => {
 
     try {
         let data;
-        
+
         if (high_clearance) {
             data = await prisma.user.findUnique({
-                where: {id: target_id},
+                where: { id: target_id },
                 select: {
                     id: true,
                     utorid: true,
@@ -362,7 +362,7 @@ app.get('/users/:userId', async (req, res) => {
             });
         } else {
             data = await prisma.user.findUnique({
-                where: {id: target_id},
+                where: { id: target_id },
                 select: {
                     id: true,
                     utorid: true,
@@ -378,7 +378,7 @@ app.get('/users/:userId', async (req, res) => {
         return res.status(200).json(data);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Database error"});
+        res.status(500).json({ message: "Database error" });
     }
 });
 
@@ -411,7 +411,7 @@ app.patch('/users/:userId', async (req, res) => {
     }
     */
     const target_id = parseInt(req.params.userId, 10);
-    const {email, verified, suspicious, role} = req.body;
+    const { email, verified, suspicious, role } = req.body;
     const data = {};
 
     if (isNaN(target_id)) {
@@ -423,8 +423,8 @@ app.patch('/users/:userId', async (req, res) => {
         if (!email.includes("@mail.utoronto.ca")) {
             return res.status(400).json({ error: "Email not proper format" });
         }
-        
-        data.email  = email;
+
+        data.email = email;
     }
     if (verified) data.verified = verified === "true";
     if (suspicious) data.suspicious = suspicious;
@@ -451,7 +451,7 @@ app.patch('/users/:userId', async (req, res) => {
         return res.status(200).json(updated_user);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Database error"});
+        res.status(500).json({ message: "Database error" });
     }
 });
 
@@ -468,7 +468,7 @@ app.post('/auth/tokens', async (req, res) => {
 
     · Response: { "token": "jwt_token_here", "expiresAt": "2025-03-10T01:41:47.000Z" }
     */
-    const {utorid, password} = req.body;
+    const { utorid, password } = req.body;
 
     if (!utorid || !password) {
         return res.status(400).json({ error: "Utorid or password missing" });
@@ -500,7 +500,7 @@ app.post('/auth/tokens', async (req, res) => {
         const updated_user = await prisma.user.update({
             where: {
                 utorid: utorid
-             },
+            },
             data,
             select: {
                 token: true,
@@ -512,7 +512,7 @@ app.post('/auth/tokens', async (req, res) => {
         return res.status(200).json(updated_user);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Database error"});
+        res.status(500).json({ message: "Database error" });
     }
 });
 
@@ -553,12 +553,12 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     o 410 Gone if the reset token expired.
     */
     const resetToken = req.params.resetToken;
-    const {utorid, password} = req.body;
+    const { utorid, password } = req.body;
 
     if (!resetToken || !utorid || !password) {
         return res.status(404).json({ error: "Must provide a reset token,utorid, and password" });
     }
-    
+
     let RegEx = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
 
     if (password.length < 8 || password.length > 20 || !RegEx.test(password)) {
@@ -589,12 +589,12 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
                 password: password
             }
         });
-        
+
         // Respond with updated note
-        return res.status(200).json({"success": "password created"})
+        return res.status(200).json({ "success": "password created" })
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Database error"});
+        res.status(500).json({ message: "Database error" });
     }
 });
 
@@ -619,6 +619,15 @@ app.post('/transactions', async (req, res) => {
 
     purchase transaction without additional promotions, the rate of earning points is 1 point per 25 cents spent (rounded to nearest integer).
     */
+
+    // try {
+    //     const {utorid, type, spent, promotionIds = [], remark} = req.body;
+        
+    //     const customer = await prisma
+
+    // } catch (error) {
+        
+    // }
 });
 
 app.post('/transactions', async (req, res) => {
@@ -1043,7 +1052,61 @@ app.post('/promotions', async (req, res) => {
     "minSpending": 50, "rate": 0.01, // for every dollar spent, 1 extra point is added 
     "points": 0 }
     */
+
+    // TODO: clearance
+    try {
+
+        const { name, description, startTime, endTime, type, minSpending, rate, points, userId } = req.body;
+
+        if (!name || !description || !startTime || !endTime) {
+            return res.status(400).json({ error: "Name, description, start time and end time are required." });
+        }
+
+        const today = new Date();
+
+        if (startTime < today) {
+            return res.status(400).json({ error: "Date must be in the future." });
+        }
+
+        if (endTime <= startTime) {
+            return res.status(400).json({ error: "Invalid time." });
+        }
+
+        if (Number(minSpending) <= 0 || Number(rate) <= 0 || Number(points) <= 0) {
+            return res.status(400).json({ error: "min spending, rate and points must be positive numberic value." });
+        }
+
+        const newPromotion = await prisma.promotion.create({
+            data: {
+                name,
+                description,
+                startTime,
+                endTime,
+                type,
+                minSpending,
+                rate,
+                points,
+                userId
+            }
+        })
+
+        return res.status(200).json(newPromotion);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error" });
+    }
+
 });
+
+// async function getCurrentUser(prisma, req) {
+//     const utorid = req?.user?.username || req?.body?.createdBy || req?.query?.createdBy;
+//     if (!utorid) return null;
+//     return prisma.user.findUnique({
+//         where: {
+//             utorid
+//         }
+//     });
+// }
 
 app.get('/promotions', async (req, res) => {
     /*
@@ -1078,6 +1141,33 @@ app.get('/promotions', async (req, res) => {
 
     Note that for both versions of GET /promotions, the descriptions of the returned promotions are omitted.
     */
+
+    // TODO: dynamic user, limits, page numbers
+    try {
+        // checking authorized user
+        // const currentUser = await getCurrentUser(prisma, req);
+        // if(!currentUser) return res.status(401).json({error: "Unauthenticated"});
+
+        const existingPromotions = await prisma.promotion.findMany({
+            where: {
+                userId: 1
+            }
+        })
+
+        const formattedResponse = {
+            count: existingPromotions.length,
+            results: existingPromotions.filter(promotion => promotion.type == "automatic")
+        };
+
+        return res.status(200).json(formattedResponse);
+
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error" });
+    }
+
+
 });
 
 app.get('/promotions/:promotionId', async (req, res) => {
@@ -1091,6 +1181,23 @@ app.get('/promotions/:promotionId', async (req, res) => {
     o 200 OK on success { "id": 3, "name": "Start of Summer Celebration", "description": "A simple promotion", "type": "automatic", "endTime": "2025-11-10T17:00:00Z", "minSpending": 50, "rate": 0.01, "points": 0 }
     o 404 Not Found if the promotion is currently inactive (not started yet, or have ended).
     */
+
+    // TODO: clearance
+    try {
+        const promotionId = Number(req.params.promotionId);
+        const existingPromotion = await prisma.promotion.findUnique({
+            where: {
+                id: promotionId
+            }
+        })
+
+        return res.status(200).json(existingPromotion);
+
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error" });
+    }
 });
 
 app.patch('/promotions/:promotionId', async (req, res) => {
@@ -1116,6 +1223,66 @@ app.patch('/promotions/:promotionId', async (req, res) => {
         - If update(s) to name, description, type, startTime, minSpending, rate, or points is made after the original start time has passed.
         - In addition to the above, if update to endTime is made after the original end time has passed.
     */
+
+    try {
+
+        const promotionId = Number(req.params.promotionId);
+        const oldPromotion = await prisma.promotion.findUnique({
+            where: {
+                id: promotionId
+            }
+        });
+
+        if (!oldPromotion) {
+            return res.status(404).json({ error: "Promotion not found" });
+        }
+
+        const now = new Date();
+        const updates = req.body || {};
+
+        if (updates.startTime || updates.endTime) {
+            const startTime = updates.startTime ? new Date(updates.startTime) : oldPromotion.startTime;
+            const endTime = updates.endTime ? new Date(updates.endTime) : oldPromotion.endTime;
+
+            if (startTime < now || endTime < now) return res.status(400).json({ error: "startTime/endTime cannot be in the past." });
+        }
+
+        if (now >= oldPromotion.startTime) {
+            const forbidden = ['name', 'description', 'type', 'startTime', 'minSpending', 'rate', 'points'];
+
+            for (const element of forbidden) {
+                if (updates[element] != null) {
+                    return res.status(400).json({ error: "Cannot update " + element + " after promotion start" });
+                }
+            }
+        }
+
+
+        if (now >= oldPromotion.endTime && updates.endTime != null) {
+            return res.status(400).json({ error: "Cannot update endTime after promotion end." })
+        }
+
+        const savedPromtion = await prisma.promotion.update({
+            where: { id: promotionId },
+            data: {
+                name: updates.name ?? undefined,
+                description: updates.description ?? undefined,
+                type: updates.type ?? undefined,
+                startTime: updates.startTime ?? undefined,
+                endTime: updates.endTime ?? undefined,
+                minSpending: updates.minSpending ?? undefined,
+                rate: updates.rate ?? undefined,
+                points: updates.points ?? undefined
+            }
+        })
+
+        res.status(201).json(savedPromtion)
+
+    } catch (error) {
+        res.status(500).json({ error: "Database error." });
+    }
+
+
 });
 
 app.delete('/promotions/:promotionId', async (req, res) => {
@@ -1129,6 +1296,36 @@ app.delete('/promotions/:promotionId', async (req, res) => {
     o 204 No Content on success
     o 403 Forbidden if the promotion has already started.
     */
+
+    try {
+        const promotionId = Number(req.params.promotionId);
+        const promotion = await prisma.promotion.findUnique({
+            where: {
+                id: promotionId
+            }
+        });
+
+
+        if (!promotion) {
+            return res.status(404).json({ error: "Promotion not found" });
+        }
+
+        const now = new Date();
+        if (now >= promotion.startTime) {
+            return res.status(403).json({ error: "Cannot delete a promotion that has started" });
+        }
+
+        await prisma.promotion.delete({
+            where: {
+                id: promotionId
+            }
+        })
+
+        res.status(201).json({ message: "Promotion deleted successfully" });
+
+    } catch (error) {
+        res.status(500).json({ error: "Database error." });
+    }
 });
 
 

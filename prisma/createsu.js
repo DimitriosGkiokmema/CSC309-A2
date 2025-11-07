@@ -5,9 +5,11 @@
  *   node prisma/createsu.js clive123 clive.su@mail.utoronto.ca SuperUser123!
  */
 'use strict';
-import { PrismaClient } from '@prisma/client'
+// import { PrismaClient } from '@prisma/client'
+const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient()
+
 const [, , utorid, email, password] = process.argv
 
 if (!utorid) {
@@ -25,24 +27,26 @@ async function main() {
   const created = await prisma.user.create({
     data: {
       utorid,
-      'name': 'admin',
+      name: utorid,
       email,
       password,
-      'verified': true,
-      'role': 'superuser',
-      'points': 0,
-      'suspicious': false
+      verified: true,
+      role: 'superuser',
+      points: 0,
+      suspicious: false
     }
   })
 
-  console.log('created user id =', created.id)
+  console.log('created user id =', created.id);
+  process.exit(0);
+
 }
 
 main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

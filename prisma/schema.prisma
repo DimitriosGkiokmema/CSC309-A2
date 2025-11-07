@@ -39,9 +39,9 @@ model User {
   avatarUrl   String?
   suspicious  Boolean
   verified    Boolean
-  token       String 
-  createdAt   DateTime
-  expiresAt   DateTime
+  token       String? 
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
   lastLogin   DateTime?
   promotions  Promotion[]
   buyers      Transaction[] @relation("buyer")
@@ -54,6 +54,7 @@ model Promotion {
   id           Int      @id @default(autoincrement())
   name         String
   description  String
+  type         PromotionType @default(automatic)
   startTime    DateTime
   endTime      DateTime
   minSpending  Float? 
