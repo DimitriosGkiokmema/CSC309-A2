@@ -370,6 +370,13 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
             return res.status(400).json({ error: "Old password is incorrect" });
         }
 
+        const now = Date.now();
+        const expires = new Date(req.user.expiresAt);
+
+        if (expires < now) {
+            return res.status(400).json({ error: "Token expired" });
+        }
+
         const updated_user = await prisma.user.update({
             where: { id: req.user.id },
             data : { password:password }
@@ -521,6 +528,10 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
     const {email, verified, suspicious, role} = req.body;
     const data = {};
 
+    if (!email && !verified && !suspicious && !role) {
+        return res.status(400).json({error: "Payload empty"});
+    }
+
     if (isNaN(target_id)) {
         return res.status(400).json({ error: "?userId must be positive number" });
     }
@@ -643,6 +654,12 @@ app.post('/auth/resets', async (req, res) => {
 
     If an account with the specified utorid exists, a reset token expiring in 1 hour will be generated.
     */
+    const {utorid} = req.body;
+
+    if (!utorid) {
+        return res.status(400).json({ message: "Empty payload" });
+    }
+
     // ------------------>
     // RATE LIMIT
     // ------------------>
@@ -662,11 +679,6 @@ app.post('/auth/resets', async (req, res) => {
 
     resetRate[ip] = now; // update timestamp
 
-    // ------------------>
-    // PASSWORD RESET
-    // ------------------>
-    const {utorid} = req.body;
-
     try {
         const existing = await prisma.user.findUnique({
             where: { utorid: utorid }
@@ -677,6 +689,13 @@ app.post('/auth/resets', async (req, res) => {
         }
 
         const resetToken = uuidv4();
+        const now = Date.now();
+        const expires = new Date(existing.expiresAt).getTime();
+
+        if (expires < now) {
+            return res.status(410).json({ message: "Expired token" });
+        }
+
         const hour_later = new Date();
         hour_later.setHours(hour_later.getHours() + 1);
 
@@ -722,7 +741,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     }
 
     if (!validPassword(password)) {
-        return res.status(430).json({ error: "password given was incorrect" });
+        return res.status(400).json({ error: "password given was incorrect" });
     }
 
     try {
