@@ -54,6 +54,7 @@ model Promotion {
   id           Int      @id @default(autoincrement())
   name         String
   description  String
+  type         PromotionType @default(automatic)
   startTime    DateTime
   endTime      DateTime
   minSpending  Float? 
@@ -66,24 +67,31 @@ model Promotion {
 
 model Transaction {
 	id Int @id @default(autoincrement())
-	utorid String //@unique
+	utorid String @unique
 	type String
 	spent Float
-	date String
-	earned Int
-	amount Int
-	sender String
-	recipient String
-	sent Int
-	redeemed Int
-	remark String
+	earned Int 
+
 	relatedId Int
-	processedBy String?
+	remark String
+	
+	createdBy String
+	cashier User @relation("buyer", fields: [createdBy], references: [utorid])
 	suspicious Boolean
-	user User @relation("buyer", fields: [utorid], references: [utorid])
-	createdBy String //cashier id?
-	cashier User @relation("cashier",fields: [createdBy], references: [utorid])
-	promotionIds Promotion[]
+
+
+	amount Int 
+	sender String
+	recipient String 
+
+	awarded Int
+
+	transfer User @relation("cashier", fields: [relatedId], references: [id])
+	event Event @relation(fields: [relatedId], references: [id])
+	promotions Promotion[] 
+
+	processedBy String?
+	processed Boolean
 }
 
 model Event {
@@ -94,11 +102,10 @@ model Event {
   startTime   DateTime
   endTime     DateTime
   capacity    Int?
-  pointsRemaining Int
-  pointsTotal Int
+  pointsRemain  Int
+  pointsAwarded Int
   published   Boolean
-  organizerId String
-  organizers  User @relation("eventOrganizer", fields: [organizerId], references: [utorid]) // change to utorid list
-  guestId String
-  guests  User @relation("eventGuest", fields: [guestId], references: [utorid]) // change to utorid list
+  organizers  User[] @relation("eventOrganizer")
+  guests User[] @relation("eventGuest")
+  transactions Transaction[]
 }

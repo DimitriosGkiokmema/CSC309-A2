@@ -26,7 +26,9 @@ const app = express();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const get_logged_in = require("./middleware/auth.js");
-const SECRET_KEY = process.env.JWT_SECRET
+const SECRET_KEY = process.env.JWT_SECRET;
+const resetRate = {};
+const ROLE_LEVELS = {"regular": 0, "cashier": 1, "manager": 2, "superuser": 3};
 app.use(express.json());
 
 // A2 Functions
@@ -40,6 +42,18 @@ function generateToken(utorid, time) {
   return token
 }
 
+function check_clearance(min_level) {
+    return function(req, res, next) {
+        const curr_level = req.user.role;
+
+        if (ROLE_LEVELS[curr_level] < ROLE_LEVELS[min_level]) {
+            return res.status(403).json({ error: "Not high enough clearance" });
+        }
+
+        next();
+    }
+}
+
 function validPassword(password) {
     let RegEx = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
 
@@ -48,7 +62,7 @@ function validPassword(password) {
         RegEx.test(password));
 }
 
-app.post('/users', async (req, res) => {
+app.post('/users', get_logged_in, check_clearance("cashier"), async (req, res) => {
     /*
     · Method: POST
     · Description: Register a new user
@@ -80,7 +94,7 @@ app.post('/users', async (req, res) => {
         "email": "dimi@mail.utoronto.ca"
     }
     */
-   const {utorid, name, email} = req.body;
+    const {utorid, name, email} = req.body;
 
     // Check fields exist
     if (!utorid || !name || !email) {
@@ -151,7 +165,7 @@ app.post('/users', async (req, res) => {
     }
 });
 
-app.get('/users', async (req, res) => {
+app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a list of users
@@ -233,7 +247,7 @@ app.get('/users', async (req, res) => {
     }
 });
 
-app.patch('/users/me', get_logged_in, async (req, res) => {
+app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, res) => {
     /*
     · Method: PATCH
     · Description: Update the current logged-in user's information
@@ -300,7 +314,7 @@ app.patch('/users/me', get_logged_in, async (req, res) => {
     }
 });
 
-app.get('/users/me', get_logged_in, async (req, res) => {
+app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve the current logged-in user's information
@@ -327,7 +341,7 @@ app.get('/users/me', get_logged_in, async (req, res) => {
     });
 });
 
-app.patch('/users/me/password', async (req, res) => {
+app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async (req, res) => {
     /*
     · Method: PATCH
     · Description: Update the current logged-in user's password
@@ -377,7 +391,7 @@ app.patch('/users/me/password', async (req, res) => {
     }
 });
 
-app.get('/users/:userId', async (req, res) => {
+app.get('/users/:userId', get_logged_in, async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a specific user
@@ -420,9 +434,8 @@ app.get('/users/:userId', async (req, res) => {
     http://localhost:3000/users/1
     http://localhost:3000/users/2
     */
-    // TODO: how to get clearance level
-    const clearance = "Manager";
-    const high_clearance = clearance === "Manager" || clearance === "Superuser"; 
+    const clearance = String(req.user.role).toLowerCase();
+    const high_clearance = clearance === "manager" || clearance === "superuser"; 
     const target_id = parseInt(req.params.userId, 10);
 
     if (isNaN(target_id)) {
@@ -472,7 +485,7 @@ app.get('/users/:userId', async (req, res) => {
     }
 });
 
-app.patch('/users/:userId', async (req, res) => {
+app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: PATCH
     · Description: Update a specific user's various statuses and some information
@@ -610,23 +623,132 @@ app.post('/auth/tokens', async (req, res) => {
 app.post('/auth/resets', async (req, res) => {
     /*
     · Method: POST
-    · Description: Request a password reset email.
+    · Description: Request a password reset token.
     · Clearance: Any
     · Payload:
     Field Required Type Description
     utorid Yes string The utorid of a user who forgot their password
 
     · Response
-    o 202 Accepted on success { "expiresAt": "2025-03-01T01:41:47.000Z", "resetToken": "ad71d4e1-8614-46aa-b96f-cb894e346506" }
+    o 202 Accepted on success 
+    { 
+    "expiresAt": "2025-03-01T01:41:47.000Z", 
+    "resetToken": "ad71d4e1-8614-46aa-b96f-cb894e346506" 
+    }
     o 429 Too Many Requests if another request is made from the same IP address within 60 seconds. Hint: your rate limiter can be implemented completely in memory. You may not use express-rate-limit, since we do not allow you to install additional packages (if you do, the autotester will break).
 
-    If an account with the specified utorid exists, an email with a password reset link will be sent to the user's email address (see POST /auth/resets/:resetToken). The password reset link expires in 1 hour.
-
-    For this assignment, you are not expected to send emails, so the response body also contains the token that can be used to reset password.
+    If an account with the specified utorid exists, a reset token expiring in 1 hour will be generated.
     */
-   const {utorid} = req.body;
+    // ------------------>
+    // RATE LIMIT
+    // ------------------>
+    const ip = req.ip;   // get ip address
+    const now = Date.now();
+
+    if (resetRate[ip] && (now - resetRate[ip]) < 60_000) {
+        return res.status(429).json({ message: "Too many requests" });
+    }
+
+    resetRate[ip] = now; // update timestamp
+
+    // ------------------>
+    // PASSWORD RESET
+    // ------------------>
+    const {utorid} = req.body;
+
+    try {
+        const existing = await prisma.user.findUnique({
+            where: { utorid: utorid }
+        });
+
+        if (!existing) {
+            return res.status(404).json({ message: "A user with that utorid does not exist" });
+        }
+
+        const resetToken = uuidv4();
+        const hour_later = new Date();
+        hour_later.setHours(hour_later.getHours() + 1);
+
+        const updated_user = await prisma.user.update({
+            where: { utorid: utorid },
+            data: {
+                token: resetToken,
+                expiresAt: hour_later.toISOString()
+            }
+        });
+        
+        // Respond with updated note
+        return res.status(200).json({
+            expiresAt: updated_user.expiresAt,
+            "resetToken": updated_user.token
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error"});
+    }
 });
 
+app.post('/users/:userId/transactions', get_logged_in, check_clearance("regular"), async (req, res) => {
+    /*
+    · Method: POST
+    · Description: Create a new transfer transaction between the current logged-in user (sender) and the user specified by userId (the recipient)
+    · Clearance: Regular or higher
+    · Payload:
+    Field Required Type Description
+    type Yes string Must be "transfer"
+    amount Yes number The points amount to be transferred. Must be a positive integer value.
+    remark No string Any remark regarding this transaction
+
+    · Response
+    201 Created on success ->
+    { "id": 127, "sender": "johndoe1", "recipient": "friend69", "type": "transfer", "sent": 500, "remark": "Poker night", "createdBy": "johndoe1" }
+
+    · 400 Bad Request if the sender does not have enough points
+    · 403 Forbidden if the sender is not verified.
+
+    Upon success, two transactions should be created: one for sending the amount and another for receiving it. For the sender, relatedId should be the user id of the recipient, For the receiver, relatedId should be the user id of the sender.
+    */
+});
+
+app.post('/users/me/transactions', get_logged_in, check_clearance("regular"), async (req, res) => {
+    /*
+    · Method: POST
+    · Description: Create a new redemption transaction.
+    · Clearance: Regular or higher
+    · Payload:
+    Field Required Type Description
+    type Yes string Must be "redemption"
+    amount Yes number The amount to redeem in this transaction. Must be a positive integer value.
+    remark No string Any remark regarding this transaction
+
+    · Response
+    o 201 Created on success { "id": 124, "utorid": "johndoe1", "type": "redemption", "processedBy": null, "amount": 1000, "remark": "", "createdBy": "johndoe1" }
+    o 400 Bad Request if the requested amount to redeem exceed the user's point balance.
+    o 403 Forbidden if the logged-in user is not verified.
+
+    A redemption transaction does not immediately deduct from the user's point balance. Instead, a cashier must process the redemption through PATCH /transactions/:transactionId/processed.
+    */
+});
+
+app.get('/users/me/transactions', get_logged_in, check_clearance("regular"), async (req, res) => {
+    /*
+    · Method: GET
+    · Description: Retrieve a list of transactions owned by the currently logged in user
+    · Clearance: Regular or higher
+    · Payload:
+    Field Required Type Description
+    type No string Filter by transaction type
+    relatedId No number Filter by related ID (must be used with type)
+    promotionId No number Filter by promotion applied to the transaction
+    amount No number Filter by point amount (must be used with operator)
+    operator No string One of "gte" (greater than or equal) or "lte" (less than or equal)
+    page No number Page number for pagination (default is 1)
+    limit No number Number of objects per page (default is 10)
+
+    · Response: count, which stores the total number of results (after applying all filters), and results, which contains a list of transactions { "count": 21, "results": [ { "id": 123, "type": "purchase", "spent": 19.99, "amount": 80, "promotionIds": [], "remark": "", "createdBy": "alice666" }, { "id": 125, "amount": -40, "type": "adjustment", "relatedId": 123, "promotionIds": [], "remark": "", "createdBy": "smithw42" }, { "id": 127, "amount": -500, "type": "transfer", "relatedId": 35, "promotionIds": [], "remark": "Poker night", "createdBy": "johndoe1" }
+    // More transaction objects... ] }
+    */
+});
 
 app.post('/auth/resets/:resetToken', async (req, res) => {
     /*
@@ -687,7 +809,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     }
 });
 
-app.post('/transactions', async (req, res) => {
+app.post('/transactions', get_logged_in, check_clearance("cashier"), async (req, res) => {
     /*
     · Method: POST
     · Description: Create a new purchase transaction.
@@ -710,7 +832,7 @@ app.post('/transactions', async (req, res) => {
     */
 });
 
-app.post('/transactions', async (req, res) => {
+app.post('/transactions', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: POST
     · Description: Create a new adjustment transaction.
@@ -731,7 +853,7 @@ app.post('/transactions', async (req, res) => {
     */
 });
 
-app.get('/transactions', async (req, res) => {
+app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a list of transactions
@@ -762,7 +884,7 @@ app.get('/transactions', async (req, res) => {
 });
 
 
-app.get('/transactions/:transactionId', async (req, res) => {
+app.get('/transactions/:transactionId', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a single transaction
@@ -774,7 +896,7 @@ app.get('/transactions/:transactionId', async (req, res) => {
     */
 });
 
-app.patch('/transactions/:transactionId/suspicious', async (req, res) => {
+app.patch('/transactions/:transactionId/suspicious', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: PATCH
     · Description: Set or unset a transaction as being suspicious
@@ -789,69 +911,7 @@ app.patch('/transactions/:transactionId/suspicious', async (req, res) => {
     */
 });
 
-app.post('/users/:userId/transactions', async (req, res) => {
-    /*
-    · Method: POST
-    · Description: Create a new transfer transaction between the current logged-in user (sender) and the user specified by userId (the recipient)
-    · Clearance: Regular or higher
-    · Payload:
-    Field Required Type Description
-    type Yes string Must be "transfer"
-    amount Yes number The points amount to be transferred. Must be a positive integer value.
-    remark No string Any remark regarding this transaction
-
-    · Response
-    201 Created on success ->
-    { "id": 127, "sender": "johndoe1", "recipient": "friend69", "type": "transfer", "sent": 500, "remark": "Poker night", "createdBy": "johndoe1" }
-
-    · 400 Bad Request if the sender does not have enough points
-    · 403 Forbidden if the sender is not verified.
-
-    Upon success, two transactions should be created: one for sending the amount and another for receiving it. For the sender, relatedId should be the user id of the recipient, For the receiver, relatedId should be the user id of the sender.
-    */
-});
-
-app.post('/users/me/transactions', async (req, res) => {
-    /*
-    · Method: POST
-    · Description: Create a new redemption transaction.
-    · Clearance: Regular or higher
-    · Payload:
-    Field Required Type Description
-    type Yes string Must be "redemption"
-    amount Yes number The amount to redeem in this transaction. Must be a positive integer value.
-    remark No string Any remark regarding this transaction
-
-    · Response
-    o 201 Created on success { "id": 124, "utorid": "johndoe1", "type": "redemption", "processedBy": null, "amount": 1000, "remark": "", "createdBy": "johndoe1" }
-    o 400 Bad Request if the requested amount to redeem exceed the user's point balance.
-    o 403 Forbidden if the logged-in user is not verified.
-
-    A redemption transaction does not immediately deduct from the user's point balance. Instead, a cashier must process the redemption through PATCH /transactions/:transactionId/processed.
-    */
-});
-
-app.get('/users/me/transactions', async (req, res) => {
-    /*
-    · Method: GET
-    · Description: Retrieve a list of transactions owned by the currently logged in user
-    · Clearance: Regular or higher
-    · Payload:
-    Field Required Type Description
-    type No string Filter by transaction type
-    relatedId No number Filter by related ID (must be used with type)
-    promotionId No number Filter by promotion applied to the transaction
-    amount No number Filter by point amount (must be used with operator)
-    operator No string One of "gte" (greater than or equal) or "lte" (less than or equal)
-    page No number Page number for pagination (default is 1)
-    limit No number Number of objects per page (default is 10)
-
-    · Response: count, which stores the total number of results (after applying all filters), and results, which contains a list of transactions { "count": 21, "results": [ { "id": 123, "type": "purchase", "spent": 19.99, "amount": 80, "promotionIds": [], "remark": "", "createdBy": "alice666" }, { "id": 125, "amount": -40, "type": "adjustment", "relatedId": 123, "promotionIds": [], "remark": "", "createdBy": "smithw42" }, { "id": 127, "amount": -500, "type": "transfer", "relatedId": 35, "promotionIds": [], "remark": "Poker night", "createdBy": "johndoe1" }
-    // More transaction objects... ] }
-    */
-});
-
-app.patch('/transactions/:transactionId/processed', async (req, res) => {
+app.patch('/transactions/:transactionId/processed', get_logged_in, check_clearance("cashier"), async (req, res) => {
     /*
     · Method: PATCH
     · Description: Set a redemption transaction as being completed
@@ -870,7 +930,7 @@ app.patch('/transactions/:transactionId/processed', async (req, res) => {
     */
 });
 
-app.post('/events', async (req, res) => {
+app.post('/events', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: POST
     · Description: Create a new point-earning event.
@@ -892,7 +952,7 @@ app.post('/events', async (req, res) => {
     */
 });
 
-app.get('/events', async (req, res) => {
+app.get('/events', get_logged_in, async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a list of events
@@ -927,6 +987,8 @@ app.get('/events', async (req, res) => {
 
     Note that for both versions of GET /events, the descriptions of the returned events are omitted.
     */
+
+    // TODO: diff clearance levels
 });
 
 app.get('/events/:eventId', async (req, res) => {
@@ -952,6 +1014,8 @@ app.get('/events/:eventId', async (req, res) => {
     · Response: { "id": 1, "name": "Event 1", "description": "A simple event", "location": "BA 2250", "startTime": "2025-11-10T09:00:00Z", "endTime": "2025-11-10T17:00:00Z", "capacity": 200, "pointsRemain": 500, "pointsAwarded": 0, "published": false, "organizers": [
     { "id": 1, "utorid": "johndoe1", "name": "John Doe" } ], "guests": [] }
     */
+
+    // TODO: diff clearance levels
 });
 
 app.patch('/events/:eventId', async (req, res) => {
@@ -979,9 +1043,11 @@ app.patch('/events/:eventId', async (req, res) => {
         - If update(s) to name, description, location, startTime, or capacity is made after the original start time has passed.
         - In addition to the above, if update to endTime is made after the original end time has passed.
     */
+
+    // TODO: special clearance
 });
 
-app.delete('/events/:eventId', async (req, res) => {
+app.delete('/events/:eventId', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: DELETE
     · Description: Remove the specified event.
@@ -994,7 +1060,7 @@ app.delete('/events/:eventId', async (req, res) => {
     */
 });
 
-app.post('/events/:eventId/organizers', async (req, res) => {
+app.post('/events/:eventId/organizers', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: POST
     · Description: Add an organizer to this event.
@@ -1021,6 +1087,8 @@ app.delete('/events/:eventId/organizers/:userId', async (req, res) => {
     · Response:
     o 204 No Content on success
     */
+
+    // TODO: special clearance
 });
 
 app.post('/events/:eventId/guests', async (req, res) => {
@@ -1039,6 +1107,8 @@ app.post('/events/:eventId/guests', async (req, res) => {
     · 404 Not Found if the event is not visible to the organizer yet
     · 410 Gone if the event is full or has ended
     */
+
+    // TODO: special clearance
 });
 
 app.delete('/events/:eventId/guests/:userId', async (req, res) => {
@@ -1051,9 +1121,11 @@ app.delete('/events/:eventId/guests/:userId', async (req, res) => {
     · Response:
     o 204 No Content on success
     */
+
+    // TODO: special clearance
 });
 
-app.post('/events/:eventId/guests/me', async (req, res) => {
+app.post('/events/:eventId/guests/me', get_logged_in, async (req, res) => {
     /*
     · Method: POST
     · Description: Add the logged-in user to the event
@@ -1067,6 +1139,11 @@ app.post('/events/:eventId/guests/me', async (req, res) => {
 
     Only the currently logged-in user should appear in the array.
     */
+    const curr_level = req.user.role;
+
+    if (curr_level !== 'regular') {
+        return res.status(403).json({ error: "Must be a regular user" });
+    }
 });
 
 app.delete('/events/:eventId/guests/me', async (req, res) => {
@@ -1081,6 +1158,11 @@ app.delete('/events/:eventId/guests/me', async (req, res) => {
     o 404 Not Found if the user did not RSVP to this event
     o 410 Gone if the event has ended
     */
+    const curr_level = req.user.role;
+
+    if (curr_level !== 'regular') {
+        return res.status(403).json({ error: "Must be a regular user" });
+    }
 });
 
 app.post('/events/:eventId/transactions', async (req, res) => {
@@ -1105,9 +1187,10 @@ app.post('/events/:eventId/transactions', async (req, res) => {
 
     Points can be awarded to the same guest multiple times, i.e., without restriction. For example, the event organizer can first award johndoe1 500 points, then award all guests (including johndoe1) 50 points each.
     */
+    // TODO: special
 });
 
-app.post('/promotions', async (req, res) => {
+app.post('/promotions', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: POST
     · Description: Create a new promotion.
@@ -1134,7 +1217,7 @@ app.post('/promotions', async (req, res) => {
     */
 });
 
-app.get('/promotions', async (req, res) => {
+app.get('/promotions', get_logged_in, async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a list of promotions
@@ -1167,9 +1250,10 @@ app.get('/promotions', async (req, res) => {
 
     Note that for both versions of GET /promotions, the descriptions of the returned promotions are omitted.
     */
+    // TODO: special
 });
 
-app.get('/promotions/:promotionId', async (req, res) => {
+app.get('/promotions/:promotionId', get_logged_in, check_clearance("regular"), async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a single promotion
@@ -1182,7 +1266,7 @@ app.get('/promotions/:promotionId', async (req, res) => {
     */
 });
 
-app.patch('/promotions/:promotionId', async (req, res) => {
+app.patch('/promotions/:promotionId', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: PATCH
     · Description: Update an existing promotion.
@@ -1207,7 +1291,7 @@ app.patch('/promotions/:promotionId', async (req, res) => {
     */
 });
 
-app.delete('/promotions/:promotionId', async (req, res) => {
+app.delete('/promotions/:promotionId', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
     · Method: DELETE
     · Description: Remove the specified promotion.
