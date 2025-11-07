@@ -643,12 +643,6 @@ app.post('/auth/resets', async (req, res) => {
 
     If an account with the specified utorid exists, a reset token expiring in 1 hour will be generated.
     */
-    const {utorid} = req.body;
-
-    if (!utorid) {
-        return res.status(400).json({ message : "Utorid cannot be empty"});
-    }
-
     // ------------------>
     // RATE LIMIT
     // ------------------>
@@ -667,6 +661,11 @@ app.post('/auth/resets', async (req, res) => {
     }
 
     resetRate[ip] = now; // update timestamp
+
+    // ------------------>
+    // PASSWORD RESET
+    // ------------------>
+    const {utorid} = req.body;
 
     try {
         const existing = await prisma.user.findUnique({
@@ -723,7 +722,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     }
 
     if (!validPassword(password)) {
-        return res.status(400).json({ error: "password given was incorrect" });
+        return res.status(430).json({ error: "password given was incorrect" });
     }
 
     try {
@@ -745,7 +744,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
         }
 
         if (existing.token !== resetToken) {
-            return res.status(401).json({ message: "A user with that token and utorid combination does not exist" });
+            return res.status(404).json({ message: "A user with that token and utorid combination does not exist" });
         }
 
         const updated_user = await prisma.user.update({
