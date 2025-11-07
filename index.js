@@ -194,11 +194,22 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
     */
     const { name, role, verified, activated, page, limit} = req.body;
     const where = {};
-    let response_size = 1;
 
     if (name) where.name  = name;
-    if (role) where.role = role;
-    if (verified) where.verified = verified === "true";
+    if (role) {
+        if (ROLE_LEVELS[role] >= 0) {
+        } else {
+            where.role = role;
+            return res.status(200).json({ error: "role not valid" });
+        }
+    }
+    if (verified) {
+        if (verified !== 'true' && verified !== 'false'){
+            return res.status(200).json({ error: "verified not valid" });
+        }
+
+        where.verified = verified === "true";
+    }
 
     if (activated) {
         if (activated === "true") {
@@ -225,6 +236,11 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
 
     try {
         const total = await prisma.user.findMany({where});
+
+        if (skip >= total.length) {
+            return res.status(400).json({ error: "page/limit too large" });
+        }
+
         const data = await prisma.user.findMany({
             where,
             skip,
@@ -247,7 +263,7 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
         // Respond with updated note
         return res.status(200).json({
             count: total.length,
-            data
+            results: [data]
         });
     } catch (error) {
         console.error(error);
