@@ -40,6 +40,13 @@ function generateToken(utorid, time) {
   return token
 }
 
+function validPassword(password) {
+    let RegEx = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
+
+    return (password.length >= 8 &&
+        password.length <= 20 && 
+        RegEx.test(password));
+}
 
 app.post('/users', async (req, res) => {
     /*
@@ -239,50 +246,58 @@ app.patch('/users/me', get_logged_in, async (req, res) => {
     avatar No file Image file for the user's avatar
 
     · Response:
-    { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png" }
+    { "id": 1,
+     "utorid": "johndoe1",
+     "name": "John Doe",
+     "email": "john.doe@mail.utoronto.ca",
+     "birthday": "2000-01-01",
+     "role": "regular",
+     "points": 0,
+     "createdAt": "2025-02-22T00:00:00.000Z",
+     "lastLogin": "2025-02-22T00:00:00.000Z",
+     "verified": true,
+     "avatarUrl": "/uploads/avatars/johndoe1.png" 
+     }
     */
-    // const {name, email, birthday, avatarUrl} = req.body;
-    // const data = {};
+    const {name, email, birthday, avatarUrl} = req.body;
+    const data = {};
 
-    // if (isNaN(target_id)) {
-    //     return res.status(400).json({ error: "?userId must be positive number" });
-    // }
-
-    // if (email) {
-    //     // Validate email is from UofT
-    //     if (!email.includes("@mail.utoronto.ca")) {
-    //         return res.status(400).json({ error: "Email not proper format" });
-    //     }
+    if (name) data.name = name;
+    if (email) {
+        // Validate email is from UofT
+        if (!email.includes("@mail.utoronto.ca")) {
+            return res.status(400).json({ error: "Email not proper format" });
+        }
         
-    //     data.email  = email;
-    // }
-    // if (verified) data.verified = verified === "true";
-    // if (suspicious) data.suspicious = suspicious;
-    // if (role) data.role = role;
+        data.email  = email;
+    }
+    if (birthday) data.birthday = birthday;
+    if (avatarUrl) data.avatarUrl = avatarUrl;
 
-    // const select = {
-    //     id: true,
-    //     utorid: true,
-    //     name: true,
-    // };
+    try {
+        const updated_user = await prisma.user.update({
+            where: { id: req.user.id },
+            data
+        })
 
-    // Object.keys(data).forEach(key => {
-    //     select[key] = true
-    // })
-
-    // try {
-    //     const updated_user = await prisma.user.update({
-    //         where: { id: target_id },
-    //         data,
-    //         select
-    //     })
-
-    //     // Respond with updated note
-    //     return res.status(200).json(updated_user);
-    // } catch (error) {
-    //     console.error(error);
-    //     res.status(500).json({ message: "Database error"});
-    // }
+        // Respond with updated note
+        return res.status(200).json({
+            id: updated_user.id,
+            utorid: updated_user.utorid,
+            name: updated_user.name,
+            email: updated_user.email,
+            birthday: updated_user.birthday,
+            role: updated_user.role,
+            points: updated_user.points,
+            createdAt: updated_user.createdAt,
+            lastLogin: updated_user.lastLogin,
+            verified: updated_user.verified,
+            avatarUrl: updated_user.avatarUrl
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error"});
+    }
 });
 
 app.get('/users/me', get_logged_in, async (req, res) => {
@@ -297,19 +312,19 @@ app.get('/users/me', get_logged_in, async (req, res) => {
     const user = req.user;
 
     return res.status(200).json({
-            id: user.id,
-            utorid: user.utorid,
-            name: user.name,
-            email: user.email,
-            birthday: user.birthday,
-            role: user.role,
-            points: user.points,
-            createdAt: user.createdAt,
-            lastLogin: user.lastLogin,
-            verified: user.verified,
-            avatarUrl: user.avatarUrl,
-            promotions: user.promotions
-        });
+        id: user.id,
+        utorid: user.utorid,
+        name: user.name,
+        email: user.email,
+        birthday: user.birthday,
+        role: user.role,
+        points: user.points,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+        verified: user.verified,
+        avatarUrl: user.avatarUrl,
+        promotions: user.promotions
+    });
 });
 
 app.patch('/users/me/password', async (req, res) => {
@@ -326,6 +341,40 @@ app.patch('/users/me/password', async (req, res) => {
     o 200 OK on success
     o 403 Forbidden if the provided current password is incorrect
     */
+    const {oldPass, newPass} = req.body;
+
+    if (!validPassword(newPass)) {
+        return res.status(400).json({ error: "New password wrong format" });
+    }
+
+    try {
+        if (req.user.password !== oldPass) {
+            return res.status(400).json({ error: "Old password is incorrect" });
+        }
+
+        const updated_user = await prisma.user.update({
+            where: { id: req.user.id },
+            data : { password:password }
+        });
+
+        // Respond with updated note
+        return res.status(200).json({
+            id: updated_user.id,
+            utorid: updated_user.utorid,
+            name: updated_user.name,
+            email: updated_user.email,
+            birthday: updated_user.birthday,
+            role: updated_user.role,
+            points: updated_user.points,
+            createdAt: updated_user.createdAt,
+            lastLogin: updated_user.lastLogin,
+            verified: updated_user.verified,
+            avatarUrl: updated_user.avatarUrl
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Database error"});
+    }
 });
 
 app.get('/users/:userId', async (req, res) => {
@@ -575,6 +624,7 @@ app.post('/auth/resets', async (req, res) => {
 
     For this assignment, you are not expected to send emails, so the response body also contains the token that can be used to reset password.
     */
+   const {utorid} = req.body;
 });
 
 
@@ -599,10 +649,8 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     if (!resetToken || !utorid || !password) {
         return res.status(404).json({ error: "Must provide a reset token,utorid, and password" });
     }
-    
-    let RegEx = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
 
-    if (password.length < 8 || password.length > 20 || !RegEx.test(password)) {
+    if (!validPassword(password)) {
         return res.status(400).json({ error: "password given was incorrect" });
     }
 

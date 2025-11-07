@@ -5,7 +5,7 @@
  *   node prisma/createsu.js clive123 clive.su@mail.utoronto.ca SuperUser123!
  */
 'use strict';
-import { PrismaClient } from '@prisma/client'
+const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient();
 
 const [, , utorid, email, password] = process.argv;
