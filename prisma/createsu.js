@@ -37,7 +37,7 @@ async function main() {
     }
   })
 
-  console.log('created user id =', created.id);
+  console.log('created user =', created);
   process.exit(0);
 
 }
