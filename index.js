@@ -31,6 +31,7 @@ app.use(express.json());
 
 // ADD YOUR WORK HERE
 
+const ROLE_LEVELS = {"regular": 0, "cashier": 1, "manager": 2, "superuser": 3};
 
 //TOKEN 
 function generateToken(utorid, time) {
@@ -41,6 +42,18 @@ function generateToken(utorid, time) {
   )
 
   return token
+}
+
+function check_clearance(min_level) {
+    return function(req, res, next) {
+        const curr_level = req.user.role;
+
+        if (ROLE_LEVELS[curr_level] < ROLE_LEVELS[min_level]) {
+            return res.status(403).json({ error: "Not high enough clearance" });
+        }
+
+        next();
+    }
 }
 
 //USER
@@ -794,7 +807,7 @@ app.get('/events', get_logged_in, async (req, res) => {
     }
 })
 
-app.post('/events', get_logged_in, async (req, res) => { //checked HTTP requests
+app.post('/events', get_logged_in, check_clearance("manager"), async (req, res) => { //checked HTTP requests
     //Check that user is a manager or higher!!
     
     const currentUser = req.user;
@@ -803,10 +816,10 @@ app.post('/events', get_logged_in, async (req, res) => { //checked HTTP requests
         console.log(currentUser);
         return res.status(401).json({"error": "Unauthorized"}); //passed, this is actually caught by middleware
     }
-    if(currentUser.role !== 'Manager' && currentUser.role !== 'Superuser') {
-        console.log(currentUser.role);
-        return res.status(403).json({"error": "Only managers or higher can create events"});
-    }
+    // if(currentUser.role !== 'Manager' && currentUser.role !== 'Superuser') {
+    //     console.log(currentUser.role);
+    //     return res.status(403).json({"error": "Only managers or higher can create events"});
+    // }
 
     const {name, description, location, startTime, endTime, capacity, points} = req.body;
 
@@ -855,7 +868,7 @@ app.post('/events', get_logged_in, async (req, res) => { //checked HTTP requests
     }
 })
 
-app.get('/events/:eventId', get_logged_in, async (req, res) => {
+app.get('/events/:eventId', get_logged_in, check_clearance("regular"), async (req, res) => {
     currentUser = req.user;
 
     const eid = req.params.eventId;
@@ -1019,11 +1032,11 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
     res.status(200).json(resultEvent);
 })
 
-app.delete('/events/:eventId', get_logged_in, async (req, res) => { //checked https requests
+app.delete('/events/:eventId', get_logged_in, check_clearance("manager"), async (req, res) => { //checked https requests
     const currentUser = req.user;
-    if(currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
-        return res.status(403).json({"error": "Only managers or higher can remove organizers"});
-    }
+    // if(currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    //     return res.status(403).json({"error": "Only managers or higher can remove organizers"});
+    // }
 
     const eid = req.params.eventId;
 
@@ -1045,14 +1058,14 @@ app.delete('/events/:eventId', get_logged_in, async (req, res) => { //checked ht
     return res.status(204).send();
 })
 
-app.post('/events/:eventId/organizers', get_logged_in, async (req, res) => { //checked https requests
+app.post('/events/:eventId/organizers', get_logged_in, check_clearance("manager"), async (req, res) => { //checked https requests
     const currentUser = req.user;
     if(!currentUser) {
         return res.status(401).json({"error": "Unauthorized"});
     }
-    if(currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
-        return res.status(403).json({"error": "Only managers or higher can create events"});
-    }
+    // if(currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    //     return res.status(403).json({"error": "Only managers or higher can create events"});
+    // }
 
     const {utorid} = req.body;
     if(utorid === undefined) {
@@ -1120,11 +1133,11 @@ app.post('/events/:eventId/organizers', get_logged_in, async (req, res) => { //c
 })
 
 
-app.delete('/events/:eventId/organizers/:userId', get_logged_in, async (req, res) => { //checked https requests
+app.delete('/events/:eventId/organizers/:userId', get_logged_in, check_clearance("manager"), async (req, res) => { //checked https requests
     const currentUser = req.user;
-    if(currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
-        return res.status(403).json({"error": "Only managers or higher can remove organizers"});
-    }
+    // if(currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    //     return res.status(403).json({"error": "Only managers or higher can remove organizers"});
+    // }
 
     const uid = req.params.userId;
     const eid = req.params.eventId;
@@ -1242,7 +1255,11 @@ app.post('/events/:eventId/guests', get_logged_in, async (req, res) => { //check
         include: {organizers: true, guests: true}
     })
 
-    if(!event.organizers.includes(currentUser) && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    const currentUserAlready = event.organizers.filter(org => {
+        return org.id === currentUser.id;
+    })
+
+    if(currentUserAlready.length === 0 && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
         return res.status(403).json({"error": "Only managers or higher, or event organizers can update events"});
     }
 
@@ -1286,11 +1303,11 @@ app.post('/events/:eventId/guests', get_logged_in, async (req, res) => { //check
     }
 })
 
-app.delete('/events/:eventId/guests/:userId', get_logged_in, async (req, res) => {
+app.delete('/events/:eventId/guests/:userId', get_logged_in, check_clearance("manager"), async (req, res) => {
     const currentUser = req.user;
-    if(currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
-        return res.status(403).json({"error": "Only managers or higher can remove guests"});
-    }
+    // if(currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    //     return res.status(403).json({"error": "Only managers or higher can remove guests"});
+    // }
 
     const uid = req.params.userId;
     const eid = req.params.eventId;
@@ -1319,10 +1336,14 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
     const eid = req.params.eventId;
     const event = await prisma.event.findUnique( {
         where: {id: parseInt(eid)},
-        include: {organizers: true}
+        include: {organizers: true, guests: true}
     })
 
-    if(!event.organizers.includes(currentUser) && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    const currentUserAlready = event.organizers.filter(org => {
+        return org.id === currentUser.id;
+    })
+
+    if(currentUserAlready.length === 0 && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
         return res.status(403).json({"error": "Only managers or higher, or event organizers can update events"});
     }
     
@@ -1330,13 +1351,17 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
         return res.status(400).json({"error": "Invalid payload"});
     }
 
-
     if(!utorid === undefined) {
-        const user = await prisma.user.findUnique({
+        const findUser = await prisma.user.findUnique({
                 where: {utorid: utorid}
             })
 
-        if(!event.guests.includes(user)) {
+
+        const alreadyGuest = event.guests.filter(guest => {
+            return guest.id === findUser.id;
+        })
+
+        if(alreadyGuest.length === 0) {
             return res.status(400).json({"error": "User is not a guest of the event"});
         }
 
@@ -1352,11 +1377,29 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
             }
         })
 
-        user.transactions.push(newTransaction);
+        await prisma.user.update({
+            where: {id: findUser.id},
+            data: {
+                transactions: {connect: {
+                    id: newTransaction.id
+                }}
+            }
+        })
+
+        //user.transactions.push(newTransaction);
         user.points += amount;
         event.pointsRemain -= amount;
         event.pointsAwarded += amount;
-        user.events.push(event);
+
+        await prisma.user.update({
+            where: {id: findUser.id},
+            data: {
+                events: {
+                    connect: {id: event.id}
+                }
+            }
+        })
+        //user.events.push(event);
 
         return res.status(201).json({id: newTransaction.id, recipient: utorid, awarded: amount, type: type, relatedId: eid, remark: remark, createdBy: newTransaction.createdBy});
     }
@@ -1365,7 +1408,11 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
         const allUsers = await prisma.user.findMany();
         const newTransactions = [];
         allUsers.forEach(async user => {
-            if(!event.guests.includes(user)) {
+
+            const alreadyGuest = event.guests.filter(guest => {
+            return guest.id === user.id;
+        })
+            if(alreadyGuest.length === 0) {
                 return res.status(400).json({message: "User is not a guest of the event"});
             }
 
@@ -1381,11 +1428,30 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
                 }
             })
 
-            user.transactions.push(newTransaction);
+            await prisma.user.update({
+            where: {id: user.id},
+            data: {
+                transactions: {connect: {
+                    id: newTransaction.id
+                    }}
+                }
+            })
+
+            //user.transactions.push(newTransaction);
             user.points += amount;
             event.pointsRemain -= amount;
             event.pointsAwarded += amount;
-            user.events.push(event);
+
+            await prisma.user.update({
+            where: {id: user.id},
+            data: {
+                events: {
+                    connect: {id: event.id}
+                }
+            }
+            })
+
+            //user.events.push(event);
 
             let jsonobj = {
                 "id": newTransaction.id,
