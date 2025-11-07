@@ -28,9 +28,10 @@ async function main() {
   const created = await prisma.user.create({
     data: {
       utorid,
-      'name': 'admin',
+      name: utorid,
       email,
       password,
+<<<<<<< HEAD
       'verified': true,
       'role': 'superuser',
       'points': 0,
@@ -38,17 +39,25 @@ async function main() {
       'token': 'superToken',
       createdAt: curr_time,
       expiresAt: week_later
+=======
+      verified: true,
+      role: 'superuser',
+      points: 0,
+      suspicious: false
+>>>>>>> origin/promotions
     }
   })
 
-  console.log('created user id =', created.id)
+  console.log('created user =', created);
+  process.exit(0);
+
 }
 
 main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

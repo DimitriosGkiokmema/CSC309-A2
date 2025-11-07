@@ -27,6 +27,8 @@ enum PromotionType {
   onetime
 }
 
+
+
 model User {
   id          Int    @id @default(autoincrement())
   utorid      String  @unique
@@ -39,60 +41,53 @@ model User {
   avatarUrl   String?
   suspicious  Boolean
   verified    Boolean
-  token       String 
-  createdAt   DateTime
-  expiresAt   DateTime
+  token       String? 
+  createdAt   DateTime?
+  expiresAt   DateTime?
   lastLogin   DateTime?
-  promotions  Promotion[]
-  buyers      Transaction[] @relation("buyer")
-  cashiers Transaction[] @relation("cashier")
+  // promotions  Promotion[]
+  // buyers      Transaction[] @relation("buyer")
+  // cashiers Transaction[] @relation("cashier")
   organizer    Event[] @relation("eventOrganizer")
   guest    Event[] @relation("eventGuest")
+  usages    Usage[]
 }
 
+
 model Promotion {
-  id           Int      @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   name         String
-  description  String
-  type         PromotionType @default(automatic)
+  type         String        @default("automatic")
   startTime    DateTime
-  endTime      DateTime
-  minSpending  Float? 
-  rate         Float? 
+  endTime      DateTime 
+  isOneTime    Boolean       @default(false)
+  minSpending  Int?
+  rate         Float?
   points       Int?
-  user       User @relation(fields: [userId], references: [id])
-  userId     Int
+  usages       Usage[]
+  description  String?
   transactions Transaction[]
 }
 
 model Transaction {
-	id Int @id @default(autoincrement())
-	utorid String @unique
-	type String
-	spent Float
-	earned Int 
-
-	relatedId Int
-	remark String
-	
-	createdBy String
-	cashier User @relation("buyer", fields: [createdBy], references: [utorid])
-	suspicious Boolean
-
-
-	amount Int 
-	sender String
-	recipient String 
-
-	awarded Int
-
-	transfer User @relation("cashier", fields: [relatedId], references: [id])
-	event Event @relation(fields: [relatedId], references: [id])
-	promotions Promotion[] 
-
-	processedBy String?
-	processed Boolean
+  id          Int         @id @default(autoincrement())
+  utorid      String
+  type        String
+  spent       Float       @default(0)
+  earned      Int?
+  amount      Int         @default(0)
+  remark      String?
+  createdBy   String
+  relatedId   Int?
+  eventId     Int?
+  processed   Boolean     @default(false)
+  processedBy String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  suspicious  Boolean     @default(false)
+  promotions  Promotion[]
 }
+
 
 model Event {
   id      Int @id @default(autoincrement())
@@ -107,5 +102,13 @@ model Event {
   published   Boolean
   organizers  User[] @relation("eventOrganizer")
   guests User[] @relation("eventGuest")
-  transactions Transaction[]
+  // transactions Transaction[]
+}
+
+model Usage {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  promotionId Int
+  promotion   Promotion @relation(fields: [promotionId], references: [id])
 }
