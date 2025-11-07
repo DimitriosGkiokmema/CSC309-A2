@@ -41,7 +41,6 @@ model User {
   avatarUrl   String?
   suspicious  Boolean
   verified    Boolean
-  resetToken  String
   token       String 
   createdAt   DateTime
   expiresAt   DateTime
@@ -58,6 +57,7 @@ model Promotion {
   id           Int      @id @default(autoincrement())
   name         String
   description  String
+  type         PromotionType @default(automatic)
   startTime    DateTime
   endTime      DateTime
   minSpending  Float? 
@@ -70,13 +70,13 @@ model Promotion {
 
 model Transaction {
 	id Int @id @default(autoincrement())
-	utorid String @unique
+	utorid String 
 	type String
 	spent Float
 	earned Int 
 
 	relatedId Int
-	remark String
+	remark String?
 	
 	createdBy String
 	cashier User @relation("buyer", fields: [createdBy], references: [utorid])
@@ -89,7 +89,7 @@ model Transaction {
 
 	awarded Int
 
-	transfer User @relation("cashier", fields: [relatedId], references: [id])
+	transfer User @relation("cashier", fields: [recipient], references: [utorid])
 	event Event @relation(fields: [relatedId], references: [id])
 	promotions Promotion[] 
 
