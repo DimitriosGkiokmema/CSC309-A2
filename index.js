@@ -126,7 +126,7 @@ app.post('/users', get_logged_in, check_clearance("cashier"), async (req, res) =
         });
 
         if (existing) {
-            return res.status(400).json({ message: "A user with that utorid already exists" });
+            return res.status(409).json({ message: "A user with that utorid already exists" });
         }
 
         const resetToken = uuidv4();
@@ -150,7 +150,7 @@ app.post('/users', get_logged_in, check_clearance("cashier"), async (req, res) =
         });
 
         // Respond with updated note
-        return res.status(200).json({
+        return res.status(201).json({
             id: user.id,
             utorid: user.utorid,
             name: user.name,
@@ -275,6 +275,10 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
     */
     const {name, email, birthday, avatarUrl} = req.body;
     const data = {};
+
+    if (!name && !email && !birthday && !avatarUrl) {
+        return res.status(400).json({ error: "Payload empty" });
+    }
 
     if (name) data.name = name;
     if (email) {
@@ -589,9 +593,9 @@ app.post('/auth/tokens', async (req, res) => {
         });
 
         if (!existing) {
-            return res.status(410).json({ message: "User with provided utorid and password does not exist." });
+            return res.status(401).json({ message: "User with provided utorid and password does not exist." });
         } else if (existing && existing.password !== password) {
-            return res.status(410).json({ message: "Incorrect password" });
+            return res.status(401).json({ message: "Incorrect password" });
         }
 
         let data = {};
@@ -645,7 +649,14 @@ app.post('/auth/resets', async (req, res) => {
     const ip = req.ip;   // get ip address
     const now = Date.now();
 
-    if (resetRate[ip] && (now - resetRate[ip]) < 60_000) {
+    // Clean up old entries
+    for (const [storedIp, timestamp] of Object.entries(resetRate)) {
+        if (now - timestamp > 60000) { // Older than 60 seconds
+            delete resetRate[storedIp];
+        }
+    }
+
+    if (resetRate[ip] && (now - resetRate[ip]) < 60000) {
         return res.status(429).json({ message: "Too many requests" });
     }
 
@@ -678,7 +689,7 @@ app.post('/auth/resets', async (req, res) => {
         });
         
         // Respond with updated note
-        return res.status(200).json({
+        return res.status(202).json({
             expiresAt: updated_user.expiresAt,
             "resetToken": updated_user.token
         });
@@ -686,68 +697,6 @@ app.post('/auth/resets', async (req, res) => {
         console.error(error);
         res.status(500).json({ message: "Database error"});
     }
-});
-
-app.post('/users/:userId/transactions', get_logged_in, check_clearance("regular"), async (req, res) => {
-    /*
-    · Method: POST
-    · Description: Create a new transfer transaction between the current logged-in user (sender) and the user specified by userId (the recipient)
-    · Clearance: Regular or higher
-    · Payload:
-    Field Required Type Description
-    type Yes string Must be "transfer"
-    amount Yes number The points amount to be transferred. Must be a positive integer value.
-    remark No string Any remark regarding this transaction
-
-    · Response
-    201 Created on success ->
-    { "id": 127, "sender": "johndoe1", "recipient": "friend69", "type": "transfer", "sent": 500, "remark": "Poker night", "createdBy": "johndoe1" }
-
-    · 400 Bad Request if the sender does not have enough points
-    · 403 Forbidden if the sender is not verified.
-
-    Upon success, two transactions should be created: one for sending the amount and another for receiving it. For the sender, relatedId should be the user id of the recipient, For the receiver, relatedId should be the user id of the sender.
-    */
-});
-
-app.post('/users/me/transactions', get_logged_in, check_clearance("regular"), async (req, res) => {
-    /*
-    · Method: POST
-    · Description: Create a new redemption transaction.
-    · Clearance: Regular or higher
-    · Payload:
-    Field Required Type Description
-    type Yes string Must be "redemption"
-    amount Yes number The amount to redeem in this transaction. Must be a positive integer value.
-    remark No string Any remark regarding this transaction
-
-    · Response
-    o 201 Created on success { "id": 124, "utorid": "johndoe1", "type": "redemption", "processedBy": null, "amount": 1000, "remark": "", "createdBy": "johndoe1" }
-    o 400 Bad Request if the requested amount to redeem exceed the user's point balance.
-    o 403 Forbidden if the logged-in user is not verified.
-
-    A redemption transaction does not immediately deduct from the user's point balance. Instead, a cashier must process the redemption through PATCH /transactions/:transactionId/processed.
-    */
-});
-
-app.get('/users/me/transactions', get_logged_in, check_clearance("regular"), async (req, res) => {
-    /*
-    · Method: GET
-    · Description: Retrieve a list of transactions owned by the currently logged in user
-    · Clearance: Regular or higher
-    · Payload:
-    Field Required Type Description
-    type No string Filter by transaction type
-    relatedId No number Filter by related ID (must be used with type)
-    promotionId No number Filter by promotion applied to the transaction
-    amount No number Filter by point amount (must be used with operator)
-    operator No string One of "gte" (greater than or equal) or "lte" (less than or equal)
-    page No number Page number for pagination (default is 1)
-    limit No number Number of objects per page (default is 10)
-
-    · Response: count, which stores the total number of results (after applying all filters), and results, which contains a list of transactions { "count": 21, "results": [ { "id": 123, "type": "purchase", "spent": 19.99, "amount": 80, "promotionIds": [], "remark": "", "createdBy": "alice666" }, { "id": 125, "amount": -40, "type": "adjustment", "relatedId": 123, "promotionIds": [], "remark": "", "createdBy": "smithw42" }, { "id": 127, "amount": -500, "type": "transfer", "relatedId": 35, "promotionIds": [], "remark": "Poker night", "createdBy": "johndoe1" }
-    // More transaction objects... ] }
-    */
 });
 
 app.post('/auth/resets/:resetToken', async (req, res) => {
@@ -769,29 +718,33 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     const {utorid, password} = req.body;
 
     if (!resetToken || !utorid || !password) {
-        return res.status(404).json({ error: "Must provide a reset token,utorid, and password" });
+        return res.status(400).json({ error: "Must provide a reset token,utorid, and password" });
     }
 
     if (!validPassword(password)) {
-        return res.status(400).json({ error: "password given was incorrect" });
+        return res.status(430).json({ error: "password given was incorrect" });
     }
 
     try {
         const curr_time = new Date().toISOString();
         const existing = await prisma.user.findUnique({
-            where: { utorid }
+            where: { utorid: utorid }
         });
 
         if (!existing) {
             return res.status(404).json({ message: "A user with that utorid does not exist" });
         }
 
-        if (existing.lastLogin < curr_time) {
+        if (existing.expiresAt < curr_time) {
             return res.status(410).json({ message: "Token has expired" });
         }
 
+        if (existing.utorid !== utorid) {
+            return res.status(401).json({ message: "Utorid token pairing wrong" });
+        }
+
         if (existing.token !== resetToken) {
-            return res.status(400).json({ message: "A user with that token and utorid combination does not exist" });
+            return res.status(404).json({ message: "A user with that token and utorid combination does not exist" });
         }
 
         const updated_user = await prisma.user.update({
