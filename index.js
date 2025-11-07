@@ -203,7 +203,7 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
             return res.status(200).json({ error: "role not valid" });
         }
     }
-    if (verified) {
+    if (verified !== undefined) {
         if (verified !== 'true' && verified !== 'false'){
             return res.status(200).json({ error: "verified not valid" });
         }
@@ -211,7 +211,7 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
         where.verified = verified === "true";
     }
 
-    if (activated) {
+    if (activated !== undefined) {
         if (activated === "true") {
             where.lastLogin = {not: null};
         } 
@@ -263,7 +263,7 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
         // Respond with updated note
         return res.status(200).json({
             count: total.length,
-            results: [data]
+            results: data
         });
     } catch (error) {
         console.error(error);
@@ -383,7 +383,12 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
     o 200 OK on success
     o 403 Forbidden if the provided current password is incorrect
     */
-    const {oldPass, newPass} = req.body;
+    const oldPass = req.body.old;
+    const newPass = req.body.new;
+
+    if (oldPass === undefined || newPass === undefined) {
+        return res.status(400).json({ error: "Payload Empty" });
+    }
 
     if (!validPassword(newPass)) {
         return res.status(400).json({ error: "New password wrong format" });
@@ -391,7 +396,7 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
 
     try {
         if (req.user.password !== oldPass) {
-            return res.status(400).json({ error: "Old password is incorrect" });
+            return res.status(403).json({ error: "Old password is incorrect" });
         }
 
         const now = Date.now();
@@ -403,22 +408,12 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
 
         const updated_user = await prisma.user.update({
             where: { id: req.user.id },
-            data : { password:password }
+            data : { password: newPass }
         });
 
         // Respond with updated note
         return res.status(200).json({
-            id: updated_user.id,
-            utorid: updated_user.utorid,
-            name: updated_user.name,
-            email: updated_user.email,
-            birthday: updated_user.birthday,
-            role: updated_user.role,
-            points: updated_user.points,
-            createdAt: updated_user.createdAt,
-            lastLogin: updated_user.lastLogin,
-            verified: updated_user.verified,
-            avatarUrl: updated_user.avatarUrl
+            new_password: updated_user.password
         });
     } catch (error) {
         console.error(error);
