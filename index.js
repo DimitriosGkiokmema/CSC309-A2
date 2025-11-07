@@ -766,97 +766,27 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
 //TRANSACTIONS
 
 //My part
-app.post('users/:userId/transactions', async (req, res) => {
-    const userid = req.params.userId;
 
-    currentUser = req.user;
-    if(!currentUser) {
-        return res.status(403).json({ "error": "Unauthorized" });
-    }
 
-    const findUser = await prisma.user.findUnique({
-        where: {id: userid}
-    })
+app.post('/users/me/transactions', get_logged_in, async (req, res) => {
+    const currentUser = req.user;
+    // if(!currentUser.verified) {
+    //     return res.status(403).json({ "error": "Unverified user" });
+    // }
 
     const {type, amount, remark} = req.body;
     if(type === undefined && amount === undefined && remark === undefined) {
         return res.status(400).json({ "error": "Empty payload" });
     }
     else if(type === undefined || amount === undefined) {
-        return res.status(400).json({ "error": "Invalid payload" });
+        return res.status(400).json({ "error": "Invalid payload" }); //passed
     }
 
     if(currentUser.points < amount) {
-        return res.status(400).json({ "error": "Insufficient points" });
+        return res.status(400).json({ "error": "Insufficient points to be redeemed" }); //passed
     }
 
-    const dataSender = {relatedId: userid, sender: currentUser.utorid, createdBy: currentUser.utorid, recipient: findUser.utorid};
-    const dataRecipient = {relatedId: currentUser.id, sender: currentUser.utorid, createdBy: currentUser.utorid, recipient: findUser.utorid};
-    if(type !== undefined) {
-        if(typeof type === 'string' && type === 'transfer') {
-            dataSender.type = type;
-            dataRecipient.type = type;
-        }
-        else {
-            return res.status(400).json({"error": "Invalid transaction type"});
-        }
-    }
-    if(amount !== undefined) {
-        if(typeof amount === 'number' && amount > 0) {
-            dataSender.amount = -(amount);
-            dataRecipient.amount = amount;
-        }
-        else {
-            return res.status(400).json({"error": "Invalid transaction amount"});
-        }
-    }
-    if(remark !== undefined) {
-        if(typeof remark === 'string') {
-            dataSender.remark = remark;
-            dataRecipient.remark = remark;
-        }
-        else {
-            return res.status(400).json({"error": "Invalid transaction remark"});
-        }
-    }
-
-    const sender = await prisma.transaction.create({
-        data: dataSender
-    })
-
-    currentUser.transactions.push(sender);
-    currentUser.points = currentUser.points + dataSender.amount;
-
-    const recipient = await prisma.transaction.create({
-        data: dataRecipient
-    })
-
-    findUser.transactions.push(recipient);
-    findUser.points = findUser.points + dataRecipient.amount;
-
-
-    return res.status(201).json({id: sender.id, sender: sender.sender, recipient: sender.recipient, type: sender.type, sent: amount, remark: sender.remark, createdBy: sender.createdBy});
-})
-
-app.post('users/me/transactions', async (req, res) => {
-    currentUser = req.user;
-    if(!currentUser) {
-        return res.status(403).json({ "error": "Unauthorized" });
-    }
-
-    const {type, amount, remark} = req.body;
-    if(type === undefined && amount === undefined && remark === undefined) {
-        return res.status(400).json({ "error": "Empty payload" });
-    }
-    else if(type === undefined || amount === undefined) {
-        return res.status(400).json({ "error": "Invalid payload" });
-    }
-
-    if(currentUser.points < amount) {
-        return res.status(400).json({ "error": "Insufficient points to be redeemed" });
-    }
-
-    const data = {utorid: currentUser.utorid, createdBy: currentUser.utorid};
+    const data = {utorid: currentUser.utorid, createdBy: currentUser.utorid, spent: 0, earned: 0, suspicious: false, awarded: 0, processed: false};
     
     if(type !== undefined) {
         if(typeof type === 'string' && type === 'redemption') {
@@ -867,7 +797,7 @@ app.post('users/me/transactions', async (req, res) => {
         }
     }
     if(amount !== undefined) {
-        if(typeof amount === 'number' && amount > 0) {
+        if(!isNaN(amount) && amount > 0) {
             data.amount = -(amount);
         }
         else {
@@ -887,26 +817,30 @@ app.post('users/me/transactions', async (req, res) => {
         data: data
     })
 
+    const correspondingUser = await prisma.user.update({
+        where: {id: currentUser.id},
+        data: {
+            cashiers: {connect: {id: redeem.id}}
+        }
+    })
     return res.status(201).json({id: redeem.id, utorid: redeem.utorid, type: type, processedBy: redeem.processedBy, amount: amount, remark: remark, createdBy: redeem.createdBy})
 })
 
-app.get('users/me/transactions', async (req, res) => {
-    currentUser = req.user;
+app.get('/users/me/transactions', get_logged_in, async (req, res) => {
+    const currentUser = req.user;
 
     const {type, relatedId, promotionId, amount, operator, page: qpage, limit} = req.query;
-    where = {utorid: currentUser.utorid};
+    let where = {utorid: currentUser.utorid};
     const page = 1;
     const take = 10;
 
     if(type !== undefined) {
         if(type === 'transfer') {
             if(relatedId !== undefined) {
-                const user = await prisma.user.findUnique({
-                    where:{id: relatedId}
-                })
+                
                 where.type = type;
                 where.relatedId = relatedId;
-                where.transfer = user;
+                
             }
             else {
                 return res.status(400).json({"error": "Invalid payload"});
@@ -914,12 +848,10 @@ app.get('users/me/transactions', async (req, res) => {
         }
         else if(type === "promotion") {
             if(relatedId !== undefined) {
-                const promotion = await prisma.promotion.findUnique({
-                    where:{id: relatedId}
-                })
+                
                 where.type = type;
                 where.relatedId = relatedId;
-                where.promotion = promotion;
+                //where.promotion = promotion;
             }
             else {
                 return res.status(400).json({"error": "Invalid payload"});
@@ -927,12 +859,10 @@ app.get('users/me/transactions', async (req, res) => {
         }
         else if(type === "event") {
             if(relatedId !== undefined) {
-                const event = await prisma.event.findUnique({
-                    where:{id: relatedId}
-                })
+                
                 where.type = type;
                 where.relatedId = relatedId;
-                where.event = event;
+                
             }
             else {
                     return res.status(400).json({"error": "Invalid payload"});
@@ -940,20 +870,48 @@ app.get('users/me/transactions', async (req, res) => {
         }
         else { //redemption
             where.type = type;
-        }
-        
+        } 
     }
     
+    const transactions = await prisma.transaction.findMany({
+            where,
+            include: {promotions: true}
+        })
+    
+    let filtered = [];
     if(promotionId !== undefined) {
-        where.promotionIds.includes(promotionId);
+        
+        const findPromotion = await prisma.promotion.findUnique({
+            where: {id: promotionId}
+        })
+
+        filtered = transactions.filter(t => {
+            const found =
+            t.promotions.filter(p => {
+                return p.id === findPromotion.id;
+            })
+
+            if(found.length !== 0) {
+                return t;
+            }
+        })
+        
     }
+
+    let roundTwo = filtered;
     if(amount !== undefined) {
         if(operator !== undefined) {
             if(operator === 'gte') {
-                where.amount >= amount;
+
+                roundTwo = filtered.filter(t => {
+                    return t.amount >= amount;
+                })
+                
             }
             else {
-                where.anount <= amount;
+                roundTwo = filtered.filter(t => {
+                    return t.amount <= amount;
+                })
             }
         }
         else {
@@ -979,30 +937,117 @@ app.get('users/me/transactions', async (req, res) => {
     
     const skip = (page - 1) * take;
     
-    const transactions = await prisma.transaction.findMany({
-            where
+    const result = roundTwo.map(e => {
+        const {id, type, spent, amount, remark, createdBy, promotions, ...rest} = e;
+        const promotionIds = promotions.map(promo => {
+                return promo.id;
         })
+        return {id, type, spent, amount, promotionIds, remark, createdBy};
+    }).slice(skip, take + skip);
+
     
-    const transactionspage = await prisma.transaction.findMany({
-            where,
-            skip,
-            take
-        })
-    
-    return res.status(201).json({count: transactions.length, results: transactionspage});
+    return res.status(201).json({count: roundTwo.length, results: result});
 })
 
-app.patch('transactions/:transactionId/processed', async (req, res) => {
+app.post('/users/:userId/transactions', get_logged_in, async (req, res) => {
+    const userid = req.params.userId;
+
+    const currentUser = req.user; //sender
+    if(!currentUser.verified) {
+        return res.status(403).json({ "error": "Unverified sender" });
+    }
+
+    const findUser = await prisma.user.findUnique({ //recipient
+        where: {id: parseInt(userid)}
+    })
+
+    console.log(findUser);
+
+    const {type, amount, remark} = req.body;
+    if(type === undefined && amount === undefined && remark === undefined) {
+        return res.status(400).json({ "error": "Empty payload" });
+    }
+    else if(type === undefined || amount === undefined) {
+        return res.status(400).json({ "error": "Invalid payload" });
+    }
+
+    if(currentUser.points < amount) {
+        return res.status(400).json({ "error": "Insufficient points" }); //passed up to here
+    }
+
+    const dataSender = {relatedId: parseInt(userid), sender: currentUser.utorid, createdBy: currentUser.utorid, recipient: findUser.utorid, utorid: currentUser.utorid, spent: 0, earned: 0, suspicious: false, awarded: 0, processed: false};
+    const dataRecipient = {relatedId: currentUser.id, sender: currentUser.utorid, createdBy: currentUser.utorid, recipient: findUser.utorid, utorid: findUser.utorid, spent: 0, earned: 0, suspicious: false, awarded: 0, processed: false};
+
+    if(type !== undefined) {
+        if(typeof type === 'string' && type === 'transfer') {
+            dataSender.type = type;
+            dataRecipient.type = type;
+        }
+        else {
+            return res.status(400).json({"error": "Invalid transaction type"});
+        }
+    }
+    if(amount !== undefined) {
+        if(!isNaN(amount) && amount > 0) {
+            dataSender.amount = -(amount);
+            dataRecipient.amount = amount;
+        }
+        else {
+            return res.status(400).json({"error": "Invalid transaction amount"});
+        }
+    }
+    if(remark !== undefined) {
+        if(typeof remark === 'string') {
+            dataSender.remark = remark;
+            dataRecipient.remark = remark;
+        }
+        else {
+            return res.status(400).json({"error": "Invalid transaction remark"});
+        }
+    }
+
+    const sender = await prisma.transaction.create({
+        data: dataSender
+    })
+
+    const newPoints = currentUser.points + dataSender.amount; //less
+
+    await prisma.user.update({
+        where: {id: currentUser.id},
+        data: {
+            cashiers: {connect: {id: sender.id}},
+            points: newPoints
+        }
+    })
+
+    const recipient = await prisma.transaction.create({
+        data: dataRecipient
+    })
+
+    const receivedPoints = findUser.points + dataRecipient.amount; //more
+
+    await prisma.user.update({
+        where: {id: findUser.id},
+        data: {
+            buyers: {connect: {id: sender.id}},
+            points: receivedPoints
+        }
+    })
+
+    return res.status(201).json({id: sender.id, sender: sender.sender, recipient: sender.recipient, type: sender.type, sent: amount, remark: sender.remark, createdBy: sender.createdBy});
+})
+
+app.patch('/transactions/:transactionId/processed', get_logged_in, check_clearance("cashier"), async (req, res) => {
     currentUser = req.user;
     const {processed} = req.body;
 
-    if(currentUser.role === 'regular') {
-        return res.status(403).json({"error": "Only cashiers and higher can process a transaction"});
-    }
+    // if(currentUser.role === 'regular') {
+    //     return res.status(403).json({"error": "Only cashiers and higher can process a transaction"});
+    // }
 
     const tid = req.params.transactionId;
     const transaction = await prisma.transaction.findUnique({
-        where: {id: tid}
+        where: {id: parseInt(tid)}
     })
 
     const user = await prisma.user.findUnique({
@@ -1013,10 +1058,22 @@ app.patch('transactions/:transactionId/processed', async (req, res) => {
         return res.status(400).json({"error": "Invalid payload"});
     }
     
-    transaction.processedBy = currentUser.utorid;
-    transaction.processed = true;
-    user.points += transaction.amount; //redemption amount is negative
-    user.transactions.push(transaction);
+    let newPoints = user.points + transaction.amount;
+    await prisma.transaction.update({
+        where: {id: parseInt(tid)},
+        data: {
+            processedBy: currentUser.utorid,
+            processed: true,
+            points: newPoints
+        }
+    })
+
+    await prisma.user.update({
+        where: {id: user.id},
+        data: {
+            cashiers: {connect: {id: parseInt(tid)}}
+        }
+    })
 
     return res.status(200).json({id: transaction.id, utorid: transaction.utorid, type: transaction.type, processedBy: transaction.processedBy, redeemed: -(transaction.amount), remark: transaction.remark, createdBy: transaction.createdBy})
 })
@@ -1101,8 +1158,8 @@ app.get('/events', get_logged_in, async (req, res) => {
         }
     }
 
-    const all = await prisma.event.findMany();
-    console.log(all);
+    //const all = await prisma.event.findMany();
+    //console.log(all);
 
     const events = await prisma.event.findMany({
                     where,
