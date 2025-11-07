@@ -28,7 +28,7 @@ async function main() {
   const created = await prisma.user.create({
     data: {
       utorid,
-      'name': 'admin',
+      name: utorid,
       email,
       password,
       'verified': true,
@@ -41,14 +41,16 @@ async function main() {
     }
   })
 
-  console.log('created user id =', created.id)
+  console.log('created user =', created);
+  process.exit(0);
+
 }
 
 main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
