@@ -241,7 +241,48 @@ app.patch('/users/me', get_logged_in, async (req, res) => {
     · Response:
     { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png" }
     */
-    return res.status(200).json(req.user);
+    // const {name, email, birthday, avatarUrl} = req.body;
+    // const data = {};
+
+    // if (isNaN(target_id)) {
+    //     return res.status(400).json({ error: "?userId must be positive number" });
+    // }
+
+    // if (email) {
+    //     // Validate email is from UofT
+    //     if (!email.includes("@mail.utoronto.ca")) {
+    //         return res.status(400).json({ error: "Email not proper format" });
+    //     }
+        
+    //     data.email  = email;
+    // }
+    // if (verified) data.verified = verified === "true";
+    // if (suspicious) data.suspicious = suspicious;
+    // if (role) data.role = role;
+
+    // const select = {
+    //     id: true,
+    //     utorid: true,
+    //     name: true,
+    // };
+
+    // Object.keys(data).forEach(key => {
+    //     select[key] = true
+    // })
+
+    // try {
+    //     const updated_user = await prisma.user.update({
+    //         where: { id: target_id },
+    //         data,
+    //         select
+    //     })
+
+    //     // Respond with updated note
+    //     return res.status(200).json(updated_user);
+    // } catch (error) {
+    //     console.error(error);
+    //     res.status(500).json({ message: "Database error"});
+    // }
 });
 
 app.get('/users/me', get_logged_in, async (req, res) => {
