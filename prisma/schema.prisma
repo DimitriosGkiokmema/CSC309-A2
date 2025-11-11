@@ -41,7 +41,7 @@ model User {
   avatarUrl   String?
   suspicious  Boolean
   verified    Boolean
-  token       String? 
+  token       String? @unique
   createdAt   DateTime?
   expiresAt   DateTime?
   lastLogin   DateTime?

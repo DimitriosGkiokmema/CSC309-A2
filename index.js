@@ -737,6 +737,7 @@ app.post('/auth/resets', async (req, res) => {
 
 app.post('/auth/resets/:resetToken', async (req, res) => {
     /*
+    reset password
     · Method: POST
     · Description: Reset the password of a user given a reset token.
     · Clearance: Any
@@ -764,14 +765,14 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     try {
         const curr_time = new Date().toISOString();
         const existing = await prisma.user.findUnique({
-            where: { utorid: utorid }
+            where: { token: resetToken }
         });
 
         if (!existing) {
             return res.status(404).json({ message: "A user with that utorid does not exist" });
         }
 
-        if (existing.expiresAt < curr_time) {
+        if (existing.expiresAt.toISOString() < curr_time) {
             return res.status(410).json({ message: "Token has expired" });
         }
 
@@ -779,12 +780,8 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
             return res.status(401).json({ message: "Utorid token pairing wrong" });
         }
 
-        if (existing.token !== resetToken) {
-            return res.status(404).json({ message: "A user with that token and utorid combination does not exist" });
-        }
-
         const updated_user = await prisma.user.update({
-            where: { utorid: utorid },
+            where: { token: resetToken },
             data: {
                 password: password
             }
