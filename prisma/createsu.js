@@ -1,14 +1,17 @@
+#!/usr/bin/env node
 /*
  * Complete this script so that it is able to add a superuser to the database
  * Usage example: 
  *   node prisma/createsu.js clive123 clive.su@mail.utoronto.ca SuperUser123!
  */
 'use strict';
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient();
 
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
-const [, , utorid, email, password] = process.argv
+const [, , utorid, email, password] = process.argv;
+const curr_time = new Date().toISOString();
+let week_later = new Date();
+week_later.setDate(week_later.getDate() + 7);
 
 if (!utorid) {
   console.error('Usage: node prisma/createsu.js <utorid>')
@@ -31,7 +34,10 @@ async function main() {
       'verified': true,
       'role': 'superuser',
       'points': 0,
-      'suspicious': false
+      'suspicious': false,
+      'token': 'superToken',
+      createdAt: curr_time,
+      expiresAt: week_later
     }
   })
 
