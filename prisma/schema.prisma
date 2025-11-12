@@ -35,8 +35,8 @@ model User {
   name        String
   email       String  @unique
   password    String?
-  birthday    DateTime?
-  role        RoleType?
+  birthday    String?
+  role        String?
   points      Int
   avatarUrl   String?
   suspicious  Boolean
@@ -72,8 +72,8 @@ model Transaction {
 	id Int @id @default(autoincrement())
 	utorid String 
 	type String
-	spent Float
-	earned Int 
+	spent Float?
+	earned Int?
 
 	relatedId Int?
 	remark String?
@@ -87,7 +87,7 @@ model Transaction {
 	sender String?
 	recipient String?
 
-	awarded Int
+	awarded Int?
 
 	transfer User? @relation("cashier", fields: [recipient], references: [utorid])
 	event Event? @relation(fields: [relatedId], references: [id])
