@@ -609,7 +609,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         } else if (req.user.role === "superuser" ) {
             data.role = role;
         } else {
-            return res.status(400).json({ error: `Current user not high enough to promote to {role}` });
+            return res.status(403).json({ error: `Current user not high enough to promote to {role}` });
         }
     }
 
