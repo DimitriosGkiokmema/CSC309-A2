@@ -383,20 +383,29 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
     o 200 OK on success
     o 403 Forbidden if the provided current password is incorrect
     */
-    const oldPass = req.body.old;
-    const newPass = req.body.new;
+   try {
+        const oldPass = req.body.old;
+        const newPass = req.body.new;
 
-    if (oldPass === undefined || newPass === undefined) {
-        return res.status(400).json({ error: "Payload Empty" });
-    }
+        if (oldPass === undefined && newPass === undefined) {
+            return res.status(400).json({ error: "Payload Empty" });
+        }
 
-    if (!validPassword(newPass)) {
-        return res.status(400).json({ error: "New password wrong format" });
-    }
+        if(newPass === null || oldPass === null) {
+            return res.status(400).json({error: "Passwords needed"});
+        }
 
-    try {
-        if (req.user.password !== oldPass) {
-            return res.status(403).json({ error: "Old password is incorrect" });
+        if(newPass !== undefined && newPass !== null) {
+            if (typeof newPass !== "string" || !validPassword(newPass)) {
+                return res.status(400).json({ error: "New password wrong format" });
+            }
+        }
+
+
+        if(oldPass !== undefined && oldPass !== null) {
+            if (typeof oldPass !== "string" || !validPassword(oldPass) || req.user.password !== oldPass) {
+                return res.status(403).json({ error: "Old password is incorrect" });
+            }
         }
 
         const now = Date.now();
@@ -412,9 +421,7 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
         });
 
         // Respond with updated note
-        return res.status(200).json({
-            new_password: updated_user.password
-        });
+        return res.status(200).send();
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Database error"});
@@ -543,34 +550,81 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         "email": "dimi67@mail.utoronto.ca"
     }
     */
+    const currentUser = req.user;
     const target_id = parseInt(req.params.userId, 10);
+
+    const findUser = await prisma.user.findUnique({
+        where: {id: target_id}
+    })
+
+    if(!findUser) {
+        return res.status(404).json({error: "Not found"});
+    }
+
     const {email, verified, suspicious, role} = req.body;
     const data = {};
 
-    if (!email && !verified && !suspicious && !role) {
+    if (email === undefined && verified === undefined && suspicious === undefined && role === undefined) {
         return res.status(400).json({error: "Payload empty"});
     }
 
-    if (isNaN(target_id)) {
+    if (!Number.isInteger(target_id) || target_id < 0) {
         return res.status(400).json({ error: "?userId must be positive number" });
     }
 
-    if (email) {
+    if (email !== undefined && email !== null) {
         // Validate email is from UofT
-        if (!email.includes("@mail.utoronto.ca")) {
-            return res.status(400).json({ error: "Email not proper format" });
+        if(typeof email === "string" && email.endsWith("@mail.utoronto.ca")) {
+            data.email  = email;
+        }
+        else {
+            return res.status(400).json({ error: "Invalid payload" });
         }
         
-        data.email  = email;
     }
-    if (verified) data.verified = verified === "true";
-    if (suspicious) data.suspicious = suspicious;
-    if (role) data.role = role;
+    if (verified !== undefined && verified !== null) {
+        if(typeof verified === "boolean" && verified) { //must be true
+            if(!findUser.verified) {
+                data.verified = verified;   
+            }
+        }
+        else {
+            return res.status(400).json({ error: "Invalid payload" });
+        }
+    }
+    if (suspicious !== undefined && suspicious !== null) 
+        if(typeof suspicious === "boolean") {
+            if(findUser.suspicious !== suspicious) {
+                data.suspicious = suspicious;   
+            }
+        }
+        else {
+            return res.status(400).json({ error: "Invalid payload" });
+        }
+        
+    const roles = ["regular", "cashier", "manager", "superuser"]
+    if (role !== undefined && role !== null) {
+        if(typeof role === "string" && roles.includes(role)) {
+            if((role === "manager" || role === "superuser") && currentUser.role !== "superuser") {
+                return res.status(403).json({ error: "Invalid payload" });
+            }
+           
+            if(findUser.role !== role) {
+                data.role = role;
+            }
+            
+        }
+    
+        else {
+            return res.status(400).json({ error: "Invalid payload" });
+        }
+    } 
 
     const select = {
         id: true,
         utorid: true,
         name: true,
+        password: false
     };
 
     Object.keys(data).forEach(key => {
@@ -607,11 +661,15 @@ app.post('/auth/tokens', async (req, res) => {
     */
     const {utorid, password} = req.body;
 
-    if (!utorid || !password) {
+    if (utorid === undefined && password === undefined) {
         return res.status(400).json({ error: "Utorid or password missing" });
     }
 
-    const jwt = generateToken(utorid, '7d');
+    if(typeof utorid !== "string" || typeof password !== "string" || !validPassword(password)) {
+        return res.status(400).json({ error: "Invalid payload" });
+    }
+
+    const jwt = generateToken(utorid, '7d'); 
     let curr_time = new Date().toISOString();
     let week_later = new Date();
     week_later.setDate(week_later.getDate() + 7);
@@ -862,7 +920,7 @@ app.post('/transactions', get_logged_in, async (req, res) => {
             promotions.push(promotion);
         }
 
-        let transaction;
+        let transaction; 
 
         if (type === 'purchase') {
             if (typeof spent !== 'number' || spent <= 0) {
@@ -879,12 +937,13 @@ app.post('/transactions', get_logged_in, async (req, res) => {
                     utorid,
                     type,
                     spent,
+                    earned: req.user.suspicious ? 0 : earnedPoints,
                     amount: earnedPoints,
                     remark,
                     createdBy,
                     suspicious: req.user.suspicious,
                     promotions: { connect: promotions.map(p => ({ id: p.id })) },
-                    processed: false
+                    processed: false,
                 },
                 include: { promotions: true },
             });
@@ -949,13 +1008,8 @@ app.post('/transactions', get_logged_in, async (req, res) => {
 
         if (type === 'purchase') {
             response.spent = transaction.spent;
-
-            if (req.user.suspicious) {
-                response.earned = 0;
-            } else {
-                response.earned = transaction.amount;
-            }
-
+            response.earned = transaction.earned;
+            
         } else {
             response.amount = transaction.amount;
             response.relatedId = transaction.relatedId;
@@ -998,10 +1052,12 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
      · Event: the ID of the event from which points were disbursed.
  */
 
-    const { name, createdBy, suspicious, promotionId, type, relatedId, amount, operator, page = 1, limit = 10 } = req.query;
+    const { name, createdBy, suspicious, promotionId, type, relatedId, amount, operator, page: qpage, limit } = req.query;
     try {
+        let page = 1;
+        let take = 10;
         const filters = {};
-
+ 
         if (name) {
             filters.utorid = { contains: name.toLowerCase() };
         }
@@ -1036,12 +1092,30 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
             filters.amount = { [operator]: parseFloat(amount) };
         }
 
+        if(qpage !== undefined) {
+            if(parseInt(qpage) < 0 || isNaN(qpage)) {
+                return res.status(400).json({ "error": "Invalid type for page" });
+            }
+            
+            page = parseInt(qpage);   
+        }
+
+        if(limit !== undefined) {
+            if(parseInt(limit) < 0 || isNaN(limit)) {
+                return res.status(400).json({ "error": "Invalid type for limit" });
+            }
+            
+            take = parseInt(limit);
+        }
+        
+        const skip = (page - 1) * take;
+
         const count = await prisma.transaction.count({ where: filters });
 
         const transactions = await prisma.transaction.findMany({
             where: filters,
-            skip: (page - 1) * limit,
-            take: parseInt(limit),
+            skip: skip,
+            take: take,
             include: {
                 promotions: {
                     select: {
@@ -1144,7 +1218,7 @@ When marking a transaction as suspicious (changing the flag from false to true),
                 where: { id: parseInt(transactionId) },
                 data: {
                     suspicious,
-                    amount: Math.round(newPoints)
+                    // amount: Math.round(newPoints)
                 },
                 include: {
                     promotions: {
@@ -1177,6 +1251,7 @@ When marking a transaction as suspicious (changing the flag from false to true),
     }
 });
 
+
 app.get('/transactions/:transactionId', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
    · Method: GET
@@ -1204,7 +1279,7 @@ app.get('/transactions/:transactionId', get_logged_in, check_clearance("manager"
             return res.status(404).json({ error: 'transaction not found' });
         }
 
-        const response = {
+        let response = {
             id: transaction.id,
             utorid: transaction.utorid,
             type: transaction.type,
@@ -1217,7 +1292,7 @@ app.get('/transactions/:transactionId', get_logged_in, check_clearance("manager"
             createdBy: transaction.createdBy,
         };
 
-        res.status(200).json(response);
+        return res.status(200).json(response);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'failed to retrieve transaction' });
@@ -1227,9 +1302,9 @@ app.get('/transactions/:transactionId', get_logged_in, check_clearance("manager"
 
 app.post('/users/me/transactions', get_logged_in, async (req, res) => {
     const currentUser = req.user;
-    // if(!currentUser.verified) {
-    //     return res.status(403).json({ "error": "Unverified user" });
-    // }
+    if(!currentUser.verified) {
+        return res.status(403).json({ "error": "Unverified user" });
+    }
 
     const {type, amount, remark} = req.body;
     if(type === undefined && amount === undefined && remark === undefined) {
@@ -1288,8 +1363,8 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
 
     const {type, relatedId, promotionId, amount, operator, page: qpage, limit} = req.query;
     let where = {utorid: currentUser.utorid};
-    const page = 1;
-    const take = 10;
+    let page = 1;
+    let take = 10; 
 
     if(type !== undefined) {
         if(type === 'transfer') {
@@ -1305,10 +1380,9 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
         }
         else if(type === "promotion") {
             if(relatedId !== undefined) {
-                
                 where.type = type;
                 where.relatedId = relatedId;
-                //where.promotion = promotion;
+
             }
             else {
                 return res.status(400).json({"error": "Invalid payload"});
@@ -1325,7 +1399,7 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
                     return res.status(400).json({"error": "Invalid payload"});
                 }
         }
-        else { //redemption
+        else { //redemption or purchase, doesnt have a relatedId
             where.type = type;
         } 
     }
@@ -1335,18 +1409,13 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
             include: {promotions: true}
         })
     
-    let filtered = [];
+    let filtered = transactions;
     if(promotionId !== undefined) {
-        
-        const findPromotion = await prisma.promotion.findUnique({
-            where: {id: promotionId}
-        })
 
         filtered = transactions.filter(t => {
-            const found =
-            t.promotions.filter(p => {
-                return p.id === findPromotion.id;
-            })
+            const found = t.promotions.filter(p => {
+                        return p.id === parseInt(promotionId);
+                    })
 
             if(found.length !== 0) {
                 return t;
@@ -1361,13 +1430,13 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
             if(operator === 'gte') {
 
                 roundTwo = filtered.filter(t => {
-                    return t.amount >= amount;
+                    return t.amount >= parseFloat(amount);
                 })
                 
             }
             else {
                 roundTwo = filtered.filter(t => {
-                    return t.amount <= amount;
+                    return t.amount <= parseFloat(amount);
                 })
             }
         }
@@ -1403,7 +1472,7 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
     }).slice(skip, take + skip);
 
     
-    return res.status(201).json({count: roundTwo.length, results: result});
+    return res.status(200).json({count: roundTwo.length, results: result});
 })
 
  
@@ -1522,7 +1591,7 @@ app.patch('/transactions/:transactionId/processed', get_logged_in, check_clearan
     }
     
     let newPoints = user.points + transaction.amount;
-    await prisma.transaction.update({
+    const updatedTransaction = await prisma.transaction.update({
         where: {id: parseInt(tid)},
         data: {
             processedBy: currentUser.utorid,
@@ -1533,12 +1602,12 @@ app.patch('/transactions/:transactionId/processed', get_logged_in, check_clearan
     await prisma.user.update({
         where: {id: user.id},
         data: {
-            points: newPoints,
-            cashiers: {connect: {id: parseInt(tid)}}
+            points: newPoints, //should be less
+            cashiers: {connect: {id: parseInt(tid)}} //recipient of this transaction
         }
     })
 
-    return res.status(200).json({id: transaction.id, utorid: transaction.utorid, type: transaction.type, processedBy: transaction.processedBy, redeemed: -(transaction.amount), remark: transaction.remark, createdBy: transaction.createdBy})
+    return res.status(200).json({id: updatedTransaction.id, utorid: updatedTransaction.utorid, type: updatedTransaction.type, processedBy: updatedTransaction.processedBy, redeemed: -(transaction.amount), remark: updatedTransaction.remark, createdBy: updatedTransaction.createdBy})
 })
 
 //EVENT ROUTES
@@ -1620,11 +1689,6 @@ app.get('/events', get_logged_in, async (req, res) => {
             where.published = true; //passed
         }
     }
-
-    //const all = await prisma.event.findMany();
-    //console.log(all);
-    //const all = await prisma.event.findMany();
-    //console.log(all);
 
     const events = await prisma.event.findMany({
                     where,
@@ -1799,52 +1863,14 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
     const currentDate = new Date();
     
     //possible conditions leading to a 400 error
-    // if(startTime !== undefined && startTime !== null) {
-    //      //check if theyre defined
-
-    //     if(!isNaN(new Date(startTime).getTime()) && (new Date(startTime) < currentDate)) {
-    //         return res.status(400).json({"error": "Event times cannot be in the past"}); //passed
-    //     }  
-    // }
+    
     if (currentDate > new Date(event.startTime)) {
        if(name !== null || description !== null || location !== null || startTime !== null || (capacity !== null)) {
            return res.status(400).json({"error": "Cannot update name, description, location, start time, or capacity of an event that has already started"});
        }
    } 
     
-    // if (endTime !== undefined && endTime !== null) {
-    //     if(!isNaN(new Date(endTime).getTime())) {
-    //         if(new Date(endTime) < currentDate || new Date(endTime) < new Date(event.startTime) || (new Date(event.endTime) < currentDate && currentDate < new Date(endTime))) {
-    //             return res.status(400).json({"error": "Event times cannot be in the past"});
-    //         } 
-    //     }
-    //     else {
-    //         return res.status(400).json({"error": "invalid payload"});
-    //     }
-    // }
-
-    // if(capacity !== undefined && Number.isInteger(capacity)) {
-    //     if (event.guests.length > capacity || capacity < 0) {
-    //         return res.status(400).json({"error": "Event capacity not valid"});
-    //     }
-    // }
-
-    // if(points !== undefined && Number.isInteger(points)) {
-    //     //const totalPoints = event.pointsAwarded + event.pointsRemain;
-    //     if(currentUser.role !== 'manager') {
-    //         return res.status(403).json({"error": "Only managers can update event points"});
-    //     }
-    //     else if(points < 0 || (points < event.pointsAwarded)) { //??
-    //         return res.status(400).json({"error": "Points not valid"});
-    //     }
-    // }
-    // if(published) {
-    //     if(currentUser.role !== 'manager') {
-    //         return res.status(403).json({"error": "Only managers can publish events"});
-    //     }
-    // }
-
-
+ 
     const dataToUpdate = {};
     if (name !== undefined && name !== null) {
         if(typeof name === "string") {
