@@ -5,6 +5,7 @@
  *   node prisma/createsu.js clive123 clive.su@mail.utoronto.ca SuperUser123!
  */
 'use strict';
+<<<<<<< HEAD
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient();
 
@@ -12,6 +13,14 @@ const [, , utorid, email, password] = process.argv;
 const curr_time = new Date().toISOString();
 let week_later = new Date();
 week_later.setDate(week_later.getDate() + 7);
+=======
+// import { PrismaClient } from '@prisma/client'
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient()
+
+const [, , utorid, email, password] = process.argv
+>>>>>>> 46b6c5de523cd0063f79700ed8c75ad4305b255f
 
 if (!utorid) {
   console.error('Usage: node prisma/createsu.js <utorid>')
@@ -28,9 +37,10 @@ async function main() {
   const created = await prisma.user.create({
     data: {
       utorid,
-      'name': 'admin',
+      name: utorid,
       email,
       password,
+<<<<<<< HEAD
       'verified': true,
       'role': 'superuser',
       'points': 0,
@@ -38,17 +48,25 @@ async function main() {
       'token': 'superToken',
       createdAt: curr_time,
       expiresAt: week_later
+=======
+      verified: true,
+      role: 'superuser',
+      points: 0,
+      suspicious: false
+>>>>>>> 46b6c5de523cd0063f79700ed8c75ad4305b255f
     }
   })
 
-  console.log('created user id =', created.id)
+  console.log('created user =', created);
+  process.exit(0);
+
 }
 
 main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

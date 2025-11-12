@@ -1406,6 +1406,7 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
     return res.status(201).json({count: roundTwo.length, results: result});
 })
 
+ 
 app.post('/users/:userId/transactions', get_logged_in, async (req, res) => {
     const userid = req.params.userId;
 
@@ -1493,6 +1494,7 @@ app.post('/users/:userId/transactions', get_logged_in, async (req, res) => {
 
     return res.status(201).json({id: sender.id, sender: sender.sender, recipient: sender.recipient, type: sender.type, sent: amount, remark: sender.remark, createdBy: sender.createdBy});
 })
+
 
 app.patch('/transactions/:transactionId/processed', get_logged_in, check_clearance("cashier"), async (req, res) => {
     const currentUser = req.user;
@@ -1619,6 +1621,8 @@ app.get('/events', get_logged_in, async (req, res) => {
         }
     }
 
+    //const all = await prisma.event.findMany();
+    //console.log(all);
     //const all = await prisma.event.findMany();
     //console.log(all);
 
