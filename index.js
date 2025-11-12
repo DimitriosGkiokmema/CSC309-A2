@@ -224,10 +224,11 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
-    if (isNaN(pageNum) || pageNum < 1) {
-        return res.status(200).json({ error: "page not valid" });
+    if (isNaN(page) || parseInt(page, 10) <  1) {
+        return res.status(400).json({ error: "page not valid" });
     }
-    if (isNaN(limitNum) || limitNum < 1) {
+    
+    if (isNaN(limit) || parseInt(limit) < 1) {
         return res.status(400).json({ error: "limit not valid" });
     }
 
@@ -235,10 +236,12 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
     const take = limitNum;
 
     try {
-        const total = await prisma.user.findMany({where});
+        const totalCount = await prisma.user.count({where});
+        const totalPages = Math.ceil(totalCount / limitNum);
 
-        if (skip >= total.length) {
-            return res.status(400).json({ error: "page/limit too large" });
+        // Check for invalid pages
+        if (totalPages > 0 && pageNum > totalPages) {
+            return res.status(400).json({ error: "Invalid page number" });
         }
 
         const data = await prisma.user.findMany({
@@ -262,7 +265,7 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
 
         // Respond with updated note
         return res.status(200).json({
-            count: total.length,
+            count: totalCount,
             results: data
         });
     } catch (error) {
