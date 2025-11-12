@@ -395,6 +395,10 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
     if (oldPass === undefined || newPass === undefined) {
         return res.status(400).json({ error: "Payload Empty" });
     }
+    
+    if (!oldPass || !newPass) {
+        return res.status(400).json({ error: "Payload Empty" });
+    }
 
     if (!validPassword(newPass)) {
         return res.status(400).json({ error: "New password wrong format" });
