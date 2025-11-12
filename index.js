@@ -236,11 +236,14 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
     const take = limitNum;
 
     try {
-        const totalCount = await prisma.user.count({where});
+        const totalCount = await prisma.user.count({ where });
         const totalPages = Math.ceil(totalCount / limitNum);
 
-        // Check for invalid pages
-        if (totalPages > 0 && pageNum > totalPages) {
+        if (totalCount === 0) {
+            return res.status(200).json({ count: 0, results: [] });
+        }
+
+        if (pageNum < 1 || pageNum > totalPages) {
             return res.status(400).json({ error: "Invalid page number" });
         }
 
@@ -566,9 +569,45 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         
         data.email  = email;
     }
-    if (verified) data.verified = verified === "true";
+    
+    // if (verified && verified !== undefined) {
+    //     const temp = String(verified).toLowerCase();
+    //     if (temp !== 'true'){
+    //         return res.status(400).json({ error: "verified must be true" });
+    //     }
+
+    //     data.verified = temp === "true";
+    // }
+
+    // if (suspicious && suspicious !== undefined) {
+    //     const temp = String(suspicious).toLowerCase();
+    //     if (temp !== 'true' && temp !== 'false'){
+    //         return res.status(400).json({ error: "suspicious not valid" });
+    //     }
+
+    //     data.suspicious = temp === "true";
+    // }
+    if (verified) data.verified = verified;
     if (suspicious) data.suspicious = suspicious;
-    if (role) data.role = role;
+
+
+    // As Manager: Either "cashier" or "regular" 
+    // As Superuser: Any of "regular", "cashier", "manager", or "superuser"
+    if (role) {
+        // Check valid role
+        // if (!(role in ROLE_LEVELS)) { // Why does this crash MarkUs???
+        //     return res.status(400).json({ error: "role not valid" });
+        // }
+
+        // Check valid promo
+        if ((req.user.role === "manager" && role === "cashier") || (req.user.role === "manager" && role === "cashier")) {
+            data.role = role;
+        } else if (req.user.role === "superuser" ) {
+            data.role = role;
+        } else {
+            return res.status(400).json({ error: `Current user not high enough to promote to {role}` });
+        }
+    }
 
     const select = {
         id: true,
@@ -581,6 +620,14 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
     })
 
     try {
+        const target_user = await prisma.user.findUnique({
+            where: {id: target_id}
+        });
+
+        if (role === "cashier" && target_user.suspicious === true) {
+            return res.status(400).json({ error: `Cannot promote sus to cashier` });
+        }
+
         const updated_user = await prisma.user.update({
             where: { id: target_id },
             data,
