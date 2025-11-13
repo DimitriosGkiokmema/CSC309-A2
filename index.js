@@ -506,6 +506,19 @@ app.get('/users/:userId', get_logged_in, check_clearance("cashier"), async (req,
     }
 
     try {
+        const promotions = await prisma.usage.findMany({
+            where: { userId: target_id },
+            include: { promotion: true },
+        });
+        const promos = promotions.map(u => {
+            return {
+                id: u.promotion.id,
+                name: u.promotion.name,
+                minSpending: u.promotion.minSpending,
+                rate: u.promotion.rate,
+                points: u.promotion.points
+            }
+        });
         let data;
         
         if (high_clearance) {
@@ -522,8 +535,7 @@ app.get('/users/:userId', get_logged_in, check_clearance("cashier"), async (req,
                     createdAt: true,
                     lastLogin: true,
                     verified: true,
-                    avatarUrl: true,
-                    promotions: true
+                    avatarUrl: true
                 }
             });
         } else {
@@ -535,13 +547,14 @@ app.get('/users/:userId', get_logged_in, check_clearance("cashier"), async (req,
                     name: true,
                     points: true,
                     verified: true,
-                    promotions: true
                 }
             });
         }
 
         // Respond with updated note
-        return res.status(200).json(data);
+        return res.status(200).json({ ...data, 
+            promotions: promos
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Database error"});
