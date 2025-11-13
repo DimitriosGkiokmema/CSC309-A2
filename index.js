@@ -310,7 +310,14 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
         return res.status(400).json({ error: "Payload empty" });
     }
 
-    if (name) data.name = name;
+    if (name) {
+        if (name.length > 50 || name.length < 1) {
+            return res.status(400).json({ error: "Name too long" });
+        }
+
+        data.name = name;
+    }
+
     if (email) {
         // Validate email is from UofT
         if (!email.includes("@mail.utoronto.ca")) {
@@ -319,7 +326,18 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
         
         data.email  = email;
     }
-    if (birthday) data.birthday = birthday;
+
+    if (birthday !== undefined) {
+        const date = new Date(birthday);
+
+        // Check if it's a valid date
+        if (isNaN(date.getTime()) || date.getTime() > Date.now()) {
+            return res.status(400).json({ error: "birthday not a valid date" });
+        }
+
+        data.birthday = date;
+    }
+
     if (avatarUrl) data.avatarUrl = avatarUrl;
 
     try {
@@ -355,9 +373,14 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
     · Clearance: Regular or higher
     · Payload: None
     
-    · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
+    · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [ { "id" : 2, "name" : "Buy a pack of Pepsi", "minSpending": null, "rate": null, "points": 20 } ] }
     */
     const user = req.user;
+
+    const promos = await prisma.usage.findMany({
+        where: { userId: user.id },
+        include: { promotion: true },
+    });
 
     return res.status(200).json({
         id: user.id,
@@ -371,7 +394,7 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         lastLogin: user.lastLogin,
         verified: user.verified,
         avatarUrl: user.avatarUrl,
-        promotions: user.promotions
+        promotions: promos
     });
 });
 
