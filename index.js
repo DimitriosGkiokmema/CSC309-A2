@@ -204,11 +204,13 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
         }
     }
     if (verified !== undefined) {
-        if (verified !== 'true' && verified !== 'false'){
-            return res.status(400).json({ error: "verified not valid" });
-        }
+        if (typeof verified === 'string') {
+            if (verified !== 'true' && verified !== 'false'){
+                return res.status(400).json({ error: "verified not valid" });
+            }
 
-        where.verified = verified === "true";
+            where.verified = verified === "true";
+        }
     }
 
     if (activated !== undefined) {
@@ -355,7 +357,9 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
         const updated_user = await prisma.user.update({
             where: { id: req.user.id },
             data
-        })
+        });
+
+        const bday = updated_user.birthday.toISOString().split("T")[0];
 
         // Respond with updated note
         return res.status(200).json({
@@ -363,7 +367,7 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
             utorid: updated_user.utorid,
             name: updated_user.name,
             email: updated_user.email,
-            birthday: birthday,
+            birthday: bday,
             role: updated_user.role,
             points: updated_user.points,
             createdAt: updated_user.createdAt,
@@ -384,7 +388,7 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
     · Clearance: Regular or higher
     · Payload: None
     
-    · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [ { "id" : 2, "name" : "Buy a pack of Pepsi", "minSpending": null, "rate": null, "points": 20 } ] }
+    · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
     */
     const user = req.user;
 
@@ -614,7 +618,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
 
     if (email) {
         // Validate email is from UofT
-        if (!email.includes("@mail.utoronto.ca")) {
+        if (typeof email !== 'string' || !email.includes("@mail.utoronto.ca")) {
             return res.status(400).json({ error: "Email not proper format" });
         }
         
