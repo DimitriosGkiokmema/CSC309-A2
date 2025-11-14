@@ -327,15 +327,26 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
         data.email  = email;
     }
 
-    if (birthday !== undefined) {
-        const date = new Date(birthday);
+    if (birthday !== undefined && birthday !== null) {
+        const bday = new Date(birthday);
+        if(!isNaN(bday.getTime())) {
+            if(bday < Date()) {
+                return res.status(400).json({"error": "Birthday cannot be in the past"});
+            }
 
-        // Check if it's a valid date
-        if (isNaN(date.getTime()) || date.getTime() > Date.now()) {
-            return res.status(400).json({ error: "birthday not a valid date" });
+            const [year, month, day] = birthday.split("-").map(Number);
+            
+            if (!(
+                bday.getUTCFullYear() === year &&
+                bday.getUTCMonth() + 1 === month &&
+                bday.getUTCDate() === day)) {
+                return res.status(400).json({"error": "Invalid birthday format"});
+            }
+
+            data.birthday = bday.toISOString();
+        } else {
+            return res.status(400).json({"error": "Birthday entered incorrectly"});
         }
-
-        data.birthday = date;
     }
 
     if (avatarUrl) data.avatarUrl = avatarUrl;
@@ -352,7 +363,7 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
             utorid: updated_user.utorid,
             name: updated_user.name,
             email: updated_user.email,
-            birthday: updated_user.birthday,
+            birthday: birthday,
             role: updated_user.role,
             points: updated_user.points,
             createdAt: updated_user.createdAt,
