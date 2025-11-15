@@ -5,8 +5,10 @@
  *   node prisma/createsu.js clive123 clive.su@mail.utoronto.ca SuperUser123!
  */
 'use strict';
-const { PrismaClient } = require('@prisma/client')
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const jwt = require('jsonwebtoken');
+const SECRET_KEY = process.env.JWT_SECRET;
 
 const [, , utorid, email, password] = process.argv;
 const curr_time = new Date().toISOString();
@@ -24,6 +26,12 @@ if (!utorid) {
   process.exit(1)
 }
 
+const token = jwt.sign(
+        { username: utorid },
+        SECRET_KEY,
+        { expiresIn: '7d' }
+    )
+
 async function main() {
   const created = await prisma.user.create({
     data: {
@@ -35,13 +43,12 @@ async function main() {
       'role': 'superuser',
       'points': 0,
       'suspicious': false,
-      'token': 'superToken',
+      'token': token,
       createdAt: curr_time,
       expiresAt: week_later
     }
   })
 
-  console.log('created user =', created);
   process.exit(0);
 
 }

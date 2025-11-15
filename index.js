@@ -192,46 +192,56 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
         "verified": "false"
     }
     */
-    const { name, role, verified, activated, page, limit } = req.body;
+    const { name, role, verified, activated, page, limit } = req.query;
     const where = {};
 
     if (name) where.name  = name;
+
     if (role) {
-        if (ROLE_LEVELS[role] >= 0) {
+        if(Object.keys(ROLE_LEVELS).includes(role)) {
             where.role = role;
         } else {
             return res.status(400).json({ error: "role not valid" });
         }
     }
+
     if (verified !== undefined) {
-        if (typeof verified === 'string') {
-            if (verified !== 'true' && verified !== 'false'){
+        if (verified !== 'true' && verified !== 'false'){
                 return res.status(400).json({ error: "verified not valid" });
             }
-
+        else {
             where.verified = verified === "true";
         }
     }
 
     if (activated !== undefined) {
-        if (activated === "true") {
+        if (activated === 'true') {
             where.lastLogin = {not: null};
-        } else if (activated === "false") {
+        } else if (activated === 'false') {
             where.lastLogin = null;
-        } else {
+        }
+        else {
             return res.status(400).json({ error: "activated not valid" });
         }
     }
 
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    let pageNum = 1;
+    let limitNum = 10;
 
-    if (isNaN(page) || parseInt(page, 10) <  1) {
-        return res.status(400).json({ error: "page not valid" });
+    if(page !== undefined) {
+        if(parseInt(page, 10) < 1 || isNaN(page)) {
+            return res.status(400).json({ "error": "Invalid type for page" });
+        }
+        
+        pageNum = parseInt(page);        
     }
-    
-    if (isNaN(limit) || parseInt(limit) < 1) {
-        return res.status(400).json({ error: "limit not valid" });
+
+    if(limit !== undefined) {
+        if(parseInt(limit, 10) < 1 || isNaN(limit)) {
+            return res.status(400).json({ "error": "Invalid type for limit" });
+        }
+        
+        limitNum = parseInt(limit);
     }
 
     const skip = (pageNum - 1) * limitNum;
@@ -240,10 +250,6 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
     try {
         const totalCount = await prisma.user.count({ where });
         const totalPages = Math.ceil(totalCount / limitNum);
-
-        if (totalCount === 0) {
-            return res.status(200).json({ count: 0, results: [] });
-        }
 
         if (pageNum < 1 || pageNum > totalPages) {
             return res.status(400).json({ error: "Invalid page number" });
@@ -604,7 +610,18 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         "email": "dimi67@mail.utoronto.ca"
     }
     */
+    const currentUser = req.user;
     const target_id = parseInt(req.params.userId, 10);
+
+    const findUser = await prisma.user.findUnique({
+        where: {id: target_id}
+    })
+
+    if(!findUser) {
+        return res.status(404).json({error: "Not found"});
+    }
+
+
     const {email, verified, suspicious, role} = req.body;
     const data = {};
 
@@ -624,45 +641,50 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         
         data.email  = email;
     }
-    
-    // if (verified && verified !== undefined) {
-    //     const temp = String(verified).toLowerCase();
-    //     if (temp !== 'true'){
-    //         return res.status(400).json({ error: "verified must be true" });
-    //     }
 
-    //     data.verified = temp === "true";
-    // }
+    if (verified !== undefined && verified !== null) {
+        if(typeof verified === "boolean" && verified) { //must be true
+            if(!findUser.verified) {
+                data.verified = verified;   
+            }
+        }
+        else {
+            return res.status(400).json({ error: "Invalid payload" });
+        }
+    }
 
-    // if (suspicious && suspicious !== undefined) {
-    //     const temp = String(suspicious).toLowerCase();
-    //     if (temp !== 'true' && temp !== 'false'){
-    //         return res.status(400).json({ error: "suspicious not valid" });
-    //     }
-
-    //     data.suspicious = temp === "true";
-    // }
-    if (verified) data.verified = verified;
-    if (suspicious) data.suspicious = suspicious;
-
+    if (suspicious !== undefined && suspicious !== null) { 
+        if(typeof suspicious === "boolean") {
+            if(findUser.suspicious !== suspicious) {
+                data.suspicious = suspicious;   
+            }
+        }
+        else {
+            return res.status(400).json({ error: "Invalid payload" });
+        }
+    }
 
     // As Manager: Either "cashier" or "regular" 
     // As Superuser: Any of "regular", "cashier", "manager", or "superuser"
-    if (role) {
-        // Check valid role
-        // if (!(role in ROLE_LEVELS)) { // Why does this crash MarkUs???
-        //     return res.status(400).json({ error: "role not valid" });
-        // }
-
-        // Check valid promo
-        if ((req.user.role === "manager" && role === "cashier") || (req.user.role === "manager" && role === "cashier")) {
-            data.role = role;
-        } else if (req.user.role === "superuser" ) {
-            data.role = role;
+    const roles = ["regular", "cashier", "manager", "superuser"]
+    if (role !== undefined && role !== null) {
+        if(typeof role === "string" && roles.includes(role)) {
+            // Check valid promo
+            if ((currentUser.role === "manager" && role === "cashier") || (currentUser.role === "manager" && role === "cashier")) {
+                data.role = role;
+            } else if (currentUser.role === "superuser" ) {
+                data.role = role;
+            } else {
+                return res.status(403).json({ error: `Current user not high enough to promote to {role}` });
+            }
+           
+            if(findUser.role !== role) {
+                data.role = role;
+            }
         } else {
-            return res.status(403).json({ error: `Current user not high enough to promote to {role}` });
+            return res.status(400).json({ error: "Invalid payload" });
         }
-    }
+    } 
 
     const select = {
         id: true,
@@ -675,11 +697,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
     })
 
     try {
-        const target_user = await prisma.user.findUnique({
-            where: {id: target_id}
-        });
-
-        if (role === "cashier" && target_user.suspicious === true) {
+        if (role === "cashier" && findUser.suspicious === true) {
             return res.status(400).json({ error: `Cannot promote sus to cashier` });
         }
 
