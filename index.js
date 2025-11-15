@@ -192,53 +192,83 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
         "verified": "false"
     }
     */
-    const { name, role, verified, activated, page, limit} = req.body;
+    const { name, role, verified, activated, page, limit } = req.query;
     const where = {};
 
     if (name) where.name  = name;
+
     if (role) {
-        if (ROLE_LEVELS[role] >= 0) {
-        } else {
+
+        if(Object.keys(ROLE_LEVELS).includes(role)) {
             where.role = role;
-            return res.status(200).json({ error: "role not valid" });
+        } else {
+            return res.status(400).json({ error: "role not valid" });
         }
     }
     if (verified !== undefined) {
         if (verified !== 'true' && verified !== 'false'){
-            return res.status(200).json({ error: "verified not valid" });
+                return res.status(400).json({ error: "verified not valid" });
+            }
+        else {
+            where.verified = verified === "true";
         }
-
-        where.verified = verified === "true";
     }
 
     if (activated !== undefined) {
-        if (activated === "true") {
+        if (activated === 'true') {
             where.lastLogin = {not: null};
-        } 
-        
-        if (activated === "false") {
+        } else if (activated === 'false') {
             where.lastLogin = null;
+        }
+        else {
+            return res.status(400).json({ error: "activated not valid" });
         }
     }
 
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    // const pageNum = page ? parseInt(page, 10) : 1;
+    // const limitNum = limit ? parseInt(limit, 10) : 10;
 
-    if (isNaN(pageNum) || pageNum < 1) {
-        return res.status(200).json({ error: "page not valid" });
+    // if (isNaN(page) || parseInt(page, 10) <  1) {
+    //     return res.status(400).json({ error: "page not valid" });
+    // }
+    
+    // if (isNaN(limit) || parseInt(limit) < 1) {
+    //     return res.status(400).json({ error: "limit not valid" });
+    // }
+
+    //not sure why but it only passes when i write it out explicitly like below
+    let pageNum = 1;
+    let limitNum = 10;
+
+    if(page !== undefined) {
+        if(parseInt(page, 10) < 1 || isNaN(page)) {
+            return res.status(400).json({ "error": "Invalid type for page" });
+        }
+        
+        pageNum = parseInt(page);        
     }
-    if (isNaN(limitNum) || limitNum < 1) {
-        return res.status(200).json({ error: "limit not valid" });
+
+    if(limit !== undefined) {
+        if(parseInt(limit, 10) < 1 || isNaN(limit)) {
+            return res.status(400).json({ "error": "Invalid type for limit" });
+        }
+        
+        limitNum = parseInt(limit);
     }
 
     const skip = (pageNum - 1) * limitNum;
     const take = limitNum;
 
     try {
-        const total = await prisma.user.findMany({where});
+        const totalCount = await prisma.user.count({ where });
+        const totalPages = Math.ceil(totalCount / limitNum);
 
-        if (skip >= total.length) {
-            return res.status(400).json({ error: "page/limit too large" });
+        // if (totalCount === 0) {
+        //     return res.status(200).json({ count: 0, results: [] });
+        // }
+
+        if (pageNum < 1 || pageNum > totalPages) {
+            return res.status(400).json({ error: "Invalid page number" });
         }
 
         const data = await prisma.user.findMany({
@@ -259,10 +289,11 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
                 avatarUrl: true
             }
         });
+        
 
         // Respond with updated note
         return res.status(200).json({
-            count: total.length,
+            count: totalCount,
             results: data
         });
     } catch (error) {
@@ -304,7 +335,14 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
         return res.status(400).json({ error: "Payload empty" });
     }
 
-    if (name) data.name = name;
+    if (name) {
+        if (name.length > 50 || name.length < 1) {
+            return res.status(400).json({ error: "Name too long" });
+        }
+
+        data.name = name;
+    }
+
     if (email) {
         // Validate email is from UofT
         if (!email.includes("@mail.utoronto.ca")) {
@@ -313,14 +351,38 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
         
         data.email  = email;
     }
-    if (birthday) data.birthday = birthday;
+
+    if (birthday !== undefined && birthday !== null) {
+        const bday = new Date(birthday);
+        if(!isNaN(bday.getTime())) {
+            if(bday < Date()) {
+                return res.status(400).json({"error": "Birthday cannot be in the past"});
+            }
+
+            const [year, month, day] = birthday.split("-").map(Number);
+            
+            if (!(
+                bday.getUTCFullYear() === year &&
+                bday.getUTCMonth() + 1 === month &&
+                bday.getUTCDate() === day)) {
+                return res.status(400).json({"error": "Invalid birthday format"});
+            }
+
+            data.birthday = bday.toISOString();
+        } else {
+            return res.status(400).json({"error": "Birthday entered incorrectly"});
+        }
+    }
+
     if (avatarUrl) data.avatarUrl = avatarUrl;
 
     try {
         const updated_user = await prisma.user.update({
             where: { id: req.user.id },
             data
-        })
+        });
+
+        const bday = updated_user.birthday.toISOString().split("T")[0];
 
         // Respond with updated note
         return res.status(200).json({
@@ -328,7 +390,7 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
             utorid: updated_user.utorid,
             name: updated_user.name,
             email: updated_user.email,
-            birthday: updated_user.birthday,
+            birthday: bday,
             role: updated_user.role,
             points: updated_user.points,
             createdAt: updated_user.createdAt,
@@ -353,6 +415,11 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
     */
     const user = req.user;
 
+    const promos = await prisma.usage.findMany({
+        where: { userId: user.id },
+        include: { promotion: true },
+    });
+
     return res.status(200).json({
         id: user.id,
         utorid: user.utorid,
@@ -365,7 +432,7 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         lastLogin: user.lastLogin,
         verified: user.verified,
         avatarUrl: user.avatarUrl,
-        promotions: user.promotions
+        promotions: promos
     });
 });
 
@@ -383,29 +450,24 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
     o 200 OK on success
     o 403 Forbidden if the provided current password is incorrect
     */
-   try {
-        const oldPass = req.body.old;
-        const newPass = req.body.new;
+    const oldPass = req.body.old;
+    const newPass = req.body.new;
 
-        if (oldPass === undefined && newPass === undefined) {
-            return res.status(400).json({ error: "Payload Empty" });
-        }
+    if (oldPass === undefined || newPass === undefined) {
+        return res.status(400).json({ error: "Payload Empty" });
+    }
+    
+    if (!oldPass || !newPass) {
+        return res.status(400).json({ error: "Payload Empty" });
+    }
 
-        if(newPass === null || oldPass === null) {
-            return res.status(400).json({error: "Passwords needed"});
-        }
+    if (!validPassword(newPass)) {
+        return res.status(400).json({ error: "New password wrong format" });
+    }
 
-        if(newPass !== undefined && newPass !== null) {
-            if (typeof newPass !== "string" || !validPassword(newPass)) {
-                return res.status(400).json({ error: "New password wrong format" });
-            }
-        }
-
-
-        if(oldPass !== undefined && oldPass !== null) {
-            if (typeof oldPass !== "string" || !validPassword(oldPass) || req.user.password !== oldPass) {
-                return res.status(403).json({ error: "Old password is incorrect" });
-            }
+    try {
+        if (req.user.password !== oldPass) {
+            return res.status(403).json({ error: "Old password is incorrect" });
         }
 
         const now = Date.now();
@@ -421,14 +483,16 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
         });
 
         // Respond with updated note
-        return res.status(200).send();
+        return res.status(200).json({
+            new_password: updated_user.password
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Database error"});
     }
 });
 
-app.get('/users/:userId', get_logged_in, async (req, res) => {
+app.get('/users/:userId', get_logged_in, check_clearance("cashier"), async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a specific user
@@ -480,6 +544,19 @@ app.get('/users/:userId', get_logged_in, async (req, res) => {
     }
 
     try {
+        const promotions = await prisma.usage.findMany({
+            where: { userId: target_id },
+            include: { promotion: true },
+        });
+        const promos = promotions.map(u => {
+            return {
+                id: u.promotion.id,
+                name: u.promotion.name,
+                minSpending: u.promotion.minSpending,
+                rate: u.promotion.rate,
+                points: u.promotion.points
+            }
+        });
         let data;
         
         if (high_clearance) {
@@ -496,8 +573,7 @@ app.get('/users/:userId', get_logged_in, async (req, res) => {
                     createdAt: true,
                     lastLogin: true,
                     verified: true,
-                    avatarUrl: true,
-                    promotions: true
+                    avatarUrl: true
                 }
             });
         } else {
@@ -509,13 +585,14 @@ app.get('/users/:userId', get_logged_in, async (req, res) => {
                     name: true,
                     points: true,
                     verified: true,
-                    promotions: true
                 }
             });
         }
 
         // Respond with updated note
-        return res.status(200).json(data);
+        return res.status(200).json({ ...data, 
+            promotions: promos
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Database error"});
@@ -561,27 +638,47 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         return res.status(404).json({error: "Not found"});
     }
 
+
     const {email, verified, suspicious, role} = req.body;
     const data = {};
 
-    if (email === undefined && verified === undefined && suspicious === undefined && role === undefined) {
+    if (!email && !verified && !suspicious && !role) {
         return res.status(400).json({error: "Payload empty"});
     }
 
-    if (!Number.isInteger(target_id) || target_id < 0) {
+    if (isNaN(target_id)) {
         return res.status(400).json({ error: "?userId must be positive number" });
     }
 
-    if (email !== undefined && email !== null) {
+    if (email) {
         // Validate email is from UofT
-        if(typeof email === "string" && email.endsWith("@mail.utoronto.ca")) {
-            data.email  = email;
-        }
-        else {
-            return res.status(400).json({ error: "Invalid payload" });
+        if (typeof email !== 'string' || !email.includes("@mail.utoronto.ca")) {
+            return res.status(400).json({ error: "Email not proper format" });
         }
         
+        data.email  = email;
     }
+    
+    // if (verified && verified !== undefined) {
+    //     const temp = String(verified).toLowerCase();
+    //     if (temp !== 'true'){
+    //         return res.status(400).json({ error: "verified must be true" });
+    //     }
+
+    //     data.verified = temp === "true";
+    // }
+
+    // if (suspicious && suspicious !== undefined) {
+    //     const temp = String(suspicious).toLowerCase();
+    //     if (temp !== 'true' && temp !== 'false'){
+    //         return res.status(400).json({ error: "suspicious not valid" });
+    //     }
+
+    //     data.suspicious = temp === "true";
+    // }
+    // if (verified) data.verified = verified;
+    // if (suspicious) data.suspicious = suspicious;
+
     if (verified !== undefined && verified !== null) {
         if(typeof verified === "boolean" && verified) { //must be true
             if(!findUser.verified) {
@@ -592,6 +689,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
             return res.status(400).json({ error: "Invalid payload" });
         }
     }
+
     if (suspicious !== undefined && suspicious !== null) 
         if(typeof suspicious === "boolean") {
             if(findUser.suspicious !== suspicious) {
@@ -601,7 +699,9 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         else {
             return res.status(400).json({ error: "Invalid payload" });
         }
-        
+
+    // As Manager: Either "cashier" or "regular" 
+    // As Superuser: Any of "regular", "cashier", "manager", or "superuser"
     const roles = ["regular", "cashier", "manager", "superuser"]
     if (role !== undefined && role !== null) {
         if(typeof role === "string" && roles.includes(role)) {
@@ -624,7 +724,6 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         id: true,
         utorid: true,
         name: true,
-        password: false
     };
 
     Object.keys(data).forEach(key => {
@@ -632,6 +731,14 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
     })
 
     try {
+        // const target_user = await prisma.user.findUnique({
+        //     where: {id: target_id}
+        // });
+
+        // if (role === "cashier" && target_user.suspicious === true) {
+        //     return res.status(400).json({ error: `Cannot promote sus to cashier` });
+        // }
+
         const updated_user = await prisma.user.update({
             where: { id: target_id },
             data,
@@ -661,15 +768,11 @@ app.post('/auth/tokens', async (req, res) => {
     */
     const {utorid, password} = req.body;
 
-    if (utorid === undefined && password === undefined) {
+    if (!utorid || !password) {
         return res.status(400).json({ error: "Utorid or password missing" });
     }
 
-    if(typeof utorid !== "string" || typeof password !== "string" || !validPassword(password)) {
-        return res.status(400).json({ error: "Invalid payload" });
-    }
-
-    const jwt = generateToken(utorid, '7d'); 
+    const jwt = generateToken(utorid, '7d');
     let curr_time = new Date().toISOString();
     let week_later = new Date();
     week_later.setDate(week_later.getDate() + 7);
@@ -711,7 +814,6 @@ app.post('/auth/tokens', async (req, res) => {
     }
 });
 
-
 app.post('/auth/resets', async (req, res) => {
     /*
     · Method: POST
@@ -737,25 +839,6 @@ app.post('/auth/resets', async (req, res) => {
         return res.status(400).json({ message: "Empty payload" });
     }
 
-    // ------------------>
-    // RATE LIMIT
-    // ------------------>
-    const ip = req.ip;   // get ip address
-    const now = Date.now();
-
-    // Clean up old entries
-    for (const [storedIp, timestamp] of Object.entries(resetRate)) {
-        if (now - timestamp > 60000) { // Older than 60 seconds
-            delete resetRate[storedIp];
-        }
-    }
-
-    if (resetRate[ip] && (now - resetRate[ip]) < 60000) {
-        return res.status(429).json({ message: "Too many requests" });
-    }
-
-    resetRate[ip] = now; // update timestamp
-
     try {
         const existing = await prisma.user.findUnique({
             where: { utorid: utorid }
@@ -772,6 +855,24 @@ app.post('/auth/resets', async (req, res) => {
         if (expires < now) {
             return res.status(410).json({ message: "Expired token" });
         }
+
+        // ------------------>
+        // RATE LIMIT
+        // ------------------>
+        const ip = req.ip;   // get ip address
+
+        // Clean up old entries
+        for (const [storedIp, timestamp] of Object.entries(resetRate)) {
+            if (now - timestamp > 60000) { // Older than 60 seconds
+                delete resetRate[storedIp];
+            }
+        }
+
+        if (resetRate[ip] && (now - resetRate[ip]) < 60000) {
+            return res.status(429).json({ message: "Too many requests" });
+        }
+
+        resetRate[ip] = now; // update timestamp
 
         const hour_later = new Date();
         hour_later.setHours(hour_later.getHours() + 1);
@@ -797,6 +898,7 @@ app.post('/auth/resets', async (req, res) => {
 
 app.post('/auth/resets/:resetToken', async (req, res) => {
     /*
+    reset password
     · Method: POST
     · Description: Reset the password of a user given a reset token.
     · Clearance: Any
@@ -824,14 +926,14 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     try {
         const curr_time = new Date().toISOString();
         const existing = await prisma.user.findUnique({
-            where: { utorid: utorid }
+            where: { token: resetToken }
         });
 
         if (!existing) {
             return res.status(404).json({ message: "A user with that utorid does not exist" });
         }
 
-        if (existing.expiresAt < curr_time) {
+        if (existing.expiresAt.toISOString() < curr_time) {
             return res.status(410).json({ message: "Token has expired" });
         }
 
@@ -839,12 +941,8 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
             return res.status(401).json({ message: "Utorid token pairing wrong" });
         }
 
-        if (existing.token !== resetToken) {
-            return res.status(404).json({ message: "A user with that token and utorid combination does not exist" });
-        }
-
         const updated_user = await prisma.user.update({
-            where: { utorid: utorid },
+            where: { token: resetToken },
             data: {
                 password: password
             }
@@ -857,6 +955,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
         res.status(500).json({ message: "Database error"});
     }
 });
+
 
 //TRANSACTIONS
 
@@ -1619,8 +1718,8 @@ app.get('/events', get_logged_in, async (req, res) => {
     const {name, location, started, ended, showFull, page: qpage, limit, published} = req.query;
     
     let where = {};
-    const page = 1;
-    const take = 10;
+    let page = 1;
+    let take = 10;
     //start filtering
     if(name !== undefined) {
         where.name = name;

@@ -35,19 +35,19 @@ model User {
   name        String
   email       String  @unique
   password    String?
-  birthday    String?
+  birthday    DateTime?
   role        String?
   points      Int
   avatarUrl   String?
   suspicious  Boolean
   verified    Boolean
-  token       String? 
+  token       String? @unique
   createdAt   DateTime?
   expiresAt   DateTime?
   lastLogin   DateTime?
   // promotions  Promotion[]
-  // buyers      Transaction[] @relation("buyer")
-  // cashiers Transaction[] @relation("cashier")
+  buyers      Transaction[] @relation("buyer")
+  cashiers Transaction[] @relation("cashier")
   organizer    Event[] @relation("eventOrganizer")
   guest    Event[] @relation("eventGuest")
   usages    Usage[]
@@ -112,7 +112,7 @@ model Event {
   published   Boolean
   organizers  User[] @relation("eventOrganizer")
   guests User[] @relation("eventGuest")
-  // transactions Transaction[]
+  transactions Transaction[]
 }
 
 model Usage {
