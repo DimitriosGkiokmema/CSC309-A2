@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>309 Project</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="../../css/home.css"/>
+
+    <!-- FontAwesome -->
+    <script src="https://kit.fontawesome.com/d082821527.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <header>
+        <div>
+            <img class="navLogo" src="../../assets/varsity_logo.png">
+            <h1 class="websiteTitle">Varsity Mart</h1>
+        </div>
+
+        <div>
+            <div class="pageLinks">
+                <a href="transactions.html">Transactions</a>
+                <a href="events.html">Events</a>
+                <a href="promotions.html">Promotions</a>
+                
+            </div>
+
+            <div class="profileDropdown">
+                <div class="profileIcon">
+                    <img src="../../assets/profile.png">
+                </div>
+                <a href="account.html">Profile</a>
+                <p>Sign In</p>
+                <form id="loginForm">
+                    <div>
+                        <label for="username" class="log-label">Username:</label>
+                        <label for="password" class="log-label">Password:</label>
+                        <button class="log-btn" type="submit">Log In</button>
+                    </div>
+                    <div>
+                        <input type="text" class="log-input" id="username" required>
+                        <input type="text" class="log-input" id="password" required>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="row storeContainer">
+        <div class="col-8 storeLocation">
+            <div class="col-4 storeInfo">
+                <h1>Our Location</h1>
+                <p>
+                    309 St George St <br>
+                    Toronto, Ontario
+                </p>
+                <img class="martPic" src="../../assets/Varsity_Mart.png">
+            </div>
+
+            <div class="col-6" id="map"></div>
+        </div>
+    </div>
+</body>
+<footer>
+    <div class="row">
+        <div class="col-3">
+            <h3>Varsity Mart</h3>
+            <p>UofT's very own grocer</p>
+
+            <div class="socials">
+                <a href="">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="">
+                    <i class="fa-brands fa-linkedin"></i>
+                </a>
+                <a href="">
+                    <i class="fa-brands fa-youtube"></i>
+                </a>
+            </div>
+        </div>
+        <div class="col-2 offset-7">
+            <h3>User</h3>
+            <a href="">Sign In</a>
+            <a href="">Log Out</a>
+        </div>
+    </div>
+
+    <script src="../../services/api/leaflet.js"></script>
+    <script src="../../js/home.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</footer>
+<script>
+    document.getElementById("loginForm").addEventListener("submit", function (e) {
+        e.preventDefault(); // prevents page refresh
+        loginUser();
+    });
+</script>
+</html>
