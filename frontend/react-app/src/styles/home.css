@@ -1,0 +1,22 @@
+.storeContainer {
+    display: flex;
+    justify-content: center;
+    margin: 20vh;
+}
+
+.storeLocation {
+    background-color: rgb(237, 239, 240);
+    display: flex;
+    border-radius: 15px;
+}
+
+.martPic {
+    height: 15vh;
+    border-radius: 10px;
+}
+
+#map {
+    height: 30vh;
+    margin: 20px;
+    margin-left: auto;
+}
