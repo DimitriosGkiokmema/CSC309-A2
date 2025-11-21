@@ -23,29 +23,61 @@ header>div {
     width: fit-content;
     padding: 10px;
     border-radius: 10px;
-    margin-right: 25vw;
+    margin-right: 5vw;
+}
+
+.pageLinks a {
+    padding: 5px;
 }
 
 .profileDropdown {
-    background-color: gray;
+    background-color: rgb(184, 180, 180);
     width: 20vw;
     position: absolute;
-    top: 20px;
-    right: 3vw;
+    top: 1vh;
+    right: 5px;
 }
 
-.profileDropdown > .profileIcon {
+.profileIcon {
     display: flex;
-    justify-content: center;
 }
 
 .profileIcon img {
     height: 50px;
-    padding-right: 10px;
+    margin: 0 auto;
+}
+
+.profileIcon > i {
+    font-size: 30px;
+    padding: 5px 5px 0 0;
+}
+
+.infoContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.infoContainer div {
+    margin: 10px;
+}
+
+.infoContainer a {
+    margin: 0 5px;
+}
+
+.infoContainer p {
+    margin: 0 5px;
+    font-weight: bold;
 }
 
 form {
     display: flex;
+    width: 80%;
+}
+
+form div input {
+    width: 100%;
 }
 
 footer {

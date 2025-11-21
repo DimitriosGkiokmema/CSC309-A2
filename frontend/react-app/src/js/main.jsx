@@ -1,11 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import '../styles/globalStyles.css';
-import App from './App';
+import SiteRoutes from './routes';
+import NavBar from '../components/NavBar/NavBar';
 
-const root = ReactDOM.createRoot(document.getElementById('todoElement'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+ReactDOM.createRoot(document.getElementById('pageRoutes')).render(
+    <BrowserRouter>
+      <NavBar />
+      <SiteRoutes />
+    </BrowserRouter>
 );

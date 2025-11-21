@@ -12,7 +12,7 @@ const seed = [
     { id: 4, text: "Learn React Hooks", completed: false },
 ];
 
-function App() {
+function TODOList() {
     // The App component serves as the main entry point for our application. At the very top, the App component shows the list title: "My ToDos". Below the list title, App component hosts a NewTodo component and a list of TodoItem components.
     const [todos, setTodos] = useState(seed)
     
@@ -63,4 +63,4 @@ function App() {
     </div>);
 }
 
-export default App;
+export default TODOList;
