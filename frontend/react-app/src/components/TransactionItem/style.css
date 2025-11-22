@@ -1,0 +1,21 @@
+.transaction-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5em;
+    background-color: rgb(223, 227, 230);
+    margin: 25px 0;
+    border-radius: 15px;
+    padding: 10px;
+}
+
+.userInfo {
+
+}
+
+.transInfo div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5em;
+}

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from 'react-router-dom';
-import { BrowserRouter } from 'react-router-dom';
-import backend from '../../js/backend.js';
+import { callBackend } from '../../js/backend.js';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -35,7 +34,7 @@ export default function Navbar() {
 
             <div className="infoContainer">
               <div>
-                <Link to="/profile">Profile</Link>
+                <Link to="/profile" onClick={() => setOpen(!open)}>Profile</Link>
                 <p>Sign In</p>
               </div>
             </div>
@@ -64,5 +63,5 @@ function handleLogin(e) {
     const pass = document.getElementById("password").value;
     const body = {"utorid": user, "password": pass};
 
-    backend("POST", '/users', body, '');
+    callBackend("POST", 'users', body, '');
 }

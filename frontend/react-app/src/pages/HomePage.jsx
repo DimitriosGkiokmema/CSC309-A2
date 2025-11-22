@@ -3,6 +3,7 @@ import leaflet from "../js/leaflet.js";
 
 export default function HomePage() {
     useEffect(() => {
+        console.log("loaded")
         // Runs AFTER the component renders
         // The #map element now EXISTS in the DOM
         if (!L.DomUtil.get("map")._leaflet_id) {

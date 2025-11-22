@@ -1,0 +1,36 @@
+.page {
+    margin: 5vh 0;
+}
+
+.profileContainer {
+    background-color: rgb(223, 227, 230);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+}
+
+.profileInfo {
+    font-size: 25px;
+}
+
+.qrContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+}
+
+.qrContainer img {
+    width: 20vw;
+    border-radius: 15px;
+}
+
+h1 {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.transactionsContainer {
+    
+}
