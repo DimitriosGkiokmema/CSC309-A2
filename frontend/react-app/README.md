@@ -1,4 +1,4 @@
-# Project Requirements
+# Basic Functionality
 **Regular Users**
 - [x] A page that displays the current available points.
 - [x] A page that displays the user's QR code for the purpose of initiating a transaction.
@@ -40,19 +40,59 @@
 **Superuser**
 - [ ] The ability to promote any user to managers or superusers.
 
-# React + Vite
+# Required Pages
+**Landing Page (10 marks)**
+- [x] Regular users (3 points):
+    - Dashboard showing points balance and recent transactions.
+- [ ] Cashiers (3 points):
+    - Quick access to transaction creation and redemption processing.
+- [ ] Managers & Superusers (4 points):
+    - Overview of events, promotions, and user management.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Accounts (60 marks)**
+- [ ] Login (5 marks):
+    - Users can log in with their credentials.
+- [ ] Registration (5 marks):
+    - Cashiers (or higher) can create accounts for users.
+- [ ] Profile Management (5 marks):
+    - Users can update their account information and passwords.
+- [ ] Password Reset (5 marks):
+    - Users can reset their password if they have forgotten.
+- [ ] Interface Switching (15 marks):
+    - Users can switch between different interfaces (e.g., cashier, event organizer, manager).
+    - For example, a manager can switch to the regular user interface to accumulate points, while a regular user who is also an event organizer can switch to the organizer interface to manage events.
+- [ ] User Listing (15 marks): Managers can view a list of users.
+- [ ] User Management (10 marks): Mangers can verify a user and make a cashier either suspicious or not. Managers or higher can promote/demote users.
 
-Currently, two official plugins are available:
+**Transactions (50 marks)**
+- [ ] Purchase (10 marks):
+    - Cashiers can create purchase transactions.
+    - Cashiers can correctly apply promotions to transactions.
+- [ ] Redemption (10 marks):
+    - Users can make a redemption request.
+    - Cashiers can process the redemption request.
+- [ ] Adjustment (5 marks):
+    - Managers can create adjustment transactions.
+- [ ] Transfer (10 marks):
+    - Users can transfer points to another user.
+- [ ] Transaction Listing (15 marks) Users can see their past transactions. Managers can see ALL transactions.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**Events (45 marks)**
+- [ ] Event Management (15 marks):
+    - Managers can create, update, and delete events.
+    - Managers can add event organizers.
+    - Event organizers can update events.
+- [ ] Event Listing (15 marks):
+    - All logged in users can view the list of events.
+- [ ] RSVP and Attendance (10 marks):
+    - Users can RSVP to events.
+    - Managers and event organizers can add guests to an event.
+    - Managers can remove guests from an event.
+- [ ] Point Allocation (5 marks):
+    - Managers and event organizers can award points to guests.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**Promotions (25 marks)**
+- [ ] Promotion Management (10 marks):
+    - Managers can create, update, and delete promotions.
+- [ ] Promotion Listing (15 marks):
+    - All logged in users can view the list of promotions.
