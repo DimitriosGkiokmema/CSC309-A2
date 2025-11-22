@@ -22,6 +22,7 @@ require('dotenv').config();
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
 const app = express();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -30,6 +31,26 @@ const SECRET_KEY = process.env.JWT_SECRET;
 const resetRate = {};
 const ROLE_LEVELS = {"regular": 0, "cashier": 1, "manager": 2, "superuser": 3};
 app.use(express.json());
+
+// Set up cors to allow requests from your React frontend
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // A2 Functions
 function generateToken(utorid, time) {
