@@ -36,7 +36,7 @@ model User {
   email       String  @unique
   password    String?
   birthday    DateTime?
-  role        RoleType?
+  role        String?
   points      Int
   avatarUrl   String?
   suspicious  Boolean
@@ -46,8 +46,8 @@ model User {
   expiresAt   DateTime?
   lastLogin   DateTime?
   // promotions  Promotion[]
-  // buyers      Transaction[] @relation("buyer")
-  // cashiers Transaction[] @relation("cashier")
+  buyers      Transaction[] @relation("buyer")
+  cashiers Transaction[] @relation("cashier")
   organizer    Event[] @relation("eventOrganizer")
   guest    Event[] @relation("eventGuest")
   usages    Usage[]
@@ -70,22 +70,32 @@ model Promotion {
 }
 
 model Transaction {
-  id          Int         @id @default(autoincrement())
-  utorid      String
-  type        String
-  spent       Float       @default(0)
-  earned      Int?
-  amount      Int         @default(0)
-  remark      String?
-  createdBy   String
-  relatedId   Int?
-  eventId     Int?
-  processed   Boolean     @default(false)
-  processedBy String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  suspicious  Boolean     @default(false)
-  promotions  Promotion[]
+	id Int @id @default(autoincrement())
+	utorid String 
+	type String
+	spent Float?
+	earned Int?
+
+	relatedId Int?
+	remark String?
+	
+	createdBy String
+	cashier User? @relation("buyer", fields: [processedBy], references: [utorid])
+	suspicious Boolean
+
+
+	amount Int 
+	sender String?
+	recipient String?
+
+	awarded Int?
+
+	transfer User? @relation("cashier", fields: [recipient], references: [utorid])
+	event Event? @relation(fields: [relatedId], references: [id])
+	promotions Promotion[] 
+
+	processedBy String?
+	processed Boolean
 }
 
 
@@ -102,7 +112,7 @@ model Event {
   published   Boolean
   organizers  User[] @relation("eventOrganizer")
   guests User[] @relation("eventGuest")
-  // transactions Transaction[]
+  transactions Transaction[]
 }
 
 model Usage {
