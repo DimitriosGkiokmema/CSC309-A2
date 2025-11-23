@@ -1,23 +1,49 @@
 import { useState } from "react";
-import { Link } from 'react-router-dom';
-import { callBackend } from '../../js/backend.js';
+import { Link, useNavigate  } from 'react-router-dom';
+import { log_in } from '../../js/backend.js';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const [loggedIn, setLoggedIn] = useState(
+    localStorage.getItem("loggedIn") === "true"
+  );
+
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+    const body = {"utorid": user, "password": pass};
+    const { ok, data } = await log_in(body);
+
+    if (ok) {
+      localStorage.setItem("token", data.token);
+      setLoggedIn(true);
+      setOpen(false);
+      navigate('/profile');
+    } else {
+      alert("Invalid Credentials");
+    }
+  }
 
   return (
     <header>
-      <div>
+      <div onClick={() => navigate("/")}>
         <img className="navLogo" src="../src/assets/varsity_logo.png" />
         <h1 className="websiteTitle">Varsity Mart</h1>
       </div>
 
       <div>
-        <div className="pageLinks">
-          <Link to="/search">Transactions</Link>
-          <Link to="/search">Events</Link>
-          <Link to="/search">Promotions</Link>
-        </div>
+        {/* Show these pages if logged in */}
+        {loggedIn && (
+          <div className="pageLinks">
+            <Link to="/search">Transactions</Link>
+            <Link to="/search">Events</Link>
+            <Link to="/search">Promotions</Link>
+          </div>
+        )}
+        
 
         {/* Profile icon only */}
         <div className="profileIcon" onClick={() => setOpen(!open)}>
@@ -34,34 +60,31 @@ export default function Navbar() {
 
             <div className="infoContainer">
               <div>
-                <Link to="/profile" onClick={() => setOpen(!open)}>Profile</Link>
-                <p>Sign In</p>
+                {loggedIn &&  (
+                  <Link to="/profile" onClick={() => setOpen(!open)}>Profile</Link>
+                )}
+                {!loggedIn && (
+                  <p>Sign In</p>
+                )}
               </div>
             </div>
 
-            <form id="loginForm" onSubmit={handleLogin}>
-              <div>
-                <label htmlFor="username" className="log-label">Utorid:</label>
-                <label htmlFor="password" className="log-label">Password:</label>
-                <button className="log-btn" type="submit">Log In</button>
-              </div>
-              <div>
-                <input type="text" className="log-input" id="username" required />
-                <input type="text" className="log-input" id="password" required />
-              </div>
-            </form>
+            {!loggedIn && (
+              <form id="loginForm" onSubmit={handleLogin}>
+                <div>
+                  <label htmlFor="username" className="log-label">Utorid:</label>
+                  <label htmlFor="password" className="log-label">Password:</label>
+                  <button className="log-btn" type="submit">Log In</button>
+                </div>
+                <div>
+                  <input type="text" className="log-input" id="username" required />
+                  <input type="text" className="log-input" id="password" required />
+                </div>
+              </form>
+            )}
           </div>
         )}
       </div>
     </header>
   );
-}
-
-function handleLogin(e) {
-    e.preventDefault();
-    const user = document.getElementById("username").value;
-    const pass = document.getElementById("password").value;
-    const body = {"utorid": user, "password": pass};
-
-    callBackend("POST", 'users', body, '');
 }

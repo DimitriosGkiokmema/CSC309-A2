@@ -1,18 +1,11 @@
 import { callBackend, check_clearance } from '../js/backend.js';
 import '../styles/profilePage.css';
-import TransactionItem from "../components/TransactionItem";
-
+import TransactionItem from "../components/TransactionItem/index.jsx";
 
 // Dummy data to represent using backend.
 // TODO: Remove when backend works
-// const user = callBackend('GET', '/users/me', {}, '');
-const user = {
-  utorid: "user123",
-  name: "Jane Doe",
-  email: "jane@example.com",
-  points: 67,
-  role: 'regular'
-};
+let user = await callBackend('GET', '/users/me', {}, '');
+user = user.data;
 
 // const transactions = callBackend('GET', '/transactions', { name: user.utorid }, '');
 const transactions = { "count": 21, "results": 
@@ -21,7 +14,7 @@ const transactions = { "count": 21, "results":
   { "id": 125, "utorid": "johndoe1", "amount": -40, "type": "adjustment", "relatedId": 123, "promotionIds": [], "suspicious": false, "remark": "", "createdBy": "smithw42" }
 ]};
 
-export default function ProfilePage() {
+export default function LandingPage() {
   return (
     <div className="page">
       <h1>User Profile</h1>
@@ -52,7 +45,7 @@ export default function ProfilePage() {
                 id={item.id}
                 utorid={item.utorid}
                 amount={item.amount}
-                type={item.amount}
+                type={item.type}
                 spent={item.spent}
                 remark={item.remark}
               />

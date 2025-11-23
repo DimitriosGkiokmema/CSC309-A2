@@ -50,7 +50,7 @@
     - Overview of events, promotions, and user management.
 
 **Accounts (60 marks)**
-- [ ] Login (5 marks):
+- [x] Login (5 marks):
     - Users can log in with their credentials.
 - [ ] Registration (5 marks):
     - Cashiers (or higher) can create accounts for users.
