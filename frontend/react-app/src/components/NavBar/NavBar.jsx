@@ -9,7 +9,6 @@ export default function Navbar() {
     localStorage.getItem("loggedIn") === "true"
   );
 
-
   async function handleLogin(e) {
     e.preventDefault();
     const user = document.getElementById("username").value;

@@ -1,7 +1,7 @@
 const API_BASE = "http://localhost:3000";
 const ROLE_LEVELS = {"regular": 0, "cashier": 1, "manager": 2, "superuser": 3};
 
-export async function callBackend(method, path, params, query) {
+export async function callBackend(method, path, params) {
     const token = localStorage.getItem("token");
     let body = {
         method,
@@ -15,12 +15,14 @@ export async function callBackend(method, path, params, query) {
         body['body'] = JSON.stringify(params);
     }
 
-    const res = await fetch(API_BASE + path + query, body);
+    const res = await fetch(API_BASE + path, body);
 
     let data = null;
     try {
         data = await res.json();
     } catch (_) {}
+
+    console.log({status: res.status, ok: res.ok, data})
 
     return {
         status: res.status,
@@ -30,7 +32,7 @@ export async function callBackend(method, path, params, query) {
 }
 
 export async function log_in(body) {
-    const result = await callBackend("POST", "/auth/tokens", body, "");
+    const result = await callBackend("POST", "/auth/tokens", body);
     console.log("api call: ", result)
     return result;
 }

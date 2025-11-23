@@ -13,7 +13,7 @@
     - Some way to make each transaction type distinct in appearance, e.g., using different colors.
 
 **Cashiers**
-- [ ] A page that allows the cashier to create a transaction.
+- [x] A page that allows the cashier to create a transaction.
     - QR code scanning capability is NOT required.
 - [ ] A page that allows the cashier to manually enter a transaction ID to process redemption requests.
     - QR code scanning capability is NOT required.
@@ -44,7 +44,7 @@
 **Landing Page (10 marks)**
 - [x] Regular users (3 points):
     - Dashboard showing points balance and recent transactions.
-- [ ] Cashiers (3 points):
+- [x] Cashiers (3 points):
     - Quick access to transaction creation and redemption processing.
 - [ ] Managers & Superusers (4 points):
     - Overview of events, promotions, and user management.
