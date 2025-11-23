@@ -42,3 +42,10 @@ h1 {
 .transactionsContainer {
     
 }
+
+.chartContainer div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5em;
+}

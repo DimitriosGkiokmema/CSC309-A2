@@ -22,7 +22,7 @@ export async function callBackend(method, path, params) {
         data = await res.json();
     } catch (_) {}
 
-    console.log({status: res.status, ok: res.ok, data})
+    console.log({method: method, endpoint: path, status: res.status, ok: res.ok, data})
 
     return {
         status: res.status,
@@ -37,9 +37,9 @@ export async function log_in(body) {
     return result;
 }
 
-const curr_level = 'superuser';
-
 export function check_clearance(min_level) {
+    const curr_level = callBackend('GET', '/users/me', {}).role;
+    console.log("curr: ", curr_level)
     return ROLE_LEVELS[curr_level] >= ROLE_LEVELS[min_level];
 }
 

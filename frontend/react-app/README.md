@@ -46,7 +46,7 @@
     - Dashboard showing points balance and recent transactions.
 - [x] Cashiers (3 points):
     - Quick access to transaction creation and redemption processing.
-- [ ] Managers & Superusers (4 points):
+- [x] Managers & Superusers (4 points):
     - Overview of events, promotions, and user management.
 
 **Accounts (60 marks)**
@@ -96,3 +96,7 @@
     - Managers can create, update, and delete promotions.
 - [ ] Promotion Listing (15 marks):
     - All logged in users can view the list of promotions.
+
+
+# Feature Ideas
+- use ImageKit to store and retrieve user profile pics
