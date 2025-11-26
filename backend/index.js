@@ -982,62 +982,133 @@ app.post('/transactions', get_logged_in, async (req, res) => {
     purchase transaction without additional promotions, the rate of earning points is 1 point per 25 cents spent (rounded to nearest integer).
     */
 
+    console.log('\n==== /transactions called ====');
+    console.log('Incoming request body:', req.body);
+
     const { utorid, type, spent, amount, relatedId, remark = '' } = req.body;
     const createdBy = req.user.utorid;
     const userRole = req.user.role.toUpperCase();
 
-    const promotionIds = typeof req.body.promotionIds === 'string'
-        ? req.body.promotionIds.split(',').map(Number)
-        : Array.isArray(req.body.promotionIds)
-            ? req.body.promotionIds
-            : [];
+    let promotionIds = [];
+    if (typeof req.body.promotionIds === 'string') {
+        promotionIds = req.body.promotionIds.split(',').map(Number);
+    } else if (Array.isArray(req.body.promotionIds)) {
+        promotionIds = req.body.promotionIds;
+    }
+
+    console.log('Parsed values:');
+    console.log({ utorid, type, spent, amount, relatedId, remark, createdBy, userRole, promotionIds });
 
     try {
+        // type & clearance checks
+        console.log('Validating type and role...');
         if (type !== 'purchase' && type !== 'adjustment') {
+            console.log('❌ Invalid type');
             return res.status(400).json({ error: 'type must be "purchase" or "adjustment"' });
         }
 
         if (type === 'purchase' && !['CASHIER', 'MANAGER', 'SUPERUSER'].includes(userRole)) {
+            console.log('❌ Insufficient clearance for purchase');
             return res.status(403).json({ error: 'insufficient clearance for purchase transactions' });
         }
         if (type === 'adjustment' && !['MANAGER', 'SUPERUSER'].includes(userRole)) {
+            console.log('❌ Insufficient clearance for adjustment');
             return res.status(403).json({ error: 'insufficient clearance for adjustment transactions' });
         }
 
-        const user = await prisma.user.findUnique({ where: { utorid } });
-        if (!user) return res.status(400).json({ error: 'user not found' });
+        console.log('✅ Type and role validation passed');
 
+        // find user
+        const user = await prisma.user.findUnique({ where: { utorid } });
+        console.log('Fetched user from DB:', user);
+
+        if (!user) {
+            console.log('❌ User not found');
+            return res.status(400).json({ error: 'user not found' });
+        }
+
+        // Validate promotions
+        console.log('Validating promotions...');
         const promotions = [];
+        const now = new Date();
+
         for (const promotionId of promotionIds) {
+            console.log(`Checking promotion ${promotionId}...`);
             const promotion = await prisma.promotion.findUnique({ where: { id: promotionId } });
-            if (!promotion) return res.status(400).json({ error: `promotion ${promotionId} not found` });
+
+            if (!promotion) {
+                console.log(`❌ Promotion ${promotionId} not found`);
+                return res.status(400).json({ error: `promotion ${promotionId} not found` });
+            }
+
+            console.log('Promotion found:', promotion);
+
+            if (promotion.startTime > now || promotion.endTime < now) {
+                console.log(`❌ Promotion ${promotionId} inactive (outside time range)`);
+                return res.status(400).json({ error: `promotion ${promotionId} is inactive` });
+            }
+
+            if (
+                type === 'purchase' &&
+                promotion.minSpending != null &&
+                typeof spent === 'number' &&
+                spent < promotion.minSpending
+            ) {
+                console.log(`❌ Promotion ${promotionId} minSpending not met`);
+                return res.status(400).json({ error: `promotion ${promotionId} minSpending not met` });
+            }
 
             const usage = await prisma.usage.findFirst({
                 where: { userId: user.id, promotionId: promotion.id },
             });
-            if (usage) return res.status(400).json({ error: `promotion ${promotionId} already used` });
 
+            console.log(`Usage for promotion ${promotionId}:`, usage);
+
+            if (usage) {
+                console.log(`❌ Promotion ${promotionId} already used`);
+                return res.status(400).json({ error: `promotion ${promotionId} already used` });
+            }
+
+            console.log(`✅ Promotion ${promotionId} validation passed`);
             promotions.push(promotion);
         }
+
+        console.log('All promotions validated successfully');
 
         let transaction;
 
         if (type === 'purchase') {
+            console.log('Processing purchase transaction...');
             if (typeof spent !== 'number' || spent <= 0) {
+                console.log('❌ Invalid spent value');
                 return res.status(400).json({ error: 'spent must be a positive number' });
             }
 
+            // base points
             let earnedPoints = Math.round(spent / 0.25);
+            console.log('Base earned points:', earnedPoints);
+
+            // promotions
             for (const promotion of promotions) {
-                earnedPoints += promotion.points || 0;
+                const promoRate = promotion.rate ?? 0;
+                const promoFlat = promotion.points ?? 0;
+
+                const extraFromRate = Math.round(spent * 100 * promoRate);
+                earnedPoints += extraFromRate + promoFlat;
+
+                console.log(`Applied promo ${promotion.id}: +${extraFromRate} (rate), +${promoFlat} (flat)`);
             }
+
+            console.log('Total earned points before suspicious check:', earnedPoints);
+
+            const earnedFinal = req.user.suspicious ? 0 : earnedPoints;
 
             transaction = await prisma.transaction.create({
                 data: {
                     utorid,
                     type,
                     spent,
-                    earned: req.user.suspicious ? 0 : earnedPoints,
+                    earned: earnedFinal,
                     amount: earnedPoints,
                     remark,
                     createdBy,
@@ -1048,23 +1119,32 @@ app.post('/transactions', get_logged_in, async (req, res) => {
                 include: { promotions: true },
             });
 
+            console.log('Transaction created in DB:', transaction);
 
             if (!req.user.suspicious) {
                 await prisma.user.update({
                     where: { id: user.id },
                     data: { points: user.points + earnedPoints },
                 });
+                console.log(`✅ Updated user ${user.utorid} points: +${earnedPoints}`);
+            } else {
+                console.log(`⚠️ Skipped user point update (suspicious cashier)`);
             }
+
         } else if (type === 'adjustment') {
+            console.log('Processing adjustment transaction...');
             if (typeof amount !== 'number') {
+                console.log('❌ Invalid adjustment amount');
                 return res.status(400).json({ error: 'amount must be a number' });
             }
 
             const relatedTransaction = await prisma.transaction.findUnique({
-                where: { id: parseInt(relatedId), },
+                where: { id: parseInt(relatedId, 10) },
             });
+            console.log('Related transaction fetched:', relatedTransaction);
 
             if (!relatedTransaction) {
+                console.log('❌ Related transaction not found');
                 return res.status(404).json({ error: 'related transaction not found' });
             }
 
@@ -1073,30 +1153,37 @@ app.post('/transactions', get_logged_in, async (req, res) => {
                     utorid,
                     type,
                     amount,
-                    relatedId: parseInt(relatedId),
+                    relatedId: parseInt(relatedId, 10),
                     spent: 0,
                     earned: 0,
                     remark,
                     createdBy,
-                    promotions: { connect: promotions.map((promotion) => ({ id: promotion.id })) },
+                    promotions: { connect: promotions.map(p => ({ id: p.id })) },
                     suspicious: false,
-                    processed: false
+                    processed: false,
                 },
                 include: { promotions: true },
             });
 
+            console.log('Adjustment transaction created:', transaction);
 
             await prisma.user.update({
                 where: { id: user.id },
                 data: { points: user.points + amount },
             });
+            console.log(`✅ Adjusted user ${user.utorid} points by ${amount}`);
         }
 
+        // record promo usage
+        console.log('Creating usage records for promotions...');
         for (const promotion of promotions) {
             await prisma.usage.create({
                 data: { userId: user.id, promotionId: promotion.id },
             });
+            console.log(`✅ Recorded usage for promotion ${promotion.id}`);
         }
+
+        // construct response
         const response = {
             id: transaction.id,
             utorid: transaction.utorid,
@@ -1109,19 +1196,23 @@ app.post('/transactions', get_logged_in, async (req, res) => {
         if (type === 'purchase') {
             response.spent = transaction.spent;
             response.earned = transaction.earned;
-
         } else {
             response.amount = transaction.amount;
             response.relatedId = transaction.relatedId;
         }
 
-        res.status(201).json(response);
+        console.log('Final response object:', response);
+        console.log('==== /transactions completed successfully ====\n');
+
+        return res.status(201).json(response);
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'failed to create transaction' });
+        console.error('💥 Error in /transactions:', err);
+        return res.status(500).json({ error: 'failed to create transaction' });
     }
 });
+
+
 
 app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, res) => {
     /*
@@ -2872,8 +2963,12 @@ app.patch('/promotions/:promotionId', get_logged_in, check_clearance("manager"),
     */
 
     try {
+        console.log("starting promotion update");
+        console.log(req.body, " request body");
+        console.log(req.params, " request params");
 
         const id = parseInt(req.params.promotionId, 10);
+        console.log("promotionId: ", id);
 
         if (isNaN(id)) {
             return res.status(400).json({ error: 'invalid promotion id' });
@@ -2883,6 +2978,8 @@ app.patch('/promotions/:promotionId', get_logged_in, check_clearance("manager"),
         if (!existing) {
             return res.status(404).json({ error: 'promotion not found' });
         }
+
+        console.log("existing promotion", existing);
 
         let {
             name,
@@ -2930,6 +3027,8 @@ app.patch('/promotions/:promotionId', get_logged_in, check_clearance("manager"),
             return res.status(400).json({ error: 'type must be either "automatic" or "one-time"' });
         }
 
+        console.log("before parsing start and end times");
+
         let parsedStart;
         let parsedEnd;
 
@@ -2946,6 +3045,8 @@ app.patch('/promotions/:promotionId', get_logged_in, check_clearance("manager"),
                 return res.status(400).json({ error: 'invalid endTime format' });
             }
         }
+
+        console.log("passed start and end time validation");
 
         const now = new Date();
         const existingStart = new Date(existing.startTime);
@@ -2988,8 +3089,10 @@ app.patch('/promotions/:promotionId', get_logged_in, check_clearance("manager"),
             }
         }
 
+        console.log("passed hasStarted/hasEnded checks");
+
         if (minSpendingProvided) {
-            if (minSpending !== null) { 
+            if (minSpending !== null) {
                 const v = Number(minSpending);
                 if (Number.isNaN(v) || v <= 0) {
                     return res.status(400).json({ error: 'minSpending must be a positive number' });
@@ -3014,6 +3117,8 @@ app.patch('/promotions/:promotionId', get_logged_in, check_clearance("manager"),
                 }
             }
         }
+
+        console.log("before building data object");
 
         const data = {};
 
@@ -3044,6 +3149,7 @@ app.patch('/promotions/:promotionId', get_logged_in, check_clearance("manager"),
         if (rateProvided) response.rate = updated.rate;
         if (pointsProvided) response.points = updated.points;
 
+        console.log('Updated promotion:', response);
 
         return res.status(200).json(response);
     } catch (err) {
