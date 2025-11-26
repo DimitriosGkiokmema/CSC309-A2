@@ -48,7 +48,7 @@ app.use(cors({
       return callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -1266,7 +1266,7 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
 
             if (['adjustment', 'transfer', 'redemption', 'event']
                 .includes(transaction.type.toLowerCase())) {
-                baseResponse.relatedId = transaction.relatedId;
+                baseResponse.relatedId = transaction.processedBy;
             }
 
             if (transaction.type.toLowerCase() === 'redemption') {
