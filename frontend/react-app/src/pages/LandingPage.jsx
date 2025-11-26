@@ -15,6 +15,7 @@ export default function LandingPage() {
   const [endedEvents, setEndedE] = useState(0);
   const [startedPromos, setStartedP] = useState(0);
   const [endedPromos, setEndedP] = useState(0);
+  const [edit, setEdit] = useState(false);
 
   useEffect(() => {
     // fetch user info
@@ -60,12 +61,23 @@ export default function LandingPage() {
         <div className="col-8 offset-2 profileContainer">
           <div className="col-6 profileInfo">
             <div>
+              
+            </div>
+            <div>
               <p><strong>Name:</strong></p>
               <p>{user.name}</p>
             </div>
             <div>
+              <p><strong>Username:</strong></p>
+              <p>{user.utorid}</p>
+            </div>
+            <div>
               <p><strong>Email:</strong></p>
               <p> {user.email}</p>
+            </div>
+            <div>
+              <p><strong>Birthday:</strong></p>
+              <p>{user.birthday || 'unknown'}</p>
             </div>
             <div>
               <p><strong>Points:</strong></p>
@@ -83,6 +95,10 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {edit && (
+        <div>EFFECT WORKS!!!</div>
+      )}
       
       {/* Dropdown menu */}
       {user.role === 'regular' && (
