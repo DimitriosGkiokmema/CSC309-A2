@@ -16,6 +16,10 @@ export default function LandingPage() {
   const [startedPromos, setStartedP] = useState(0);
   const [endedPromos, setEndedP] = useState(0);
   const [edit, setEdit] = useState(false);
+  // local copy of fields
+  const [formData, setFormData] = useState({
+    name: ''
+  });
 
   useEffect(() => {
     // fetch user info
@@ -23,6 +27,12 @@ export default function LandingPage() {
       const me = await callBackend('GET', '/users/me', {});
       if (!me.ok) return; // user not logged in or error
       setUser(me.data);
+      setFormData({
+        name: me.data.name,
+        utorid: me.data.utorid,
+        email: me.data.email,
+        birthday: me.data.birthday
+      });
 
       const tx = await callBackend('GET', '/users/me/transactions', {});
       setTransactions(tx.data);
@@ -49,6 +59,32 @@ export default function LandingPage() {
     load();
   }, []);
 
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }
+
+  function handleSave() {
+    const updates = {};
+
+    // only return changed values
+    for (const key in formData) {
+      if (formData[key] !== user[key] && formData[key] !== "" && formData[key] !== null) {
+        updates[key] = formData[key];
+      }
+    }
+
+    if (updates.length !== 0) {
+      console.log("Updates:", updates);
+      callBackend('PATCH', '/users/me', updates);
+    }
+
+    setEdit(false);
+  }
+
   if (!user || !transactions) {
     return <div>Loading</div>;  // or nothing, or a minimal loader
   }
@@ -61,7 +97,8 @@ export default function LandingPage() {
         <div className="col-8 offset-2 profileContainer">
           <div className="col-6 profileInfo">
             <div>
-              
+              <div></div>
+              <i class="fa-regular fa-pen-to-square" onClick={() => setEdit(!edit)}></i>
             </div>
             <div>
               <p><strong>Name:</strong></p>
@@ -96,8 +133,46 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* Edit Profile Info */}
       {edit && (
-        <div>EFFECT WORKS!!!</div>
+        <div className="editModal">
+          <div className="editBox">
+            <h2>Edit Profile</h2>
+
+            <label>Name:</label>
+            <input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+            />
+
+            <label>Username:</label>
+            <input
+              name="utorid"
+              value={formData.utorid}
+              onChange={handleChange}
+            />
+
+            <label>Email:</label>
+            <input
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+            />
+
+            <label>Birthday:</label>
+            <input
+              name="birthday"
+              value={formData.birthday || ""}
+              onChange={handleChange}
+            />
+
+            <div className="editActions">
+              <button onClick={() => setEdit(false)}>Cancel</button>
+              <button onClick={handleSave}>Save</button>
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Dropdown menu */}
