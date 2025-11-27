@@ -403,7 +403,7 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
             data
         });
 
-        const bday = updated_user.birthday.toISOString().split("T")[0];
+        const bday = updated_user === null ? "" : updated_user.birthday.toISOString().split("T")[0];
 
         // Respond with updated note
         return res.status(200).json({
@@ -444,6 +444,7 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
     return res.status(200).json({
         id: user.id,
         utorid: user.utorid,
+        password: user.password,
         name: user.name,
         email: user.email,
         birthday: user.birthday,

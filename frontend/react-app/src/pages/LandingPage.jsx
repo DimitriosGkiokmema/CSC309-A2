@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { callBackend } from '../js/backend.js';
+import { callBackend, resetPassword } from '../js/backend.js';
+import { jsonToQRUrl } from '../js/create_qr.js';
 import '../styles/LandingPage.css';
 import TransactionItem from "../components/TransactionItem";
 import CreateItem from "../components/CreateItem";
@@ -16,10 +17,8 @@ export default function LandingPage() {
   const [startedPromos, setStartedP] = useState(0);
   const [endedPromos, setEndedP] = useState(0);
   const [edit, setEdit] = useState(false);
-  // local copy of fields
-  const [formData, setFormData] = useState({
-    name: ''
-  });
+  const [qr_url, setQR] = useState('');
+  const [formData, setFormData] = useState({});
 
   useEffect(() => {
     // fetch user info
@@ -27,12 +26,20 @@ export default function LandingPage() {
       const me = await callBackend('GET', '/users/me', {});
       if (!me.ok) return; // user not logged in or error
       setUser(me.data);
-      setFormData({
+      // setName(me.data.name);
+
+      const userInfo = {
         name: me.data.name,
         utorid: me.data.utorid,
         email: me.data.email,
-        birthday: me.data.birthday
-      });
+        birthday: me.data.birthday,
+        password: me.data.password,
+      };
+
+      jsonToQRUrl(userInfo).then(url => {
+        setQR(url);
+      })
+      setFormData(userInfo);
 
       const tx = await callBackend('GET', '/users/me/transactions', {});
       setTransactions(tx.data);
@@ -76,12 +83,22 @@ export default function LandingPage() {
         updates[key] = formData[key];
       }
     }
+    console.log(updates);
 
-    if (updates.length !== 0) {
-      console.log("Updates:", updates);
+    if (Object.keys(updates).length !== 0) {
       callBackend('PATCH', '/users/me', updates);
     }
 
+    if (updates.password !== undefined) {
+      resetPassword(user.utorid, updates['password']).then(res => {
+        console.log(res.data);
+      })
+    }
+
+    // setUser();
+    jsonToQRUrl(user).then(url => {
+      setQR(url);
+    });
     setEdit(false);
   }
 
@@ -97,10 +114,6 @@ export default function LandingPage() {
         <div className="col-8 offset-2 profileContainer">
           <div className="col-6 profileInfo">
             <div>
-              <div></div>
-              <i class="fa-regular fa-pen-to-square" onClick={() => setEdit(!edit)}></i>
-            </div>
-            <div>
               <p><strong>Name:</strong></p>
               <p>{user.name}</p>
             </div>
@@ -109,12 +122,16 @@ export default function LandingPage() {
               <p>{user.utorid}</p>
             </div>
             <div>
+              <p><strong>Password:</strong></p>
+              <p>{user.password}</p>
+            </div>
+            <div>
               <p><strong>Email:</strong></p>
               <p> {user.email}</p>
             </div>
             <div>
               <p><strong>Birthday:</strong></p>
-              <p>{user.birthday || 'unknown'}</p>
+              <p>{user.birthday || ''}</p>
             </div>
             <div>
               <p><strong>Points:</strong></p>
@@ -124,10 +141,14 @@ export default function LandingPage() {
               <p><strong>Role:</strong></p>
               <p> {user.role}</p>
             </div>
+            <div>
+              <div></div>
+              <i className="fa-regular fa-pen-to-square" onClick={() => setEdit(!edit)}></i>
+            </div>
           </div>
           <div className="col-4">
             <div className="qrContainer">
-              <img src="../src/assets/qr_code.png" />
+              <img src={qr_url} />
             </div>
           </div>
         </div>
@@ -153,6 +174,13 @@ export default function LandingPage() {
               onChange={handleChange}
             />
 
+            <label>Password:</label>
+            <input
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+            />
+
             <label>Email:</label>
             <input
               name="email"
@@ -163,7 +191,7 @@ export default function LandingPage() {
             <label>Birthday:</label>
             <input
               name="birthday"
-              value={formData.birthday || ""}
+              value={formData.birthday || ''}
               onChange={handleChange}
             />
 

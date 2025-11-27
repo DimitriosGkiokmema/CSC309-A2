@@ -43,6 +43,10 @@ h1 {
     
 }
 
+.fa-pen-to-square {
+    font-size: 25px;
+}
+
 .chartContainer div {
     display: flex;
     align-items: center;

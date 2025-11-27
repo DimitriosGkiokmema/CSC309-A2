@@ -33,17 +33,10 @@ export async function callBackend(method, path, params) {
 
 export async function log_in(body) {
     const result = await callBackend("POST", "/auth/tokens", body);
-    console.log("api call: ", result)
     return result;
 }
 
-export function check_clearance(min_level) {
-    const curr_level = callBackend('GET', '/users/me', {}).role;
-    console.log("curr: ", curr_level)
-    return ROLE_LEVELS[curr_level] >= ROLE_LEVELS[min_level];
-}
-
-// TODO: actually implement this function
-export function get_clearance() {
-    return curr_level;
+export async function resetPassword(utorid, password) {
+    const resetToken = (await callBackend("POST", "/auth/resets", {utorid})).data.resetToken;
+    return await callBackend('POST', `/auth/resets/${resetToken}`, {utorid, password});
 }
