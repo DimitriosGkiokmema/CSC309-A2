@@ -48,7 +48,7 @@ app.use(cors({
       return callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -1852,6 +1852,8 @@ app.get('/events', get_logged_in, async (req, res) => {
     else {
         return res.status(200).json({count: filtered.length, results: resultRegular}); 
     }
+
+    //return res.status(200).json({count: filtered.length, results: resultRegular}); 
 })
 
 app.post('/events', get_logged_in, check_clearance("manager"), async (req, res) => { //checked HTTP requests
@@ -1881,7 +1883,7 @@ app.post('/events', get_logged_in, check_clearance("manager"), async (req, res) 
         let dateobj = new Date(startTime);
         let dateobj2 = new Date(endTime);
         if(isNaN(dateobj.getTime()) || isNaN(dateobj2.getTime()) || (dateobj > dateobj2)) { //not a valid date
-            return res.status(400).json({"error": "Invalid date format"}); //passed
+            return res.status(400).json({"error": "Invalid start and end times"}); //passed
         }
 
         if(capacity !== undefined && !isNaN(capacity) && capacity < 0) {
@@ -1999,7 +2001,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid payload"});
+            return res.status(400).json({"error": "Invalid name"});
         }
     }
     
@@ -2010,7 +2012,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid payload"});
+            return res.status(400).json({"error": "Invalid description"});
         }
     }
     if (location !== undefined && location !== null) {
@@ -2020,7 +2022,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid payload"});
+            return res.status(400).json({"error": "Invalid location"});
         }
     }
     if (startTime !== undefined && startTime !== null) {
@@ -2034,7 +2036,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid payload"});
+            return res.status(400).json({"error": "Invalid start time"});
         }
     }
     if (endTime !== undefined && endTime !== null) {
@@ -2047,7 +2049,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid payload"});
+            return res.status(400).json({"error": "Invalid end time"});
         }
     }
     if (capacity !== undefined && capacity !== null) { //has to be a positive number
@@ -2060,7 +2062,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         } 
         else {
-            return res.status(400).json({"error": "Invalid payload"});
+            return res.status(400).json({"error": "Invalid capacity"});
         }
     }
     if (points !== undefined && points !== null) {
@@ -2079,7 +2081,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid payload"});
+            return res.status(400).json({"error": "Invalid points"});
         }
     }
     if (published !== undefined && published !== null) {
@@ -2094,7 +2096,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         } 
         else {
-            return res.status(400).json({"error": "Invalid payload"});
+            return res.status(400).json({"error": "Invalid published value"});
         }
     }
 

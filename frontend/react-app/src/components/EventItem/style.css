@@ -1,0 +1,58 @@
+.event-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5em;
+    background-color: rgb(223, 227, 230);
+    margin: 25px 0;
+    border-radius: 15px;
+    padding: 10px;
+}
+
+
+.eventInfo div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5em;
+}
+
+.trashCan {
+    padding-top: 3px;
+}
+
+.trashCan a {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    
+}
+
+.trashCan a img {
+    height: 1.5rem;
+}
+
+.conditional {
+    display: flex;
+}
+
+button {
+    background-color: aliceblue;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: grey;
+    font-weight: bold;
+    
+}
+
+.error {
+    color: red;
+    font-style: italic;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

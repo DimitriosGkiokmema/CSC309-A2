@@ -27,9 +27,10 @@ export default function Navbar() {
   }
 
   return (
-    <header>
+    <header >
+      {/* Navbar is here */}
       <div onClick={() => navigate("/")}>
-        <img className="navLogo" src="../src/assets/varsity_logo.png" />
+        <img className="navLogo" src="../../../src/assets/varsity_logo.png" />
         <h1 className="websiteTitle">Varsity Mart</h1>
       </div>
 
@@ -38,7 +39,7 @@ export default function Navbar() {
         {loggedIn && (
           <div className="pageLinks">
             <Link to="/search">Transactions</Link>
-            <Link to="/search">Events</Link>
+            <Link to="/events">Events</Link>
             <Link to="/search">Promotions</Link>
           </div>
         )}
@@ -46,14 +47,14 @@ export default function Navbar() {
 
         {/* Profile icon only */}
         <div className="profileIcon" onClick={() => setOpen(!open)}>
-          <img src="../src/assets/profile.png" />
+          <img src="../../../src/assets/profile.png" />
         </div>
 
         {/* Dropdown menu */}
         {open && (
           <div className="profileDropdown">
             <div className="profileIcon">
-              <img src="../src/assets/profile.png" />
+              <img src="../../../src/assets/profile.png" />
               <i className="fa-regular fa-circle-xmark" onClick={() => setOpen(!open)}></i>
             </div>
 
@@ -77,7 +78,7 @@ export default function Navbar() {
                 </div>
                 <div>
                   <input type="text" className="log-input" id="username" required />
-                  <input type="text" className="log-input" id="password" required />
+                  <input type="password" className="log-input" id="password" required />
                 </div>
               </form>
             )}
