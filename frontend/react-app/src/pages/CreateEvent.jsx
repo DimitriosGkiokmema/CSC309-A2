@@ -76,8 +76,8 @@ export default function CreateEvent() {
   
     return (
         <div>
-            <h1>Event Updates</h1>
-            <form className="event-update-form" onSubmit={updateEvent}>
+            <h1>New Event</h1>
+            <form className="event-create-form" onSubmit={updateEvent}>
                 <label>Name:</label>
                 <input id="name" type="text" required onChange={(e) => setName(e.target.value)}/>
                 <br/>

@@ -81,6 +81,10 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         if(over) {
             rsvpInfo = <p className="error">This event is over</p>
         } else if (!available) {
+            console.log("this event has this many spots in total: " + capacity);
+            console.log("this event has " + numGuests + " many guests");
+            console.log("this event is available: " + available);
+            console.log("this event has " + spots + " spots left")
             rsvpInfo = (
             <div>
                 <button className="rsvp" disabled={true}>RSVP</button>
@@ -103,7 +107,7 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
     const clearance = user && (user.role === "manager")
 
     if(clearance && !over) {
-        updateInfo = <button onClick={handleUpdate}>Edit</button>
+        updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
     }
 
     let deleteIcon;
@@ -117,9 +121,9 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
     }
 
     return (
-    <div className="event-item row">
-        <div className="col">
-            <p>Event {id}: <strong>{name}</strong></p>
+    <div className="event-item">
+        <div className="col eventName">
+            <p><strong>Event Name:</strong> {name}</p>
             <div className="conditional">
                
                 {clearance && updateInfo}
@@ -130,21 +134,21 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
             {message && <p className="error">{message}</p>}
             
         </div>
-        <div className="col-4 eventInfo">
+        <div className="col-5 eventInfo">
             <div>
-                <p>Location:</p>
+                <p><strong>Location:</strong></p>
                 <p>{location}</p>
             </div>
             <div>
-                <p>Start:</p>
+                <p><strong>Start:</strong></p>
                 <p>{startTime}</p>
             </div>
             <div>
-                <p>End:</p>
+                <p><strong>End:</strong></p>
                 <p>{endTime}</p>
             </div>
             <div>
-                <p>Spots left:</p>
+                <p><strong>Spots left:</strong></p>
                 <p>{spots}</p>
             </div>
         </div>

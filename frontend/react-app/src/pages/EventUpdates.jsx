@@ -20,14 +20,14 @@ export default function EventUpdates() {
     const [capacity, setCapacity] = useState(null);
     const [points, setPoints] = useState(null);
     const [published, setPublished] = useState(null);
+
     const [guestid, setGuestId] = useState(null);
     const [organizerid, setOrganizerId] = useState(null);
     const [guest, setGuest] = useState(null);
     const [organizer, setOrganizer] = useState(null);
     const [addGuest, setAddGuest] = useState(null);
-    const [removeGuest, setRemoveGuest] = useState(null);
     const [addOrganizer, setAddOrganizer] = useState(null);
-    const [removeOrganizer, setRemoveOrganizer] = useState(null);
+    
 
 
     const [message, setMessage] = useState("");
@@ -85,7 +85,7 @@ export default function EventUpdates() {
             }
             else {
                 setMessage("Event updated successfully!"); // rn it doesnt show, navigates too fast
-                navigate("/events");
+                // navigate("/events");
             }
         }
         else if (!changed && res.status === 200) { // empty payload
@@ -96,50 +96,71 @@ export default function EventUpdates() {
         }
      
         // add or remove guests/organizers
+        console.log(`Guest id to remove: ${guestid}`);
+
         if(guestid) {
             const res = await callBackend("GET", `/users/${guestid}`, {});
             if(res.ok) {
-                setGuest(res.data);
-
-                const payload = {
-                    utorid: guest.utorid, //??
-                }
                 
+                //console.log(`guest id returned, status is: ${res.status}`);
+                const fetchedGuest = res.data;
+                //console.log(`addguest or removeguest? add: ${addGuest}`);
                 if(addGuest) {
-                    const gt = await callBackend("POST", `/events/${eventId}/guests`, payload);
+                    const gt = await callBackend("POST", `/events/${eventId}/guests`, {utorid: fetchedGuest.utorid});
                     if(gt.ok) {
-                        setList(`New guest added to event ${eventId}: ${state.name}`);
+                        // console.log(`guest id added, status is: ${gt.status}`);
+                        setList(`New guest added to ${state.name} (id: ${eventId})`);
                     } 
                     else {
                         setList("Guest could not be added: " + gt.data.error);
                     }  
                 }
                 else {
+                    // console.log("guestid =", guestid);
+                    // console.log("eventid =", eventId);
                     const gt = await callBackend("DELETE", `/events/${eventId}/guests/${guestid}`, {});
+                    //console.log(`guest id removed, status is: ${gt.status}`);
                     if(gt.ok) {
-                        setList(`Guest removed from event ${eventId}: ${state.name}`);
+                        //console.log(`guest id removed, status is: ${gt.status}`);
+                        setList(`Guest removed from ${state.name} (id: ${eventId})`);
                     } 
                     else {
+                        //console.log(`guest id could not be removed, status is: ${gt.status}`);
                         setList("Guest could not be removed: " + gt.data.error);
                     }  
                 }
+            }
+            else {
+                setList("Guest list could not be modified, user not found");
             }
         }
 
         if(organizerid) {
             const res = await callBackend("GET", `/users/${organizerid}`, {});
             if(res.ok) {
-                setOrganizer(res.data);
-                const payload = {
-                    utorid: organizer.utorid, //??
-                }
+                const fetchedOrg = res.data;
                 
                 if(addOrganizer) {
-                    const gt = await callBackend("POST", `/events/${eventId}/organizer`, payload);
+                    const gt = await callBackend("POST", `/events/${eventId}/organizers`, {utorid: fetchedOrg.utorid});
+                    if(gt.ok) {
+                        setList(`New organizer added to ${eventId} (id: ${state.name})`);
+                    } 
+                    else {
+                        setList("Organizer could not be added: " + gt.data.error);
+                    } 
                 }
                 else {
-                    const gt = await callBackend("DELETE", `/events/${eventId}/organizer/${organizerid}`, {});
+                    const gt = await callBackend("DELETE", `/events/${eventId}/organizers/${organizerid}`, {});
+                    if(gt.ok) {
+                        setList(`Organizer removed from ${eventId} (id: ${state.name})`);
+                    } 
+                    else {
+                        setList("Organizer could not be removed: " + gt.data.error);
+                    } 
                 }
+            }
+            else {
+                setList("Organizer list could not be modified, user not found");
             }
         }
 
@@ -225,10 +246,10 @@ export default function EventUpdates() {
                 <input id="guestid" type="number" onChange={(e) => setGuestId(e.target.value)}></input>
                 <span id="editGuests">
                     
-                    <input id="addGuest" name ="guest" type="radio" onChange={(e) => setAddGuest(e.target.value)}></input>
+                    <input id="addGuest" name ="guest" type="radio" onChange={() => setAddGuest(true)}></input>
                     <label htmlFor="addGuest">Add guest</label>
                     
-                    <input id="removeGuest" name="guest" type="radio" onChange={(e) => setRemoveGuest(e.target.value)}></input>
+                    <input id="removeGuest" name="guest" type="radio" onChange={() => setAddGuest(false)}></input>
                     <label htmlFor="removeGuest">Remove guest</label>
                 </span>
                 <br/>
@@ -236,18 +257,19 @@ export default function EventUpdates() {
                 <input id="organizerid" type="number" onChange={(e) => setOrganizerId(e.target.value)}></input>
                 <span id="editOrganizers">
                     
-                    <input id="addOrganizer" name ="organizer" type="radio" onChange={(e) => setAddOrganizer(e.target.value)}></input>
+                    <input id="addOrganizer" name ="organizer" type="radio" onChange={() => setAddOrganizer(true)}></input>
                     <label htmlFor="addOrganizer">Add organizer</label>
                     
-                    <input id="removeOrganizer" name="organizer" type="radio" onChange={(e) => setRemoveOrganizer(e.target.value)}></input>
+                    <input id="removeOrganizer" name="organizer" type="radio" onChange={() => setAddOrganizer(false)}></input>
                     <label htmlFor="removeOrganizer">Remove organizer</label>
                 </span>
                 <br/>
                 <input className="submitButton" type="submit" value="Submit"></input> 
-                <input className="cancelButton" type="button" value="cancel" onClick={goBack}></input>
+                <input className="cancelButton" type="button" value="Cancel" onClick={goBack}></input>
             </form>
 
             <div className="message">{message}</div>
+            <div>{listMessage}</div>
         </div>
     );
 }

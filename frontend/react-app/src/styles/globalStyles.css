@@ -40,6 +40,7 @@ header>div {
 
 .profileIcon {
     display: flex;
+    height: 50px;
 }
 
 .profileIcon img {
@@ -80,8 +81,31 @@ form div input {
     width: 100%;
 }
 
+body {
+  /* font-family: sans-serif; */
+  width: 100%;
+  padding: 0;
+  margin:0;
+  display: flex;
+  flex-direction: column;
+  background-color: lightblue;   
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  
+}
+
+
 footer {
-    background-color: rgb(103, 181, 245);
-    padding: 0 50px;
-    border-radius: 20px 20px 0 0;
+  /* use 100% rather than 100vw so that the scrollbar is not included in the screen width */
+  width: 100%; 
+  height: 8rem;
+  bottom: 0;
+  /* margin-top makes it so that it shows whatever content above it
+   before the footer appears, so it doesnt cut anything off */
+  margin-top: auto; 
+  background-color: rgb(103, 181, 245);
+  padding: 15px;
+  border-radius: 20px 20px 0 0;
+
 }

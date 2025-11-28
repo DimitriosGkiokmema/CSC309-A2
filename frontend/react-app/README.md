@@ -27,9 +27,9 @@
 - [ ] A page that displays all promotions (with filters, order-by, and pagination).
 - [ ] A page that allows managers to view/edit/delete a specific promotion.
 - [x] A page that allows managers to create new events.
-- [ ] A page that displays all events (with filters, order-by, and pagination).
+- [x] A page that displays all events (with filters, order-by, and pagination).
 - [x] A page that allows managers to view/edit/delete a specific event.
-- [ ] A page that allows managers to add or remove users from an event.
+- [x] A page that allows managers to add or remove users from an event.
 
 **Event Organizer (and all Managers)**
 - [ ] A page that displays the events that the user is responsible for.
@@ -80,14 +80,14 @@
 **Events (45 marks)**
 - [ ] Event Management (15 marks):
     - Managers can create, update, and delete events. (DONE)
-    - Managers can add event organizers.
+    - Managers can add event organizers. (DONE)
     - Event organizers can update events.
 - [x] Event Listing (15 marks):
     - All logged in users can view the list of events. (DONE)
 - [ ] RSVP and Attendance (10 marks):
     - Users can RSVP to events. (DONE)
-    - Managers and event organizers can add guests to an event.
-    - Managers can remove guests from an event.
+    - Managers and event organizers can add guests to an event. (only managers rn)
+    - Managers can remove guests from an event. (DONE)
 - [ ] Point Allocation (5 marks):
     - Managers and event organizers can award points to guests.
 

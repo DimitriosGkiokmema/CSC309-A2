@@ -1736,9 +1736,10 @@ app.patch('/transactions/:transactionId/processed', get_logged_in, check_clearan
 app.get('/events', get_logged_in, async (req, res) => {
     const currentUser = req.user;
    
-    const {name, location, started, ended, showFull, page: qpage, limit, published} = req.query;
+    const {name, location, started, ended, showFull, page: qpage, limit, published, order} = req.query;
     
     let where = {};
+    let orderBy = {};
     let page = 1;
     let take = 10;
     //start filtering
@@ -1810,8 +1811,16 @@ app.get('/events', get_logged_in, async (req, res) => {
         }
     }
 
+
+    if(order !== undefined) {
+        orderBy[order] = 'asc';
+    }
+    //console.log(order);
+    //console.log(orderBy);
+
     const events = await prisma.event.findMany({
                     where,
+                    orderBy,
                     include: {guests: true}
                 })
    
@@ -1948,7 +1957,8 @@ app.get('/events/:eventId', get_logged_in, async (req, res) => {
     }
 
     else if(alreadyOrganizer.length !== 0 || currentUser.role === 'manager' || currentUser.role === 'superuser') {
-        return res.status(200).json(event);
+        const {guests, ...rest} = event;
+        return res.status(200).json({...rest, numGuests: guests.length});
     } 
     
 })
@@ -2442,16 +2452,30 @@ app.delete('/events/:eventId/guests/:userId', get_logged_in, check_clearance("ma
         return res.status(404).json({"error": "Not Found"});
     }
 
-    if(event.capacity >= event.guests.length) {
-        return res.status(410).json({"error": "Invalid"});
-    }
+    // if(event.capacity >= event.guests.length) {
+    //     return res.status(410).json({"error": "Invalid"});
+    // }
 
-    event.guests.filter(guest => {
-        if(guest === user) {
-            event.guests.remove(guest);
-            return res.status(204);
+    const isGuest = event.guests.filter(guest => {
+        if(guest.id === user.id) {
+            return guest;
         }
     })
+
+    if(isGuest.length !== 0) {
+
+        await prisma.event.update({
+            where: {id: parseInt(eid)},
+            data: {
+                guests: {disconnect: {id: parseInt(uid)}}
+            }
+        })
+        
+        return res.status(204).send();
+    }
+    else {
+        return res.status(410).json({"error": "This user is not a guest"});
+    }
 })
 
 app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { //checked https requests
