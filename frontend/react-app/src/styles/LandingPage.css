@@ -43,6 +43,18 @@ h1 {
     
 }
 
+.editBtn {
+  display: flex;
+  align-items: center;
+  background-color: rgb(185, 187, 188);
+  border-radius: 10px;
+  padding: 5px;
+}
+
+.editBtn:hover {
+  background-color: rgb(148, 150, 152);
+}
+
 .fa-pen-to-square {
     font-size: 25px;
 }

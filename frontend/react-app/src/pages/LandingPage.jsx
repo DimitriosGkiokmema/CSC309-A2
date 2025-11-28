@@ -7,6 +7,7 @@ import CreateItem from "../components/CreateItem";
 import ProcessRedemption from "../components/ProcessRedemption";
 import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
+import { useUser } from "../components/UserContext";
 
 export default function LandingPage() {
   const [user, setUser] = useState(null);
@@ -19,6 +20,8 @@ export default function LandingPage() {
   const [edit, setEdit] = useState(false);
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
+  const { role } = useUser();
+  console.log("User is ", role)
 
   useEffect(() => {
     // fetch user info
@@ -26,7 +29,6 @@ export default function LandingPage() {
       const me = await callBackend('GET', '/users/me', {});
       if (!me.ok) return; // user not logged in or error
       setUser(me.data);
-      // setName(me.data.name);
 
       const userInfo = {
         name: me.data.name,
@@ -103,7 +105,11 @@ export default function LandingPage() {
   }
 
   if (!user || !transactions) {
-    return <div>Loading</div>;  // or nothing, or a minimal loader
+    return (
+    <div className="loggedOut">
+      <h1>Please Log In!</h1>
+    </div>
+    );
   }
 
   return (
@@ -143,7 +149,11 @@ export default function LandingPage() {
             </div>
             <div>
               <div></div>
-              <i className="fa-regular fa-pen-to-square" onClick={() => setEdit(!edit)}></i>
+              <div className="editBtn" onClick={() => setEdit(!edit)}>
+                <div>Edit</div>
+                <i className="fa-regular fa-pen-to-square"></i>
+              </div>
+              <div></div>
             </div>
           </div>
           <div className="col-4">
@@ -204,7 +214,7 @@ export default function LandingPage() {
       )}
       
       {/* Dropdown menu */}
-      {user.role === 'regular' && (
+      {role === 'regular' && (
         <div className="row">
           <div className="transactionsContainer col-8 offset-2">
             <h1>My Transactions</h1>
@@ -224,10 +234,11 @@ export default function LandingPage() {
       )}
 
       {/* Transaction Creation, Redemption Processing */}
-      {user.role === 'cashier' && (
+      {role === 'cashier' && (
         <div className="row">
           <div className="col-8 offset-2">
             <CreateItem />
+            <h1>My Redemptions</h1>
             {redemptions.map((item) => 
             (
               <ProcessRedemption
@@ -245,7 +256,7 @@ export default function LandingPage() {
       )}
 
       {/* Overview of events, promotions, and user management */}
-      {(user.role === 'manager' || user.role === 'superuser') && (
+      {(role === 'manager' || role === 'superuser') && (
         <div className="row">
           <div className="col-6 offset-3 chartContainer">
             <h1>Event & Promotion Overview</h1>
