@@ -1,18 +1,6 @@
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import '../styles/globalStyles.css';
-import SiteRoutes from './routes';
-import NavBar from '../components/NavBar/NavBar';
+import ReactDOM from "react-dom/client";
+import App from "./App";
 
-// Use to store and retrieve data from dom api
-// localStorage.setItem("token", "Fake123!");
-// const token = localStorage.getItem("token");
-// console.log(token);
-localStorage.setItem("loggedIn", false);
-
-ReactDOM.createRoot(document.getElementById('pageRoutes')).render(
-    <BrowserRouter>
-      <NavBar />
-      <SiteRoutes />
-    </BrowserRouter>
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <App />
 );

@@ -1,23 +1,35 @@
 import { useState } from "react";
 import { Link, useNavigate  } from 'react-router-dom';
-import { log_in } from '../../js/backend.js';
+import { callBackend, log_in } from '../../js/backend.js';
+import { useUser } from "../UserContext/index.jsx";
 
 export default function Navbar() {
+  const { role, setRole } = useUser();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(
     localStorage.getItem("loggedIn") === "true"
   );
+  const [allowedRoles, setRoles] = useState(null);
 
   async function handleLogin(e) {
     e.preventDefault();
     const user = document.getElementById("username").value;
     const pass = document.getElementById("password").value;
+    const allRoles = ['superuser', 'manager', 'cashier', 'regular'];
     const body = {"utorid": user, "password": pass};
     const { ok, data } = await log_in(body);
+    localStorage.setItem("token", ok ? data.token : "");
+
+    const curr_role = (await callBackend('GET', '/users/me', {})).data.role;
+    setRole(curr_role);
 
     if (ok) {
-      localStorage.setItem("token", data.token);
+      setRoles(
+        allRoles.slice(
+            allRoles.indexOf(curr_role)
+        )
+      );
       setLoggedIn(true);
       setOpen(false);
       navigate('/profile');
@@ -33,16 +45,28 @@ export default function Navbar() {
         <h1 className="websiteTitle">Varsity Mart</h1>
       </div>
 
+      <div></div>
+
       <div>
         {/* Show these pages if logged in */}
         {loggedIn && (
-          <div className="pageLinks">
-            <Link to="/search">Transactions</Link>
-            <Link to="/search">Events</Link>
-            <Link to="/search">Promotions</Link>
+          <div className="featureContainer">
+            <div className="pageLinks">
+              <Link to="/search">Transactions</Link>
+              <Link to="/search">Events</Link>
+              <Link to="/search">Promotions</Link>
+            </div>
+            <div className="roleLevel">
+              <label for="fruitSelect">Switch View:</label>
+              <select value={role} onChange={(e) => setRole(e.target.value)}>
+                  <option value="" disabled>-- Select a role --</option>
+                  {allowedRoles.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+              </select>
+            </div>
           </div>
         )}
-        
 
         {/* Profile icon only */}
         <div className="profileIcon" onClick={() => setOpen(!open)}>

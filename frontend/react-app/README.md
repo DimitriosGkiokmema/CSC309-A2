@@ -54,9 +54,9 @@
     - Users can log in with their credentials.
 - [ ] Registration (5 marks):
     - Cashiers (or higher) can create accounts for users.
-- [ ] Profile Management (5 marks):
+- [x] Profile Management (5 marks):
     - Users can update their account information and passwords.
-- [ ] Password Reset (5 marks):
+- [x] Password Reset (5 marks):
     - Users can reset their password if they have forgotten.
 - [ ] Interface Switching (15 marks):
     - Users can switch between different interfaces (e.g., cashier, event organizer, manager).
