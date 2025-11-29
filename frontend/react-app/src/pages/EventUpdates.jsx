@@ -23,11 +23,9 @@ export default function EventUpdates() {
 
     const [guestid, setGuestId] = useState(null);
     const [organizerid, setOrganizerId] = useState(null);
-    const [guest, setGuest] = useState(null);
-    const [organizer, setOrganizer] = useState(null);
     const [addGuest, setAddGuest] = useState(null);
     const [addOrganizer, setAddOrganizer] = useState(null);
-    
+    const [success, setSuccess] = useState(false);
 
 
     const [message, setMessage] = useState("");
@@ -59,8 +57,6 @@ export default function EventUpdates() {
             published,
         };
 
-        // console.log(payload);
-
         // check for white space as well
         const changed = (payload.name !== null || payload.description !== null || payload.location !== null || payload.startTime !== null ||
             payload.endTime !== null || payload.capacity !== null || payload.points !== null || payload.published !== null);
@@ -75,7 +71,6 @@ export default function EventUpdates() {
         if(location) {
             sameLocation = state.location === location;
         }
-        // console.log(changed);
 
         // API call
         const res = await callBackend("PATCH", `/events/${eventId}`, payload);
@@ -84,8 +79,9 @@ export default function EventUpdates() {
                 setMessage("Input values are the same as existing values.");
             }
             else {
+                setSuccess(true);
                 setMessage("Event updated successfully!"); // rn it doesnt show, navigates too fast
-                // navigate("/events");
+                
             }
         }
         else if (!changed && res.status === 200) { // empty payload
@@ -101,31 +97,29 @@ export default function EventUpdates() {
         if(guestid) {
             const res = await callBackend("GET", `/users/${guestid}`, {});
             if(res.ok) {
-                
-                //console.log(`guest id returned, status is: ${res.status}`);
+
                 const fetchedGuest = res.data;
-                //console.log(`addguest or removeguest? add: ${addGuest}`);
+              
                 if(addGuest) {
                     const gt = await callBackend("POST", `/events/${eventId}/guests`, {utorid: fetchedGuest.utorid});
                     if(gt.ok) {
-                        // console.log(`guest id added, status is: ${gt.status}`);
+                        
+                        setSuccess(true);
                         setList(`New guest added to ${state.name} (id: ${eventId})`);
+                        
                     } 
                     else {
                         setList("Guest could not be added: " + gt.data.error);
                     }  
                 }
                 else {
-                    // console.log("guestid =", guestid);
-                    // console.log("eventid =", eventId);
                     const gt = await callBackend("DELETE", `/events/${eventId}/guests/${guestid}`, {});
-                    //console.log(`guest id removed, status is: ${gt.status}`);
                     if(gt.ok) {
-                        //console.log(`guest id removed, status is: ${gt.status}`);
+                        setSuccess(true);
                         setList(`Guest removed from ${state.name} (id: ${eventId})`);
+                        
                     } 
                     else {
-                        //console.log(`guest id could not be removed, status is: ${gt.status}`);
                         setList("Guest could not be removed: " + gt.data.error);
                     }  
                 }
@@ -143,6 +137,7 @@ export default function EventUpdates() {
                 if(addOrganizer) {
                     const gt = await callBackend("POST", `/events/${eventId}/organizers`, {utorid: fetchedOrg.utorid});
                     if(gt.ok) {
+                        setSuccess(true);
                         setList(`New organizer added to ${eventId} (id: ${state.name})`);
                     } 
                     else {
@@ -152,6 +147,7 @@ export default function EventUpdates() {
                 else {
                     const gt = await callBackend("DELETE", `/events/${eventId}/organizers/${organizerid}`, {});
                     if(gt.ok) {
+                        setSuccess(true);
                         setList(`Organizer removed from ${eventId} (id: ${state.name})`);
                     } 
                     else {
@@ -164,7 +160,11 @@ export default function EventUpdates() {
             }
         }
 
-
+        if(success) {
+            setTimeout(() => {
+                    navigate("/events");
+            }, 1500); // 1.5 seconds
+        }
 
     }
 

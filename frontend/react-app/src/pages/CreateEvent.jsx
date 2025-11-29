@@ -1,14 +1,10 @@
 import "../styles/CreateEvent.css";
-import {useState, useEffect} from "react";
+import {useState} from "react";
 
 import {callBackend} from "../js/backend.js";
-import { useLocation } from 'react-router-dom';
 import {useNavigate} from 'react-router-dom';
 
 export default function CreateEvent() {
-    
-    const loc = useLocation(); // get values from the caller (navigate)
-    const state = loc.state;
     const navigate = useNavigate();
 
     // set patch payload values from the form
@@ -21,20 +17,8 @@ export default function CreateEvent() {
     const [points, setPoints] = useState(null);
     
     const [message, setMessage] = useState("");
-    const [user, setUser] = useState(null); //get the current user so you can check clearance
-
-    useEffect(() => {
-        // fetch current user
-        async function load() {
-            const me = await callBackend('GET', '/users/me', {});
-            if (!me.ok) return; // user not logged in or error
-            setUser(me.data);
-        }
-        load();
-    }, []);
-
-
-    async function updateEvent(e) {
+   
+    async function createEvent(e) {
         // call PATCH /events/:id  
         e.preventDefault();
         const payload = {
@@ -48,18 +32,14 @@ export default function CreateEvent() {
             
         };
 
-        console.log(payload);
-
-        // check for white space as well
-        // const changed = (payload.name !== null || payload.description !== null || payload.location !== null || payload.startTime !== null ||
-        //     payload.endTime !== null || payload.capacity !== null || payload.points !== null);
-    
-
         // API call
         const res = await callBackend("POST", `/events`, payload);
         if (res.ok) {
                 setMessage("Event updated successfully!"); // rn it doesnt show, navigates too fast
-                //navigate("/events");
+
+                setTimeout(() => {
+                    navigate("/events");
+                }, 1500); // 1.5 seconds
             }
         
         else {
@@ -72,12 +52,10 @@ export default function CreateEvent() {
         navigate("/events");
     };
 
-
-  
     return (
         <div>
             <h1>New Event</h1>
-            <form className="event-create-form" onSubmit={updateEvent}>
+            <form className="event-create-form" onSubmit={createEvent}>
                 <label>Name:</label>
                 <input id="name" type="text" required onChange={(e) => setName(e.target.value)}/>
                 <br/>
