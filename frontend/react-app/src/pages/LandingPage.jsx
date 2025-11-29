@@ -61,7 +61,8 @@ export default function LandingPage() {
         <div className="col-8 offset-2 profileContainer">
           <div className="col-6 profileInfo">
             <div>
-              
+                Do you want to edit your profile?
+                <button onClick={() => setEdit(true)}>Edit Profile</button>
             </div>
             <div>
               <p><strong>Name:</strong></p>
