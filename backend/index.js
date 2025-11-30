@@ -23,12 +23,14 @@ const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const jwt = require('jsonwebtoken');
 const app = express();
+const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const get_logged_in = require("./middleware/auth.js");
 const SECRET_KEY = process.env.JWT_SECRET;
 const resetRate = {};
 const ROLE_LEVELS = { "regular": 0, "cashier": 1, "manager": 2, "superuser": 3 };
+app.use(cors());
 app.use(express.json());
 
 // A2 Functions

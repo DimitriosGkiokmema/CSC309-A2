@@ -46,7 +46,7 @@
     - Dashboard showing points balance and recent transactions.
 - [x] Cashiers (3 points):
     - Quick access to transaction creation and redemption processing.
-- [ ] Managers & Superusers (4 points):
+- [x] Managers & Superusers (4 points):
     - Overview of events, promotions, and user management.
 
 **Accounts (60 marks)**
@@ -54,14 +54,14 @@
     - Users can log in with their credentials.
 - [ ] Registration (5 marks):
     - Cashiers (or higher) can create accounts for users.
-- [ ] Profile Management (5 marks):
+- [x] Profile Management (5 marks):
     - Users can update their account information and passwords.
-- [ ] Password Reset (5 marks):
+- [x] Password Reset (5 marks):
     - Users can reset their password if they have forgotten.
 - [ ] Interface Switching (15 marks):
     - Users can switch between different interfaces (e.g., cashier, event organizer, manager).
     - For example, a manager can switch to the regular user interface to accumulate points, while a regular user who is also an event organizer can switch to the organizer interface to manage events.
-- [ ] User Listing (15 marks): Managers can view a list of users.
+- [x] User Listing (15 marks): Managers can view a list of users.
 - [ ] User Management (10 marks): Mangers can verify a user and make a cashier either suspicious or not. Managers or higher can promote/demote users.
 
 **Transactions (50 marks)**
@@ -96,3 +96,7 @@
     - Managers can create, update, and delete promotions.
 - [ ] Promotion Listing (15 marks):
     - All logged in users can view the list of promotions.
+
+
+# Feature Ideas
+- use ImageKit to store and retrieve user profile pics

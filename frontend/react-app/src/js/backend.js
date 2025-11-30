@@ -2,7 +2,7 @@ const API_BASE = "http://localhost:3000";
 const ROLE_LEVELS = {"regular": 0, "cashier": 1, "manager": 2, "superuser": 3};
 
 export async function callBackend(method, path, params) {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     let body = {
         method,
         headers: {
@@ -22,7 +22,7 @@ export async function callBackend(method, path, params) {
         data = await res.json();
     } catch (_) {}
 
-    console.log({status: res.status, ok: res.ok, data})
+    // console.log({method: method, endpoint: path, status: res.status, ok: res.ok, data})
 
     return {
         status: res.status,
@@ -33,17 +33,10 @@ export async function callBackend(method, path, params) {
 
 export async function log_in(body) {
     const result = await callBackend("POST", "/auth/tokens", body);
-    console.log("api call: ", result)
     return result;
 }
 
-const curr_level = 'superuser';
-
-export function check_clearance(min_level) {
-    return ROLE_LEVELS[curr_level] >= ROLE_LEVELS[min_level];
-}
-
-// TODO: actually implement this function
-export function get_clearance() {
-    return curr_level;
+export async function resetPassword(utorid, password) {
+    const resetToken = (await callBackend("POST", "/auth/resets", {utorid})).data.resetToken;
+    return await callBackend('POST', `/auth/resets/${resetToken}`, {utorid, password});
 }

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { callBackend } from '../js/backend.js';
+import { callBackend, resetPassword } from '../js/backend.js';
+import { jsonToQRUrl } from '../js/create_qr.js';
 import '../styles/LandingPage.css';
 import TransactionItem from "../components/TransactionItem";
 import CreateItem from "../components/CreateItem";
 import ProcessRedemption from "../components/ProcessRedemption";
-// import PieChart from "../components/PieChart";
-// import AdminDash from "../components/AdminDash";
+import PieChart from "../components/PieChart";
+import AdminDash from "../components/AdminDash";
+import { useUser } from "../components/UserContext";
+import UsersListing from "../components/UsersListing/UsersListing.jsx";
 
 export default function LandingPage() {
   const [user, setUser] = useState(null);
@@ -16,6 +19,10 @@ export default function LandingPage() {
   const [startedPromos, setStartedP] = useState(0);
   const [endedPromos, setEndedP] = useState(0);
   const [edit, setEdit] = useState(false);
+  const [qr_url, setQR] = useState('');
+  const [formData, setFormData] = useState({});
+  const { role } = useUser();
+  console.log("User is ", role)
 
   useEffect(() => {
     // fetch user info
@@ -23,6 +30,19 @@ export default function LandingPage() {
       const me = await callBackend('GET', '/users/me', {});
       if (!me.ok) return; // user not logged in or error
       setUser(me.data);
+
+      const userInfo = {
+        name: me.data.name,
+        utorid: me.data.utorid,
+        email: me.data.email,
+        birthday: me.data.birthday,
+        password: me.data.password,
+      };
+
+      jsonToQRUrl(userInfo).then(url => {
+        setQR(url);
+      })
+      setFormData(userInfo);
 
       const tx = await callBackend('GET', '/users/me/transactions', {});
       setTransactions(tx.data);
@@ -49,8 +69,48 @@ export default function LandingPage() {
     load();
   }, []);
 
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }
+
+  function handleSave() {
+    const updates = {};
+
+    // only return changed values
+    for (const key in formData) {
+      if (formData[key] !== user[key] && formData[key] !== "" && formData[key] !== null) {
+        updates[key] = formData[key];
+      }
+    }
+    console.log(updates);
+
+    if (Object.keys(updates).length !== 0) {
+      callBackend('PATCH', '/users/me', updates);
+    }
+
+    if (updates.password !== undefined) {
+      resetPassword(user.utorid, updates['password']).then(res => {
+        console.log(res.data);
+      })
+    }
+
+    // setUser();
+    jsonToQRUrl(user).then(url => {
+      setQR(url);
+    });
+    setEdit(false);
+  }
+
   if (!user || !transactions) {
-    return <div>Loading</div>;  // or nothing, or a minimal loader
+    return (
+    <div className="loggedOut">
+      <h1>Please Log In!</h1>
+    </div>
+    );
   }
 
   return (
@@ -61,10 +121,6 @@ export default function LandingPage() {
         <div className="col-8 offset-2 profileContainer">
           <div className="col-6 profileInfo">
             <div>
-                Do you want to edit your profile?
-                <button onClick={() => setEdit(true)}>Edit Profile</button>
-            </div>
-            <div>
               <p><strong>Name:</strong></p>
               <p>{user.name}</p>
             </div>
@@ -73,12 +129,16 @@ export default function LandingPage() {
               <p>{user.utorid}</p>
             </div>
             <div>
+              <p><strong>Password:</strong></p>
+              <p>{user.password}</p>
+            </div>
+            <div>
               <p><strong>Email:</strong></p>
               <p> {user.email}</p>
             </div>
             <div>
               <p><strong>Birthday:</strong></p>
-              <p>{user.birthday || 'unknown'}</p>
+              <p>{user.birthday || ''}</p>
             </div>
             <div>
               <p><strong>Points:</strong></p>
@@ -88,21 +148,74 @@ export default function LandingPage() {
               <p><strong>Role:</strong></p>
               <p> {user.role}</p>
             </div>
+            <div>
+              <div></div>
+              <div className="editBtn" onClick={() => setEdit(!edit)}>
+                <div>Edit</div>
+                <i className="fa-regular fa-pen-to-square"></i>
+              </div>
+              <div></div>
+            </div>
           </div>
           <div className="col-4">
             <div className="qrContainer">
-              <img src="../src/assets/qr_code.png" />
+              <img src={qr_url} />
             </div>
           </div>
         </div>
       </div>
 
+      {/* Edit Profile Info */}
       {edit && (
-        <div>EFFECT WORKS!!!</div>
+        <div className="editModal">
+          <div className="editBox">
+            <h2>Edit Profile</h2>
+
+            <label>Name:</label>
+            <input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+            />
+
+            <label>Username:</label>
+            <input
+              name="utorid"
+              value={formData.utorid}
+              onChange={handleChange}
+            />
+
+            <label>Password:</label>
+            <input
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+            />
+
+            <label>Email:</label>
+            <input
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+            />
+
+            <label>Birthday:</label>
+            <input
+              name="birthday"
+              value={formData.birthday || ''}
+              onChange={handleChange}
+            />
+
+            <div className="editActions">
+              <button onClick={() => setEdit(false)}>Cancel</button>
+              <button onClick={handleSave}>Save</button>
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Dropdown menu */}
-      {user.role === 'regular' && (
+      {role === 'regular' && (
         <div className="row">
           <div className="transactionsContainer col-8 offset-2">
             <h1>My Transactions</h1>
@@ -122,10 +235,11 @@ export default function LandingPage() {
       )}
 
       {/* Transaction Creation, Redemption Processing */}
-      {user.role === 'cashier' && (
+      {role === 'cashier' && (
         <div className="row">
           <div className="col-8 offset-2">
             <CreateItem />
+            <h1>My Redemptions</h1>
             {redemptions.map((item) => 
             (
               <ProcessRedemption
@@ -142,13 +256,19 @@ export default function LandingPage() {
         </div>
       )}
 
+
+      {/* Overview of Users Listings */}
+      {(role === 'manager' || role === 'superuser') && (
+        <UsersListing />
+      )}
+
       {/* Overview of events, promotions, and user management */}
-      {(user.role === 'manager' || user.role === 'superuser') && (
+      {(role === 'manager' || role === 'superuser') && (
         <div className="row">
           <div className="col-6 offset-3 chartContainer">
             <h1>Event & Promotion Overview</h1>
-            <div>
-              {/* <PieChart
+            {/* <div>
+              <PieChart
                 title="Events"
                 started={startedEvents}
                 ended={endedEvents}
@@ -157,10 +277,10 @@ export default function LandingPage() {
                 title="Promotions"
                 started={startedPromos}
                 ended={endedPromos}
-              /> */}
-            </div>
+              />
+            </div> */}
           </div>
-          {/* <AdminDash /> */}
+          <AdminDash />
         </div>
       )}
     </div>

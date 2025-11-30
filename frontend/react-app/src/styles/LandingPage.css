@@ -42,3 +42,94 @@ h1 {
 .transactionsContainer {
     
 }
+
+.editBtn {
+  display: flex;
+  align-items: center;
+  background-color: rgb(185, 187, 188);
+  border-radius: 10px;
+  padding: 5px;
+}
+
+.editBtn:hover {
+  background-color: rgb(148, 150, 152);
+}
+
+.fa-pen-to-square {
+    font-size: 25px;
+}
+
+.chartContainer div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5em;
+}
+
+/* Backdrop */
+.editModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+/* Popup box */
+.editBox {
+  background: #fff;
+  padding: 25px 30px;
+  width: 380px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Popup title */
+.editBox h2 {
+  margin: 0 0 10px 0;
+  font-size: 22px;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Labels */
+.editBox label {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+/* Inputs */
+.editBox input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+.editBox input:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* Buttons container */
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Buttons */
+.editActions button {
+  padding: 8px 14px;
+  font-size: 14px
+}

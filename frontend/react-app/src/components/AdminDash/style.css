@@ -1,0 +1,33 @@
+.analytics-container {
+  width: 100%;
+  padding: 20px 40px;
+}
+
+.analytics-title {
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.analytics-card {
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  background: #fafafa;
+}
+
+.analytics-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.analytics-value {
+  font-size: 24px;
+  font-weight: 700;
+}
