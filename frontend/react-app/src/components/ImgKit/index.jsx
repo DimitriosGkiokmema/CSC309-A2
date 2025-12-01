@@ -2,11 +2,11 @@ import { IKContext, IKImage, IKUpload } from 'imagekitio-react';
 import { updateProfilePic } from '../../js/backend.js';
 import { useUser } from "../UserContext/index.jsx";
 
-const urlEndpoint = 'https://ik.imagekit.io/dimi/309_Project';
-const publicKey = 'public_Ezy+fEYaGELwaZbrca1PEAsLYH8='; 
+const urlEndpoint = import.meta.env.VITE_IMAGEKIT_ENDPOINT;
+const publicKey = import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY; 
 const authenticator =  async () => {
     try {
-        const response = await fetch('http://localhost:3001/auth');
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/img/auth`);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -20,8 +20,6 @@ const authenticator =  async () => {
         throw new Error(`Authentication request failed: ${error.message}`);
     }
 };
-
-
 
 export default function ImgKit() {
   const { setPic } = useUser();
