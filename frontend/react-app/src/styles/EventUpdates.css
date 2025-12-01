@@ -1,0 +1,97 @@
+.event-update-form {
+    display: grid;
+    grid-template-columns: auto 500px;
+    justify-content: center;
+    margin-left: 30px;
+    margin-bottom: 50px;
+   
+    
+}
+
+form > label {
+  font-weight: bold;
+  text-align: right;
+  grid-column: 1;
+  margin-right: 20px;
+}
+
+input[type="checkbox"] {
+    grid-column: 2;
+    justify-self: left;
+    padding: 0;
+    transform: scale(1.5);
+}
+
+#checkbox {
+    text-align: left;
+   
+}
+
+.submitButton {
+    grid-column: 2;
+    grid-row: 21;
+    justify-self: center;
+    padding: 5px;
+    width: 100px;
+    border-radius: 5px;
+    border-color:gray;
+    background-color:azure;
+}
+
+.submitButton:hover {
+    border-color: black;
+    background-color: lightblue;
+    font-weight: bold;
+}
+
+.cancelButton {
+    grid-column: 2;
+    grid-row: 21;
+    justify-self: right;
+    padding: 5px;
+    width: 100px;
+    border-radius: 5px;
+    border-color:gray;
+    background-color:lightgrey;
+}
+
+.cancelButton:hover {
+    border-color: black;
+    background-color:grey;
+    font-weight: bold;
+}
+
+#guestid {
+    grid-column: 2;
+    grid-row: 17;
+    justify-self: left;
+    width: 20%;
+}
+
+#editGuests {
+    grid-column: 2;
+    grid-row: 17;
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+
+#organizerid {
+    grid-column: 2;
+    grid-row: 19;
+    justify-self: left;
+    width: 20%;
+    margin-right: 60px;
+}
+
+#editOrganizers {
+    grid-column: 2;
+    grid-row: 19;
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+

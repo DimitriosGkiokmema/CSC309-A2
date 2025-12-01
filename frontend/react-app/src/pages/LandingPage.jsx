@@ -7,7 +7,9 @@ import CreateItem from "../components/CreateItem";
 import ProcessRedemption from "../components/ProcessRedemption";
 import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
+import ImgKit from "../components/ImgKit";
 import { useUser } from "../components/UserContext";
+import { Image } from '@imagekit/react';
 
 export default function LandingPage() {
   const [user, setUser] = useState(null);
@@ -21,50 +23,53 @@ export default function LandingPage() {
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
   const { role } = useUser();
-  console.log("User is ", role)
+
+  // fetch user info
+  async function load() {
+    const me = await callBackend('GET', '/users/me', {});
+    if (!me.ok) return; // user not logged in or error
+    setUser(me.data);
+
+    const bday = me.data.birthday
+      ? new Date(me.data.birthday).toISOString().slice(0, 16)
+      : "";
+
+    const userInfo = {
+      name: me.data.name,
+      utorid: me.data.utorid,
+      email: me.data.email,
+      birthday: bday,
+      password: me.data.password,
+    };
+
+    jsonToQRUrl(userInfo).then(url => {
+      setQR(url);
+    })
+    setFormData(userInfo);
+
+    const tx = await callBackend('GET', '/users/me/transactions', {});
+    setTransactions(tx.data);
+
+    const r = await callBackend('GET', '/users/me/transactions?type=redemption&relatedId=null', {});
+    const filtered = r.data.results.filter(obj => obj.type === 'redemption');
+    setRedemptions(filtered);
+
+    // Get event data
+    let started = await callBackend('GET', '/events?started=true', {});
+    setStartedE(started.data.count);
+
+    let ended = await callBackend('GET', '/events?ended=true', {});
+    setEndedE(ended.data.count);
+
+    // Get promo data
+    started = await callBackend('GET', '/promotions?started=true', {});
+    setStartedP(started.data.count);
+
+    ended = await callBackend('GET', '/promotions?ended=false', {});
+    setEndedP(ended.data.count);
+  }
 
   useEffect(() => {
-    // fetch user info
-    async function load() {
-      const me = await callBackend('GET', '/users/me', {});
-      if (!me.ok) return; // user not logged in or error
-      setUser(me.data);
-
-      const userInfo = {
-        name: me.data.name,
-        utorid: me.data.utorid,
-        email: me.data.email,
-        birthday: me.data.birthday,
-        password: me.data.password,
-      };
-
-      jsonToQRUrl(userInfo).then(url => {
-        setQR(url);
-      })
-      setFormData(userInfo);
-
-      const tx = await callBackend('GET', '/users/me/transactions', {});
-      setTransactions(tx.data);
-
-      const r = await callBackend('GET', '/users/me/transactions?type=redemption&relatedId=null', {});
-      const filtered = r.data.results.filter(obj => obj.type === 'redemption');
-      setRedemptions(filtered);
-
-      // Get event data
-      let started = await callBackend('GET', '/events?started=true', {});
-      setStartedE(started.data.count);
-
-      let ended = await callBackend('GET', '/events?ended=true', {});
-      setEndedE(ended.data.count);
-
-      // Get promo data
-      started = await callBackend('GET', '/promotions?started=true', {});
-      setStartedP(started.data.count);
-
-      ended = await callBackend('GET', '/promotions?ended=false', {});
-      setEndedP(ended.data.count);
-    }
-
     load();
   }, []);
 
@@ -83,9 +88,13 @@ export default function LandingPage() {
     for (const key in formData) {
       if (formData[key] !== user[key] && formData[key] !== "" && formData[key] !== null) {
         updates[key] = formData[key];
+
+        if (key === 'birthday') {
+          updates[key] = new Date(formData[key]).toISOString();
+        }
       }
     }
-    console.log(updates);
+    console.log("Updating user stats:", updates);
 
     if (Object.keys(updates).length !== 0) {
       callBackend('PATCH', '/users/me', updates);
@@ -102,6 +111,7 @@ export default function LandingPage() {
       setQR(url);
     });
     setEdit(false);
+    load();
   }
 
   if (!user || !transactions) {
@@ -128,16 +138,12 @@ export default function LandingPage() {
               <p>{user.utorid}</p>
             </div>
             <div>
-              <p><strong>Password:</strong></p>
-              <p>{user.password}</p>
-            </div>
-            <div>
               <p><strong>Email:</strong></p>
               <p> {user.email}</p>
             </div>
             <div>
               <p><strong>Birthday:</strong></p>
-              <p>{user.birthday || ''}</p>
+              <p>{user.birthday ? user.birthday.slice(0, 10) : ''}</p>
             </div>
             <div>
               <p><strong>Points:</strong></p>
@@ -201,9 +207,13 @@ export default function LandingPage() {
             <label>Birthday:</label>
             <input
               name="birthday"
-              value={formData.birthday || ''}
+              value={formData.birthday?.slice(0, 16) || ""}
+              type="datetime-local"
               onChange={handleChange}
             />
+
+            {/* Allows users to upload an image to ImageKit */}
+            <ImgKit />
 
             <div className="editActions">
               <button onClick={() => setEdit(false)}>Cancel</button>

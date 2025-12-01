@@ -1,0 +1,68 @@
+.eventSearch {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+input[type="number"] {
+    /* width: 500px; */
+    margin-right: 10px;
+}
+
+input[type="button"] {
+    background-color: aliceblue;
+    border-radius: 5px;
+    margin-right: 25px;
+}
+
+input[type="button"]:hover {
+    background-color: grey;
+    font-weight: bold;
+    
+}
+
+.error {
+    color: red;
+    font-style: italic;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.filterOptions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+#start, #end, #publish {
+    margin: 6px;
+}
+
+#filterName, #filterLocation {
+    width: 120px;
+}
+
+.pagenav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 10px;
+}
+
+#prevBtn, #nextBtn {
+    border: none;
+    color: black;
+    background-color: lightblue;
+    font-weight: bold;
+}
+
+#prevBtn:active, #nextBtn:active {
+    text-decoration: underline;
+}
+
+#filterStart, #filterEnd, #filterPublished {
+    margin-right: 5px;
+}

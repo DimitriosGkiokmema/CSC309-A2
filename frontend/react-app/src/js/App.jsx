@@ -2,6 +2,7 @@ import { BrowserRouter } from "react-router-dom";
 import { useEffect } from "react";
 import SiteRoutes from "./routes";
 import NavBar from "../components/NavBar";
+import Footer from '../components/Footer/Footer';
 import { UserProvider } from "../components/UserContext";
 
 // Use to store and retrieve data from dom api
@@ -32,6 +33,7 @@ export default function App() {
       <BrowserRouter>
         <NavBar />
         <SiteRoutes />
+        <Footer />
       </BrowserRouter>
     </UserProvider>
   );

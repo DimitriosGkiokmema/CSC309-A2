@@ -22,7 +22,7 @@ export async function callBackend(method, path, params) {
         data = await res.json();
     } catch (_) {}
 
-    // console.log({method: method, endpoint: path, status: res.status, ok: res.ok, data})
+    console.log({method: method, endpoint: path, body: params, status: res.status, ok: res.ok, data})
 
     return {
         status: res.status,
@@ -39,4 +39,8 @@ export async function log_in(body) {
 export async function resetPassword(utorid, password) {
     const resetToken = (await callBackend("POST", "/auth/resets", {utorid})).data.resetToken;
     return await callBackend('POST', `/auth/resets/${resetToken}`, {utorid, password});
+}
+
+export async function updateProfilePic(url) {
+    return await callBackend('PATCH', '/users/me', {avatarUrl: url});
 }

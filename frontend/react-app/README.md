@@ -100,3 +100,4 @@
 
 # Feature Ideas
 - use ImageKit to store and retrieve user profile pics
+- Need to find  online prisma db
