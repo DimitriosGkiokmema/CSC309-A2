@@ -288,7 +288,8 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
                 createdAt: true,
                 lastLogin: true,
                 verified: true,
-                avatarUrl: true
+                avatarUrl: true,
+                suspicious: true
             }
         });
 
@@ -689,7 +690,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
             }
         }
         else {
-            return res.status(400).json({ error: "Invalid payload" });
+            return res.status(400).json({ error: "Invalid payload from verified" });
         }
     }
 
@@ -700,7 +701,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
             }
         }
         else {
-            return res.status(400).json({ error: "Invalid payload" });
+            return res.status(400).json({ error: "Invalid payload from suspicious" });
         }
 
     // As Manager: Either "cashier" or "regular" 
@@ -709,7 +710,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
     if (role !== undefined && role !== null) {
         if (typeof role === "string" && roles.includes(role)) {
             if ((role === "manager" || role === "superuser") && currentUser.role !== "superuser") {
-                return res.status(403).json({ error: "Invalid payload" });
+                return res.status(403).json({ error: "Invalid payload from role" });
             }
 
             if (findUser.role !== role) {
@@ -719,7 +720,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         }
 
         else {
-            return res.status(400).json({ error: "Invalid payload" });
+            return res.status(400).json({ error: "Invalid payload from role else" });
         }
     }
 

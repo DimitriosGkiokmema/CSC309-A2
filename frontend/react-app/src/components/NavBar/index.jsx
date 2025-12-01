@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate  } from 'react-router-dom';
 import { callBackend, log_in } from '../../js/backend.js';
-import { useUser } from "../UserContext/index.jsx";
+import { useUser } from "../UserContext/useUser.js";
 
 export default function Navbar() {
-  const { role, setRole } = useUser();
+  const { role, setRole, loadingRole } = useUser();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(
     sessionStorage.getItem("loggedIn") === "true"
   );
-  const [allowedRoles, setRoles] = useState(null);
+  const [allowedRoles, setRoles] = useState(['superuser', 'manager', 'cashier', 'regular']);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -53,6 +53,10 @@ export default function Navbar() {
     setRole("");
     setOpen(false);
     navigate('/');
+  }
+
+  if (loadingRole) {
+    return <div>Loading...</div>;
   }
 
   return (

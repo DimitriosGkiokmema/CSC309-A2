@@ -40,3 +40,13 @@ export async function resetPassword(utorid, password) {
     const resetToken = (await callBackend("POST", "/auth/resets", {utorid})).data.resetToken;
     return await callBackend('POST', `/auth/resets/${resetToken}`, {utorid, password});
 }
+
+export function get_clearance(role) {
+    if (!role) return -1;
+    const key = String(role).toLowerCase();
+    return ROLE_LEVELS[key] ?? -1;
+}
+
+export function check_clearance(currentRole, minRole) {
+    return get_clearance(currentRole) >= get_clearance(minRole);
+}
