@@ -4,10 +4,12 @@ const UserContext = createContext();
 
 export function UserProvider({ children }) {
   const [role, setRole] = useState("regular");
+  const [pic, setPic] = useState("");
 
   useEffect(() => {
     const handleBeforeUnload = () => {
       setRole("regular");
+      setPic("");
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -16,7 +18,14 @@ export function UserProvider({ children }) {
   }, []);
 
   return (
-    <UserContext.Provider value={{ role, setRole }}>
+    <UserContext.Provider
+      value={{
+        role,
+        setRole,
+        pic,
+        setPic
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

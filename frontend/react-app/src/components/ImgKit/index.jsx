@@ -1,5 +1,6 @@
 import { IKContext, IKImage, IKUpload } from 'imagekitio-react';
 import { updateProfilePic } from '../../js/backend.js';
+import { useUser } from "../UserContext/index.jsx";
 
 const urlEndpoint = 'https://ik.imagekit.io/dimi/309_Project';
 const publicKey = 'public_Ezy+fEYaGELwaZbrca1PEAsLYH8='; 
@@ -20,16 +21,21 @@ const authenticator =  async () => {
     }
 };
 
-const onError = err => {
-    console.log("Error uploading pic to ImageKit", err);
-};
 
-const onSuccess = res => {
-    console.log("Successfully uploaded pic to ImageKit", res);
-    updateProfilePic(res.url)
-};
 
 export default function ImgKit() {
+  const { setPic } = useUser();
+
+  const onError = err => {
+      console.log("Error uploading pic to ImageKit", err);
+  };
+
+  const onSuccess = res => {
+      console.log("Successfully uploaded pic to ImageKit", res);
+      updateProfilePic(res.url);
+      setPic(res.url);
+  };
+
   return (
     <div className="ImgKit">
       <IKContext 
