@@ -1,8 +1,7 @@
-// import "./style.css";
+import "./style.css";
 import {useState, useEffect} from "react";
 import { callBackend } from "../../js/backend"; 
-import {useNavigate} from "react-router-dom";
-import {useLocation} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router-dom';
 
 function EventItem({ id, name, location, startTime, endTime, capacity, numGuests, published }) {
     const [user, setUser] = useState(null); // check the user's role

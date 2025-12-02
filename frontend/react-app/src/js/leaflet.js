@@ -1,3 +1,4 @@
+
 export default function createMap() {
     var map = L.map('map').setView([43.6617, -79.397108], 15);
     var marker = L.marker([43.66137058152606, -79.39710894938374]).addTo(map);

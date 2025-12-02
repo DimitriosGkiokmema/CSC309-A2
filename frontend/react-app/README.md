@@ -6,7 +6,7 @@
 - [ ] A page that allows the user to make a point redemption request
 - [ ] A page that displays the QR code of an unprocessed redemption request.
 - [ ] A page that displays all available promotions.
-- [ ] A page that displays all published events.
+- [x] A page that displays all published events.
 - [ ] A page that displays a specific event and allows a user to RSVP to an event.
 - [ ] A page that displays all past transactions for the current logged in user (with filters, order-by, and pagination).
     - Each transaction card should be displayed "nicely", e.g., instead of relatedId, it should display the utorid of the sender/receiver.
@@ -19,17 +19,17 @@
     - QR code scanning capability is NOT required.
 
 **Managers**
-- [ ] A page that displays all users with filters, order-by, and pagination).
+- [ ] A page that displays all users with filters, order-by, and pagination.
 - [ ] A page that allows managers to update users, e.g., make a user verified, promote a user to cashier, etc.
 - [ ] A page that displays ALL transactions (with filters, order-by, and pagination).
 - [ ] A page that displays a specific transaction, with the option of creating an adjustment transaction for it, and marking it as suspicious.
 - [ ] A page that allows managers to create new promotions.
 - [ ] A page that displays all promotions (with filters, order-by, and pagination).
 - [ ] A page that allows managers to view/edit/delete a specific promotion.
-- [ ] A page that allows managers to create new events.
-- [ ] A page that displays all events (with filters, order-by, and pagination).
-- [ ] A page that allows managers to view/edit/delete a specific event.
-- [ ] A page that allows managers to add or remove users from an event.
+- [x] A page that allows managers to create new events.
+- [x] A page that displays all events (with filters, order-by, and pagination).
+- [x] A page that allows managers to view/edit/delete a specific event.
+- [x] A page that allows managers to add or remove users from an event.
 
 **Event Organizer (and all Managers)**
 - [ ] A page that displays the events that the user is responsible for.
@@ -46,6 +46,7 @@
     - Dashboard showing points balance and recent transactions.
 - [x] Cashiers (3 points):
     - Quick access to transaction creation and redemption processing.
+- [x] Managers & Superusers (4 points):
 - [x] Managers & Superusers (4 points):
     - Overview of events, promotions, and user management.
 
@@ -79,15 +80,15 @@
 
 **Events (45 marks)**
 - [ ] Event Management (15 marks):
-    - Managers can create, update, and delete events.
-    - Managers can add event organizers.
+    - Managers can create, update, and delete events. (DONE)
+    - Managers can add event organizers. (DONE)
     - Event organizers can update events.
-- [ ] Event Listing (15 marks):
-    - All logged in users can view the list of events.
+- [x] Event Listing (15 marks):
+    - All logged in users can view the list of events. (DONE)
 - [ ] RSVP and Attendance (10 marks):
-    - Users can RSVP to events.
-    - Managers and event organizers can add guests to an event.
-    - Managers can remove guests from an event.
+    - Users can RSVP to events. (DONE)
+    - Managers and event organizers can add guests to an event. (only managers rn)
+    - Managers can remove guests from an event. (DONE)
 - [ ] Point Allocation (5 marks):
     - Managers and event organizers can award points to guests.
 

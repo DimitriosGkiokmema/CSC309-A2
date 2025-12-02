@@ -54,12 +54,14 @@ export default function Navbar() {
   }
 
   return (
-    <header>
+    <header >
+      {/* Navbar is here */}
       <div onClick={() => navigate("/")}>
-        <img className="navLogo" src="../src/assets/varsity_logo.png" />
+        <img className="navLogo" src="../../../src/assets/varsity_logo.png" />
         <h1 className="websiteTitle">Varsity Mart</h1>
       </div>
 
+      {/* DO NOT DELETE EMPTY DIV: needed for styling to work */}
       <div></div>
 
       <div>
@@ -70,6 +72,9 @@ export default function Navbar() {
               <Link to="/search">Transactions</Link>
               <Link to="/search">Events</Link>
               <Link to="/search">Promotions</Link>
+              <Link to="/events">Events</Link>
+              <Link to="/event-new">New Event</Link>
+              <Link to="/registration">Registration</Link>
             </div>
             <div className="roleLevel">
               <label for="fruitSelect">Switch View:</label>
@@ -118,7 +123,7 @@ export default function Navbar() {
                 </div>
                 <div>
                   <input type="text" className="log-input" id="username" required />
-                  <input type="text" className="log-input" id="password" required />
+                  <input type="password" className="log-input" id="password" required />
                 </div>
               </form>
             )}
