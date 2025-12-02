@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import SiteRoutes from "./routes";
 import NavBar from "../components/NavBar";
 import { UserProvider } from "../components/UserContext";
+import Footer from "../components/Footer/Footer";
 
 // Use to store and retrieve data from dom api
 // localStorage.setItem("token", "Fake123!");
@@ -15,6 +16,7 @@ export default function App() {
       <BrowserRouter>
         <NavBar />
         <SiteRoutes />
+        <Footer />
       </BrowserRouter>
     </UserProvider>
   );

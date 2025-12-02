@@ -75,7 +75,7 @@ export default function Navbar() {
             <div className="pageLinks">
               <Link to="/search">Transactions</Link>
               <Link to="/search">Events</Link>
-              <Link to="/search">Promotions</Link>
+              <Link to="#promotions">Promotions</Link>
             </div>
             <div className="roleLevel">
               <label for="fruitSelect">Switch View:</label>
@@ -127,6 +127,7 @@ export default function Navbar() {
                   <input type="text" className="log-input" id="username" required />
                   <input type="text" className="log-input" id="password" required />
                 </div>
+
               </form>
             )}
           </div>

@@ -9,6 +9,7 @@ import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
 import UsersListing from "../components/UsersListing/UsersListing.jsx";
 import { useUser } from "../components/UserContext/useUser.js";
+import Promotions from "./Promotions.jsx";
 
 export default function LandingPage() {
   const [user, setUser] = useState(null);
@@ -22,7 +23,7 @@ export default function LandingPage() {
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
   const { role, loadingRole } = useUser();
-  console.log("User is ", role)
+  console.log("User role is ", role)
 
   useEffect(() => {
     // fetch user info
@@ -283,6 +284,9 @@ export default function LandingPage() {
           <AdminDash />
         </div>
       )}
+      {console.log("Rendering promotions with role ", role)}
+      {/* Promotions Listing and Management */}
+      { user && <Promotions role={role} /> }
     </div>
   );
 }

@@ -102,7 +102,7 @@ export default function UsersListing() {
         <div>
             <h1>Users Listing</h1>
             {/* Bootstrap Table to display users */}
-            <table className="table table-striped">
+            <table className="table table-striped table-bordered">
                 <thead>
                     <tr>
                         <th>ID</th>
