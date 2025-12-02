@@ -27,9 +27,13 @@ export default function EventUpdates() {
     const [addOrganizer, setAddOrganizer] = useState(null);
     const [success, setSuccess] = useState(false);
 
+    const [award, setAward] = useState("all");
+    const [awardId, setAwardId] = useState(null);
+    const [awardAmt, setAwardAmt] = useState(0);
 
     const [message, setMessage] = useState("");
     const [listMessage, setList] = useState("");
+    const [pointsMsg, setPointsMsg] = useState("");
     const [user, setUser] = useState(null); //get the current user so you can check clearance
 
     useEffect(() => {
@@ -92,8 +96,8 @@ export default function EventUpdates() {
         }
      
         // add or remove guests/organizers
-        console.log(`Guest id to remove: ${guestid}`);
-
+        // console.log(`Guest id to edit: ${guestid}`);
+        // console.log("Add a guest: " + addGuest);
         if(guestid) {
             const res = await callBackend("GET", `/users/${guestid}`, {});
             if(res.ok) {
@@ -160,6 +164,40 @@ export default function EventUpdates() {
             }
         }
 
+        // give points to guests
+        if(award === "all") {
+            // utorid is undefined
+            if(awardAmt !== 0) {
+                console.log("award amount is a number: " + (typeof parseInt(awardAmt) === "number"));
+                const res = await callBackend("POST", `/events/${eventId}/transactions`, {type: "event", utorid: awardId, amount: parseInt(awardAmt)});
+                if (res.ok) {
+                    setSuccess(true);
+                    setPointsMsg("All guests were awarded " + awardAmt + " points");
+                }
+                else {
+                    setPointsMsg("No points awarded, " + res.data.error);
+                }
+            }
+            else {
+                setPointsMsg("No points awarded, please enter an amount");
+            }
+        }
+        else {
+            if(awardAmt !== 0) {
+                const res = await callBackend("POST", `/events/${eventId}/transactions`, {type: "event", utorid: awardId, amount: parseInt(awardAmt)});
+                if(res.ok) {
+                    setSuccess(true);
+                    setPointsMsg("Guest " + awardId + "was awarded " + awardAmt + " points");
+                }
+                else {
+                    setPointsMsg("No points awarded, " + res.data.error);
+                }
+            }
+            else {
+                setPointsMsg("No points awarded, please enter an amount");
+            }
+        }
+
         if(success) {
             setTimeout(() => {
                     navigate("/events");
@@ -169,49 +207,82 @@ export default function EventUpdates() {
     }
 
     async function goBack() {
+        if(state.profile) {
+            navigate("/profile");
+        }
         navigate("/events");
     };
 
 
-    if(user && user.role !== "manager") { //clearance, disable points and published
-        return (
-            <div>
-                <h1>Event Updates</h1>
-                <form className="event-update-form" onSubmit={updateEvent}>
-                    <label>Name:</label>
-                    <input id="name" type="text" onChange={(e) => setName(e.target.value)}/>
-                    <br/>
-                    <label>Description:</label>
-                    <textarea id="description" type="text" onChange={(e) => setDescription(e.target.value)}/>
-                    <br/>
-                    <label>Location:</label>
-                    <input type="text" onChange={(e) => setLocation(e.target.value)}/>
-                    <br/>    
-                    <label>Start:</label>
-                    <input type="datetime-local" onChange={(e) => setStartTime(e.target.value)}/>
-                    <br/>    
-                    <label>End:</label>
-                    <input type="datetime-local" onChange={(e) => setEndTime(e.target.value)}/>
-                    <br/>  
-                    <label>Capacity:</label>
-                    <input type="number" onChange={(e) => setCapacity(e.target.value)}/>
-                    <br/>
-                    <label>Points:</label>
-                    <input type="number" disabled onChange={(e) => setPoints(e.target.value)}/>
-                    <br/>
-                    <label className="checkbox">Published:</label>
-                    <input type="checkbox" disabled onChange={(e) => setPublished(e.target.checked)}/>
     
+    if (user && state.organizer && user.role !== "manager") {
+        return (
+        <div>
+            <h1>Event Updates: {state.name}</h1>
+            <form className="event-update-form" onSubmit={updateEvent}>
+                <label>Name:</label>
+                <input id="name" type="text" placeholder="Enter a new event name" onChange={(e) => setName(e.target.value)}/>
+                <br/>
+                <label>Description:</label>
+                <textarea id="description" type="text" placeholder="Enter a new event description" onChange={(e) => setDescription(e.target.value)}/>
+                <br/>
+                <label>Location:</label>
+                <input type="text" placeholder="Enter a new event location" onChange={(e) => setLocation(e.target.value)}/>
+                <br/>    
+                <label>Start:</label>
+                <input type="datetime-local" onChange={(e) => setStartTime(e.target.value)}/>
+                <br/>    
+                <label>End:</label>
+                <input type="datetime-local" onChange={(e) => setEndTime(e.target.value)}/>
+                <br/>  
+                <label>Capacity:</label>
+                <input type="number" placeholder="Enter a new capacity" onChange={(e) => setCapacity(e.target.value)}/>
+                <br/>
+                <label>Award points:</label>
+                <input type="number" placeholder="Enter a new points total" disabled onChange={(e) => setPoints(e.target.value)}/>
+                <br/>
+                <label className="checkbox">Publish:</label>
+                <input type="checkbox" disabled onChange={(e) => setPublished(e.target.checked)}/>
+                <br/>
+                <hr/>
+                {/* {add organizers and guests, only managers can do this!} */}
+                <label>Add a guest:</label>
+                <input id="guestid" type="number" placeholder="Enter id#" onChange={(e) => setGuestId(e.target.value)}></input>
+                <span id="editGuests">
+                    
+                    <input id="addGuest" name ="guest" type="checkbox" checked={addGuest} onChange={(e) => setAddGuest(e.target.checked)}></input>
+                    <label htmlFor="addGuest">Add guest</label>
+                    
+                </span>
+                <br/>
+                {/* award points to a single guest or all guests */}
+                <hr/>
+                <label>Award points to: </label>
+                <select onChange={(e) => {setAward(e.target.value)}} value={award}>
+                    <option value="all" selected>All guests</option>
+                    <option value="single">Single guest</option>
+                </select> 
+                    <br/>
+                    <label>Recipient:</label>
+                    <input id="awardGuest" type="text" placeholder="Enter utorid" disabled={award === "all"} onChange={(e) => setAwardId(e.target.value)}></input>
+                    <br/>
+                    <label>Award Amount</label>
+                    <input id="awardAmt" type="number" placeholder="Enter points to award" onChange={(e) => setAwardAmt(e.target.value)}></input>
+                
+                
+                <br/><br/>
+                <div className="formButtons">
                     <input className="submitButton" type="submit" value="Submit"></input> 
                     <input className="cancelButton" type="button" value="Cancel" onClick={goBack}></input>
-                </form>
-    
-                <div className="message">{message}</div>
-            </div>
-        );
-        
+                </div>
+            </form>
+
+            <div className="message">{message}</div>
+            <div>{listMessage}</div>
+            <div>{pointsMsg}</div>
+        </div>
+    );
     }
-    
     // only for managers!!
     return (
         <div>
@@ -233,17 +304,18 @@ export default function EventUpdates() {
                 <input type="datetime-local" onChange={(e) => setEndTime(e.target.value)}/>
                 <br/>  
                 <label>Capacity:</label>
-                <input type="number" onChange={(e) => setCapacity(e.target.value)}/>
+                <input type="number" placeholder="Enter a new capacity" onChange={(e) => setCapacity(e.target.value)}/>
                 <br/>
                 <label>Award points:</label>
-                <input type="number" onChange={(e) => setPoints(e.target.value)}/>
+                <input type="number" placeholder="Enter a new points total" onChange={(e) => setPoints(e.target.value)}/>
                 <br/>
                 <label className="checkbox">Publish:</label>
                 <input type="checkbox" onChange={(e) => setPublished(e.target.checked)}/>
                 <br/>
+                <hr/>
                 {/* {add organizers and guests, only managers can do this!} */}
-                <label>Edit guest list (enter id#):</label>
-                <input id="guestid" type="number" onChange={(e) => setGuestId(e.target.value)}></input>
+                <label>Edit guest list:</label>
+                <input id="guestid" type="number" placeholder="Enter id#" onChange={(e) => setGuestId(e.target.value)}></input>
                 <span id="editGuests">
                     
                     <input id="addGuest" name ="guest" type="radio" onChange={() => setAddGuest(true)}></input>
@@ -253,8 +325,8 @@ export default function EventUpdates() {
                     <label htmlFor="removeGuest">Remove guest</label>
                 </span>
                 <br/>
-                <label>Edit organizer list (enter id#):</label>
-                <input id="organizerid" type="number" onChange={(e) => setOrganizerId(e.target.value)}></input>
+                <label>Edit organizer list:</label>
+                <input id="organizerid" type="number" placeholder="Enter id#" onChange={(e) => setOrganizerId(e.target.value)}></input>
                 <span id="editOrganizers">
                     
                     <input id="addOrganizer" name ="organizer" type="radio" onChange={() => setAddOrganizer(true)}></input>
@@ -264,12 +336,31 @@ export default function EventUpdates() {
                     <label htmlFor="removeOrganizer">Remove organizer</label>
                 </span>
                 <br/>
-                <input className="submitButton" type="submit" value="Submit"></input> 
-                <input className="cancelButton" type="button" value="Cancel" onClick={goBack}></input>
+                {/* award points to a single guest or all guests */}
+                <hr/>
+                <label>Award points to: </label>
+                <select onChange={(e) => {setAward(e.target.value)}} value={award}>
+                    <option value="all" selected>All guests</option>
+                    <option value="single">Single guest</option>
+                </select> 
+                    <br/>
+                    <label>Recipient:</label>
+                    <input id="awardGuest" type="text" placeholder="Enter utorid" disabled={award === "all"} onChange={(e) => setAwardId(e.target.value)}></input>
+                    <br/>
+                    <label>Award Amount</label>
+                    <input id="awardAmt" type="number" placeholder="Enter points to award" onChange={(e) => setAwardAmt(e.target.value)}></input>
+                
+                
+                <br/><br/>
+                <div className="formButtons">
+                    <input className="submitButton" type="submit" value="Submit"></input> 
+                    <input className="cancelButton" type="button" value="Cancel" onClick={goBack}></input>
+                </div>
             </form>
 
             <div className="message">{message}</div>
             <div>{listMessage}</div>
+            <div>{pointsMsg}</div>
         </div>
     );
 }

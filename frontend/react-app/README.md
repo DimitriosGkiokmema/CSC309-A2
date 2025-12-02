@@ -32,10 +32,10 @@
 - [x] A page that allows managers to add or remove users from an event.
 
 **Event Organizer (and all Managers)**
-- [ ] A page that displays the events that the user is responsible for.
-- [ ] A page that allows the user to view/edit a specific event that he/she is responsible for.
-- [ ] A page that allows adding a user to the event that he/she is responsible for.
-- [ ] A page that allows awarding points to a single guest, or to all guests who have RSVPed.
+- [x] A page that displays the events that the user is responsible for.
+- [x] A page that allows the user to view/edit a specific event that he/she is responsible for.
+- [x] A page that allows adding a user to the event that he/she is responsible for.
+- [x] A page that allows awarding points to a single guest, or to all guests who have RSVPed.
 
 **Superuser**
 - [ ] The ability to promote any user to managers or superusers.
@@ -54,9 +54,9 @@
     - Users can log in with their credentials.
 - [ ] Registration (5 marks):
     - Cashiers (or higher) can create accounts for users.
-- [ ] Profile Management (5 marks):
+- [x] Profile Management (5 marks):
     - Users can update their account information and passwords.
-- [ ] Password Reset (5 marks):
+- [x] Password Reset (5 marks):
     - Users can reset their password if they have forgotten.
 - [ ] Interface Switching (15 marks):
     - Users can switch between different interfaces (e.g., cashier, event organizer, manager).
@@ -78,17 +78,17 @@
 - [ ] Transaction Listing (15 marks) Users can see their past transactions. Managers can see ALL transactions.
 
 **Events (45 marks)**
-- [ ] Event Management (15 marks):
+- [x] Event Management (15 marks):
     - Managers can create, update, and delete events. (DONE)
     - Managers can add event organizers. (DONE)
     - Event organizers can update events.
 - [x] Event Listing (15 marks):
     - All logged in users can view the list of events. (DONE)
-- [ ] RSVP and Attendance (10 marks):
+- [x] RSVP and Attendance (10 marks):
     - Users can RSVP to events. (DONE)
     - Managers and event organizers can add guests to an event. (only managers rn)
     - Managers can remove guests from an event. (DONE)
-- [ ] Point Allocation (5 marks):
+- [x] Point Allocation (5 marks):
     - Managers and event organizers can award points to guests.
 
 **Promotions (25 marks)**

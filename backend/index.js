@@ -22,6 +22,7 @@ require('dotenv').config();
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const jwt = require('jsonwebtoken');
+const cors = require("cors");
 const app = express();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -402,7 +403,7 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
             data
         });
 
-        const bday = updated_user.birthday.toISOString().split("T")[0];
+        const bday = updated_user === null ? "" : updated_user.birthday.toISOString().split("T")[0];
 
         // Respond with updated note
         return res.status(200).json({
@@ -434,15 +435,25 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
     · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
     */
     const user = req.user;
-
+    
+    const findUser = await prisma.user.findUnique({
+        where: {id: user.id},
+        include: {organizer: {
+                include: {
+                    guests: true, organizers: true
+                }
+        }}
+    })
     const promos = await prisma.usage.findMany({
         where: { userId: user.id },
         include: { promotion: true },
     });
 
+
     return res.status(200).json({
         id: user.id,
         utorid: user.utorid,
+        password: user.password,
         name: user.name,
         email: user.email,
         birthday: user.birthday,
@@ -452,7 +463,8 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         lastLogin: user.lastLogin,
         verified: user.verified,
         avatarUrl: user.avatarUrl,
-        promotions: promos
+        promotions: promos,
+        organizer: findUser.organizer
     });
 });
 
@@ -512,7 +524,7 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
     }
 });
 
-app.get('/users/:userId', get_logged_in, check_clearance("cashier"), async (req, res) => {
+app.get('/users/:userId', get_logged_in, async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a specific user
@@ -1357,7 +1369,7 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
 
             if (['adjustment', 'transfer', 'redemption', 'event']
                 .includes(transaction.type.toLowerCase())) {
-                baseResponse.relatedId = transaction.relatedId;
+                baseResponse.relatedId = transaction.processedBy;
             }
 
             if (transaction.type.toLowerCase() === 'redemption') {
@@ -1841,6 +1853,10 @@ app.get('/events', get_logged_in, async (req, res) => {
         where.location = location;
     }
 
+    const now = new Date().toISOString();
+    // console.log(now);
+    // console.log(started);
+
     if (started !== undefined) {
 
         if (started === 'true') {
@@ -1869,7 +1885,7 @@ app.get('/events', get_logged_in, async (req, res) => {
     }
 
     if (limit !== undefined) {
-        if (parseInt(limit) < 0 || isNaN(limit)) {
+        if (parseInt(limit) < 0) {
             return res.status(400).json({ "error": "Invalid type for limit" });
         }
 
@@ -1908,13 +1924,24 @@ app.get('/events', get_logged_in, async (req, res) => {
     }
     //console.log(order);
     //console.log(orderBy);
+    // console.log(where.startTime);
+
+    console.log("Server now local: ", new Date());
+    console.log("Server now ISO:   ", new Date().toISOString());
+
+    console.log("where: " + JSON.stringify(where));
+    console.log("orderBy: " + JSON.stringify(orderBy));
 
     const events = await prisma.event.findMany({
                     where,
                     orderBy,
-                    include: {guests: true}
+                    include: {guests: true,
+                        organizers: true
+                    }
                 })
    
+    console.log("Event startTime raw:", events.map(e => e.startTime));
+    console.log("Event startTime ISO:", events.map(e => e.startTime.toISOString()));
 
 
     let filtered = events;
@@ -1933,18 +1960,19 @@ app.get('/events', get_logged_in, async (req, res) => {
         })
     }
 
+    const paginated = filtered.slice(skip, take + skip);
     const resultRegular =
-        filtered.map(event => {
-            const { description, organizers, guests, published, pointsRemain, pointsAwarded, ...rest } = event;
+        paginated.map(event => {
+            const { description, guests, published, pointsRemain, pointsAwarded, ...rest } = event;
             return { ...rest, numGuests: guests.length };
-        }).slice(skip, take + skip);
+        })
 
 
     const resultHigher =
-        filtered.map(event => {
-            const { description, organizers, guests, ...rest } = event;
+        paginated.map(event => {
+            const { description, guests, ...rest } = event;
             return { ...rest, numGuests: guests.length };
-        }).slice(skip, take + skip);
+        })
 
     if (currentUser.role === 'manager' || currentUser.role === 'superuser') {
 
@@ -1954,7 +1982,6 @@ app.get('/events', get_logged_in, async (req, res) => {
         return res.status(200).json({ count: filtered.length, results: resultRegular });
     }
 
-    //return res.status(200).json({count: filtered.length, results: resultRegular}); 
 })
 
 app.post('/events', get_logged_in, check_clearance("manager"), async (req, res) => { //checked HTTP requests
@@ -2035,20 +2062,24 @@ app.get('/events/:eventId', get_logged_in, async (req, res) => {
         return res.status(404).json({ "error": "Not found" });
     }
 
-    if (!event.published) {
-        return res.status(404).json({ "error": "Event not published yet" });
-    }
 
-    const alreadyOrganizer = event.organizers.filter(org => {
+    // console.log("organizers: " + event.organizers);
+    const alreadyOrganizer = event.organizers.some(org => {
+        //console.log(org.id);
         return org.id === currentUser.id;
     })
 
+
     if (currentUser.role === 'regular') {
+        if (!event.published) {
+        return res.status(404).json({ "error": "Event not published yet" });
+    }
+    
         const { guests, published, pointsRemain, pointsAwarded, ...rest } = event;
         return res.status(200).json({ ...rest, numGuests: guests.length });
     }
 
-    else if(alreadyOrganizer.length !== 0 || currentUser.role === 'manager' || currentUser.role === 'superuser') {
+    else if(alreadyOrganizer || currentUser.role === 'manager' || currentUser.role === 'superuser') {
         const {guests, ...rest} = event;
         return res.status(200).json({...rest, numGuests: guests.length});
     } 
@@ -2072,12 +2103,15 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
         return res.status(404).json({ "error": "Event not found" });
     }
 
-    const alreadyOrganizer = event.organizers.filter(org => {
+    const alreadyOrganizer = event.organizers.some(org => {
+        //console.log(org.id);
         return org.id === currentUser.id;
     })
-
+    //console.log(alreadyOrganizer);
+    // console.log("patch organizer: " + (alreadyOrganizer));
+    // console.log(currentUser.id);
     //general clearance check
-    if (!alreadyOrganizer.length !== 0 && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    if (!alreadyOrganizer && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
         return res.status(403).json({ "error": "Only managers or higher, or event organizers can update events" });
     }
 
@@ -2285,7 +2319,7 @@ app.post('/events/:eventId/organizers', get_logged_in, check_clearance("manager"
         return res.status(404).json({ "error": "Event not found" });
     }
 
-    const alreadyGuest = event.guests.filter(guest => {
+    const alreadyGuest = event.guests.some(guest => {
         return guest.id === user.id;
     })
 
@@ -2293,16 +2327,16 @@ app.post('/events/:eventId/organizers', get_logged_in, check_clearance("manager"
     if (event.endTime < new Date()) {
         return res.status(410).json({ "error": "Cannot add organizers to an event that has ended" });
     }
-    else if (alreadyGuest.length !== 0) {
+    else if (alreadyGuest) {
         return res.status(400).json({ "error": "User is already a guest of the event" });
     }
     else {
 
-        const alreadyOrganizer = event.organizers.filter(org => {
+        const alreadyOrganizer = event.organizers.some(org => {
             return org.id === user.id;
         })
 
-        if (alreadyOrganizer.length === 0) {
+        if (!alreadyOrganizer) {
             //console.log(event.organizers);
             const updatedEvent = await prisma.event.update({
                 where: { id: parseInt(eid) },
@@ -2313,12 +2347,22 @@ app.post('/events/:eventId/organizers', get_logged_in, check_clearance("manager"
 
             })
 
+            // link the organizer in the User model
+            // const updatedUser = await prisma.user.update({
+            //     where: {utorid: utorid},
+            //     data: {
+            //         organizer: {connect: {id: updatedEvent.id}}
+            //     }
+            // })
+
             const result = [];
             updatedEvent.organizers.forEach(org => {
                 //console.log(org);
                 const { id, utorid, name, ...rest } = org;
                 result.push({ id, utorid, name });
             })
+
+            
             return res.status(201).json({ id: event.id, name: event.name, location: event.location, organizers: result });
         }
         else {
@@ -2351,12 +2395,12 @@ app.delete('/events/:eventId/organizers/:userId', get_logged_in, check_clearance
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const validOrganizer = event.organizers.filter(org => {
+    const validOrganizer = event.organizers.some(org => {
         return org.id === user.id;
     })
 
-    if (validOrganizer.length !== 0) {
-        const deleteUser = validOrganizer[0].id;
+    if (validOrganizer) {
+        const deleteUser = user.id;
         const updatedEvent = await prisma.event.update({
             where: { id: parseInt(eid) },
             data: {
@@ -2384,11 +2428,11 @@ app.post('/events/:eventId/guests/me', get_logged_in, async (req, res) => { //ch
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const validGuest = event.guests.filter(guest => {
+    const validGuest = event.guests.some(guest => {
         return guest.id === user.id;
     })
 
-    if (validGuest.length !== 0) {
+    if (validGuest) {
         return res.status(400).json({ "error": "User is already a guest of the event" });
     }
     else if (event.capacity === event.guests.length || event.endTime < new Date()) {
@@ -2437,11 +2481,11 @@ app.delete('/events/:eventId/guests/me', get_logged_in, async (req, res) => { //
         return res.status(410).json({ "error": "Cannot remove guests from an event that has ended" });
     }
 
-    const validGuest = event.guests.filter(guest => {
+    const validGuest = event.guests.some(guest => {
         return guest.id === user.id;
     })
 
-    if (validGuest.length !== 0) {
+    if (validGuest) {
         const updatedEvent = await prisma.event.update({
             where: { id: parseInt(eid) },
             data: {
@@ -2480,26 +2524,26 @@ app.post('/events/:eventId/guests', get_logged_in, async (req, res) => { //check
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const currentUserAlready = event.organizers.filter(org => { //check if logged in user is an organizer
+    const currentUserAlready = event.organizers.some(org => { //check if logged in user is an organizer
         return org.id === currentUser.id;
     })
 
-    if (currentUserAlready.length === 0 && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    if (!currentUserAlready && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
         return res.status(403).json({ "error": "Only managers or higher, or event organizers can update events" });
     }
 
-    const alreadyOrganizer = event.organizers.filter(org => { //check if the payload user is an organizer
+    const alreadyOrganizer = event.organizers.some(org => { //check if the payload user is an organizer
         return org.id === user.id;
     })
 
-    const alreadyGuest = event.guests.filter(guest => { //check if the payload user is a guest
+    const alreadyGuest = event.guests.some(guest => { //check if the payload user is a guest
         return guest.id === user.id;
     })
 
-    if (alreadyOrganizer.length !== 0) {
+    if (alreadyOrganizer) {
         return res.status(400).json({ "error": "User is already an organizer of the event" });
     }
-    else if (alreadyGuest.length !== 0) {
+    else if (alreadyGuest) {
         return res.status(409).json({ "error": "User is already a guest of this event" });
     }
     else if (!event.published) {
@@ -2545,13 +2589,13 @@ app.delete('/events/:eventId/guests/:userId', get_logged_in, check_clearance("ma
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const isGuest = event.guests.filter(guest => {
+    const isGuest = event.guests.some(guest => {
         if(guest.id === user.id) {
             return guest;
         }
     })
 
-    if(isGuest.length !== 0) {
+    if(isGuest) {
 
         await prisma.event.update({
             where: {id: parseInt(eid)},
@@ -2581,15 +2625,18 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const currentUserAlready = event.organizers.filter(org => { //check if logged in user is an organizer
+    const currentUserAlready = event.organizers.some(org => { //check if logged in user is an organizer
         return org.id === currentUser.id;
     })
 
-    if (currentUserAlready.length === 0 && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    if (!currentUserAlready && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
         return res.status(403).json({ "error": "Only managers or higher, or event organizers can update events" });
     }
 
     if (type === undefined || typeof type !== "string" || type !== 'event' || !Number.isInteger(amount) || amount === undefined || amount < 0) {
+       console.log("faulty input");
+       console.log("the problem is type: " + !(type !== 'event'));
+       console.log("the problem is amount: " + !Number.isInteger(amount));
         return res.status(400).json({ "error": "Invalid payload" }); //passed
     }
     if (remark === undefined) {
@@ -2614,11 +2661,11 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
             return res.status(404).json({ "error": "Not found" });
         }
 
-        const alreadyGuest = event.guests.filter(guest => {
+        const alreadyGuest = event.guests.some(guest => {
             return guest.id === findUser.id;
         })
 
-        if (alreadyGuest.length === 0) {
+        if (!alreadyGuest) {
             return res.status(400).json({ "error": "User is not a guest of the event" }); //passed
         }
 
@@ -2673,6 +2720,9 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
 
         const numGuests = event.guests.length;
         if ((amount * numGuests) > event.pointsRemain) {
+            console.log("the problem is here");
+            console.log("points to give: " + amount * numGuests);
+            console.log("points we have: " + event.pointsRemain);
             return res.status(400).json({ "error": "Invalid payload" });
         }
 

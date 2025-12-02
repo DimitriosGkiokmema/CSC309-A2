@@ -11,7 +11,7 @@ export default function Events() {
     const loc = useLocation();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-
+    
     const [name, setName] = useState(null); // string, text
     const [location, setLocation] = useState(null); //string, text
     const [started, setStart] = useState(null); //boolean, checkbox
@@ -19,7 +19,7 @@ export default function Events() {
     const [published, setPublished] = useState(null); //boolean, checkbox
     const [limit, setLimit] = useState(5);
     const [order, setOrder] = useState(null);
-
+    const [query, setQuery] = useState("");
     const [totalPages, setTotalPages] = useState(1); //default only one page
     const [currentPage, setCurrentPage] = useState(1); //default starts on page 1
     // showFull, page: qpage, limit, 
@@ -61,6 +61,7 @@ export default function Events() {
             // filterpub.checked = false;
 
             const res = await callBackend("GET", `/events/${eventId}`, {});
+            console.log(res.data);
             if(res.status === 404) {
                 setSearch(true);
                 setMessage("Event not found, please try again.");
@@ -83,8 +84,9 @@ export default function Events() {
     // fetch user info
     async function load() {
         // Get all events data
-        let events = await callBackend('GET', '/events', {});
-        setEvents(events.data.results);
+        let res = await callBackend('GET', '/events', {});
+        setEvents(res.data.results);
+
     }
 
     useEffect(() => {
@@ -133,6 +135,8 @@ export default function Events() {
         
         console.log("the current limit is: " + limit);
         const query = params.toString();
+        setQuery(query);
+
         console.log(query);
 
         const res = await callBackend("GET", `/events?${query}`, {});
@@ -156,9 +160,10 @@ export default function Events() {
         setCurrentPage(page);
         const params = new URLSearchParams();
         params.append("page", page);
-        params.append("limit", limit);
-        const query = params.toString();
-        const res = await callBackend("GET", `/events?${query}`, {});
+        if(order) params.append("order", order);
+        const newquery = query + "&" + params.toString();
+        console.log(newquery);
+        const res = await callBackend("GET", `/events?${newquery}`, {});
         if(res.status !== 200) {
                 setSearch(false);
                 console.log(res.data.error);
@@ -263,7 +268,8 @@ if(!search) {
                     endTime={event.endTime}
                     capacity={event.capacity} 
                     numGuests={event.numGuests} 
-                    published={event.published}    
+                    published={event.published}  
+                    organizer={user && event.organizers.some(org => org.id === user.id)}  
                 />
             ))}
         
@@ -325,7 +331,9 @@ else if (search && !message) {
                     endTime={event.endTime}
                     capacity={event.capacity} 
                     numGuests={event.numGuests}  
-                    published={event.published}   
+                    published={event.published} 
+                    organizer={user && event.organizers.some(org => org.id === user.id)}
+                    profile={false}
                 />
             ))}
         </div>
