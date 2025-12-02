@@ -1,6 +1,6 @@
+// use callbackend to register a new user
 import { useState } from "react";
-
-const BASE_URL = "http://localhost:3000";
+import { callBackend } from "../js/backend";
 
 export default function Registration() {
     const [utorid, setUtorid] = useState("");
@@ -29,7 +29,7 @@ export default function Registration() {
             return;
         }
 
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         if (!token) {
             setError("You must be logged in to register");
             setLoading(false);
@@ -37,22 +37,12 @@ export default function Registration() {
         }
 
         try {
-            const response = await fetch(`${BASE_URL}/users`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ utorid, name, email })
-            });
+            const response = await callBackend('POST', '/users', { utorid, name, email });
             if (!response.ok) {
-                const errorData = await response.json();
-                console.log(errorData, "Error registering user");
-                setError(errorData.message || "Failed to register");
+                setError(response.data.message || "Failed to register");
                 setLoading(false);
                 return;
             } else {
-                const data = await response.json();
                 setSuccess("Registration successful");
             }
         } catch (error) {
@@ -65,7 +55,6 @@ export default function Registration() {
             setName("");
             setEmail("");
         }
-
     }
 
     return (

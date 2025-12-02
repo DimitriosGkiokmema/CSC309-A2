@@ -2,7 +2,7 @@ const API_BASE = "http://localhost:3000";
 const ROLE_LEVELS = {"regular": 0, "cashier": 1, "manager": 2, "superuser": 3};
 
 export async function callBackend(method, path, params) {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     let body = {
         method,
         headers: {
@@ -43,4 +43,14 @@ export async function resetPassword(utorid, password) {
 
 export async function updateProfilePic(url) {
     return await callBackend('PATCH', '/users/me', {avatarUrl: url});
+}
+
+export function get_clearance(role) {
+    if (!role) return -1;
+    const key = String(role).toLowerCase();
+    return ROLE_LEVELS[key] ?? -1;
+}
+
+export function check_clearance(currentRole, minRole) {
+    return get_clearance(currentRole) >= get_clearance(minRole);
 }

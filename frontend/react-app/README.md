@@ -62,7 +62,7 @@
 - [ ] Interface Switching (15 marks):
     - Users can switch between different interfaces (e.g., cashier, event organizer, manager).
     - For example, a manager can switch to the regular user interface to accumulate points, while a regular user who is also an event organizer can switch to the organizer interface to manage events.
-- [ ] User Listing (15 marks): Managers can view a list of users.
+- [x] User Listing (15 marks): Managers can view a list of users.
 - [ ] User Management (10 marks): Mangers can verify a user and make a cashier either suspicious or not. Managers or higher can promote/demote users.
 
 **Transactions (50 marks)**
@@ -100,5 +100,4 @@
 
 
 # Feature Ideas
-- use ImageKit to store and retrieve user profile pics
 - Need to find  online prisma db

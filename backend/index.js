@@ -23,6 +23,7 @@ const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const jwt = require('jsonwebtoken');
 const app = express();
+const cors = require('cors');
 const ImageKit = require('imagekit');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -30,6 +31,7 @@ const get_logged_in = require("./middleware/auth.js");
 const SECRET_KEY = process.env.JWT_SECRET;
 const resetRate = {};
 const ROLE_LEVELS = { "regular": 0, "cashier": 1, "manager": 2, "superuser": 3 };
+app.use(cors());
 app.use(express.json());
 
 // Set up cors to allow requests from your React frontend
@@ -319,7 +321,8 @@ app.get('/users', get_logged_in, check_clearance("manager"), async (req, res) =>
                 createdAt: true,
                 lastLogin: true,
                 verified: true,
-                avatarUrl: true
+                avatarUrl: true,
+                suspicious: true
             }
         });
 
@@ -722,7 +725,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
             }
         }
         else {
-            return res.status(400).json({ error: "Invalid payload" });
+            return res.status(400).json({ error: "Invalid payload from verified" });
         }
     }
 
@@ -733,7 +736,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
             }
         }
         else {
-            return res.status(400).json({ error: "Invalid payload" });
+            return res.status(400).json({ error: "Invalid payload from suspicious" });
         }
 
     // As Manager: Either "cashier" or "regular" 
@@ -742,7 +745,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
     if (role !== undefined && role !== null) {
         if (typeof role === "string" && roles.includes(role)) {
             if ((role === "manager" || role === "superuser") && currentUser.role !== "superuser") {
-                return res.status(403).json({ error: "Invalid payload" });
+                return res.status(403).json({ error: "Invalid payload from role" });
             }
 
             if (findUser.role !== role) {
@@ -752,7 +755,7 @@ app.patch('/users/:userId', get_logged_in, check_clearance("manager"), async (re
         }
 
         else {
-            return res.status(400).json({ error: "Invalid payload" });
+            return res.status(400).json({ error: "Invalid payload from role else" });
         }
     }
 

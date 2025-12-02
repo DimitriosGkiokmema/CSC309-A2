@@ -9,7 +9,8 @@ import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
 import ImgKit from "../components/ImgKit";
 import { useUser } from "../components/UserContext";
-import { Image } from '@imagekit/react';
+import UsersListing from "../components/UsersListing/UsersListing.jsx";
+import Promotions from "./Promotions.jsx";
 
 export default function LandingPage() {
   const [user, setUser] = useState(null);
@@ -22,7 +23,8 @@ export default function LandingPage() {
   const [edit, setEdit] = useState(false);
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
-  const { role } = useUser();
+  const { role, loadingRole } = useUser();
+  console.log("User role is ", role)
 
   // fetch user info
   async function load() {
@@ -44,7 +46,7 @@ export default function LandingPage() {
 
     jsonToQRUrl(userInfo).then(url => {
       setQR(url);
-    })
+    });
     setFormData(userInfo);
 
     const tx = await callBackend('GET', '/users/me/transactions', {});
@@ -138,6 +140,10 @@ export default function LandingPage() {
               <p>{user.utorid}</p>
             </div>
             <div>
+              <p><strong>Password:</strong></p>
+              <p>{user.password}</p>
+            </div>
+            <div>
               <p><strong>Email:</strong></p>
               <p> {user.email}</p>
             </div>
@@ -154,6 +160,7 @@ export default function LandingPage() {
               <p> {user.role}</p>
             </div>
             <div>
+              {/* DO NOT DELETE EMPTY DIVS: needed for styling */}
               <div></div>
               <div className="editBtn" onClick={() => setEdit(!edit)}>
                 <div>Edit</div>
@@ -265,6 +272,12 @@ export default function LandingPage() {
         </div>
       )}
 
+
+      {/* Overview of Users Listings */}
+      {(role === 'manager' || role === 'superuser') && (
+        <UsersListing />
+      )}
+
       {/* Overview of events, promotions, and user management */}
       {(role === 'manager' || role === 'superuser') && (
         <div className="row">
@@ -286,6 +299,9 @@ export default function LandingPage() {
           <AdminDash />
         </div>
       )}
+      {console.log("Rendering promotions with role ", role)}
+      {/* Promotions Listing and Management */}
+      { user && <Promotions role={role} /> }
     </div>
   );
 }

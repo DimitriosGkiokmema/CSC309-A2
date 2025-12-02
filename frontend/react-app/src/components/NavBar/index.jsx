@@ -2,16 +2,15 @@ import { useState } from "react";
 import { Link, useNavigate  } from 'react-router-dom';
 import { callBackend, log_in } from '../../js/backend.js';
 import { useUser } from "../UserContext/index.jsx";
-import { Image } from '@imagekit/react';
 
 export default function Navbar() {
-  const { role, setRole, pic, setPic } = useUser();
+  const { role, setRole, pic, setPic, loadingRole } = useUser();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(
-    localStorage.getItem("loggedIn") === "true"
+    sessionStorage.getItem("loggedIn") === "true"
   );
-  const [allowedRoles, setRoles] = useState(null);
+  const [allowedRoles, setRoles] = useState(['superuser', 'manager', 'cashier', 'regular']);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -24,6 +23,15 @@ export default function Navbar() {
 
     const curr_user = (await callBackend('GET', '/users/me', {})).data;
     setRole(curr_user.role);
+    // localStorage.setItem("token", ok ? data.token : "");
+    // localStorage.setItem("loggedIn", ok ? "true" : "false");
+    if(ok) {
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("loggedIn", "true");
+    } else {
+      sessionStorage.setItem("token", "");
+      sessionStorage.setItem("loggedIn", "false");
+    }
 
     if (ok) {
       setRoles(
@@ -52,6 +60,19 @@ export default function Navbar() {
 
     return pic;
   }
+  
+  function handleLogout() {
+    sessionStorage.setItem("token", "");
+    sessionStorage.setItem("loggedIn", "false");
+    setLoggedIn(false);
+    setRole("");
+    setOpen(false);
+    navigate('/');
+  }
+
+  if (loadingRole) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <header >
@@ -70,14 +91,14 @@ export default function Navbar() {
           <div className="featureContainer">
             <div className="pageLinks">
               <Link to="/search">Transactions</Link>
-              <Link to="/search">Events</Link>
               <Link to="/search">Promotions</Link>
               <Link to="/events">Events</Link>
               <Link to="/event-new">New Event</Link>
               <Link to="/registration">Registration</Link>
+              <Link to="/promotions">Promotions</Link>
             </div>
             <div className="roleLevel">
-              <label for="fruitSelect">Switch View:</label>
+              <label for="roleSelect">Switch View:</label>
               <select value={role} onChange={(e) => setRole(e.target.value)}>
                   <option value="" disabled>-- Select a role --</option>
                   {allowedRoles.map(r => (
@@ -106,7 +127,10 @@ export default function Navbar() {
             <div className="infoContainer">
               <div>
                 {loggedIn &&  (
+                  <>
                   <Link to="/profile" onClick={() => setOpen(!open)}>Profile</Link>
+                  <button onClick={handleLogout}>Log Out</button>
+                  </>
                 )}
                 {!loggedIn && (
                   <p>Sign In</p>
@@ -125,6 +149,7 @@ export default function Navbar() {
                   <input type="text" className="log-input" id="username" required />
                   <input type="password" className="log-input" id="password" required />
                 </div>
+
               </form>
             )}
           </div>

@@ -5,6 +5,7 @@ import SearchPage from "../pages/SearchPage";
 import Events from "../pages/Events";
 import EventUpdates from "../pages/EventUpdates";
 import CreateEvent from "../pages/CreateEvent";
+import Promotions from "../pages/Promotions";
 import Registration from "../pages/Registration";
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
       <Route path="/event-updates/:eventId" element={<EventUpdates />} />
       <Route path="/event-new" element={<CreateEvent />} />
       <Route path="/registration" element={<Registration />} />
+      <Route path="/promotions" element={<Promotions />} />
     </Routes>
   );
 }
