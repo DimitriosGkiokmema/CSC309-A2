@@ -19,21 +19,17 @@ export default function Navbar() {
     const allRoles = ['superuser', 'manager', 'cashier', 'regular'];
     const body = {"utorid": user, "password": pass};
     const { ok, data } = await log_in(body);
-    localStorage.setItem("token", ok ? data.token : "");
+    sessionStorage.setItem("token", ok ? data.token : "");
+    console.log("auth token: ", sessionStorage.getItem("token"))
 
     const curr_user = (await callBackend('GET', '/users/me', {})).data;
     setRole(curr_user.role);
-    // localStorage.setItem("token", ok ? data.token : "");
-    // localStorage.setItem("loggedIn", ok ? "true" : "false");
-    if(ok) {
-      sessionStorage.setItem("token", data.token);
-      sessionStorage.setItem("loggedIn", "true");
-    } else {
-      sessionStorage.setItem("token", "");
-      sessionStorage.setItem("loggedIn", "false");
-    }
+    console.log("logged in user: ", curr_user)
 
     if (ok) {
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("loggedIn", "true");
+
       setRoles(
         allRoles.slice(
             allRoles.indexOf(curr_user.role)
@@ -43,18 +39,21 @@ export default function Navbar() {
       setOpen(false);
       
       if (curr_user.avatarUrl !== null) {
+        console.log("SETTING PF PIC: ", curr_user.avatarUrl)
         setPic(curr_user.avatarUrl);
       }
 
       navigate('/profile');
     } else {
+      sessionStorage.setItem("token", "");
+      sessionStorage.setItem("loggedIn", "false");
       alert("Invalid Credentials");
     }
   }
 
   function getProfilePic() {
     // const pic = (await callBackend("GET", "/users/me", {})).data.avatarUrl;
-    if (!loggedIn || pic === "") {
+    if (!loggedIn || pic === "" || pic === undefined) {
       return  "../src/assets/profile.png";
     }
 

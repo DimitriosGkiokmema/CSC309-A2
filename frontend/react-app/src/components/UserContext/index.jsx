@@ -37,7 +37,6 @@ export function UserProvider({ children }) {
 
     const handleBeforeUnload = () => {
       setRole("regular");
-      setPic("");
     };
 
     initRoleFromBackend();

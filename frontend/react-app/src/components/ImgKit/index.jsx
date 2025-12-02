@@ -1,4 +1,4 @@
-import { IKContext, IKImage, IKUpload } from 'imagekitio-react';
+import { IKContext, IKUpload } from 'imagekitio-react';
 import { updateProfilePic } from '../../js/backend.js';
 import { useUser } from "../UserContext/index.jsx";
 
