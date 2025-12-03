@@ -1,25 +1,39 @@
+
 import { useState } from "react";
 import { Link, useNavigate  } from 'react-router-dom';
 import { callBackend, log_in } from '../../js/backend.js';
-import { useUser } from "../UserContext/index.jsx";
+import { useUser } from "../UserContext";
 
 export default function Navbar() {
-  const { role, setRole } = useUser();
+  const { role, setRole, loadingRole } = useUser();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(
-    localStorage.getItem("loggedIn") === "true"
+    sessionStorage.getItem("loggedIn") === "true"
   );
-  const [allowedRoles, setRoles] = useState(null);
+  const [allowedRoles, setRoles] = useState(['superuser', 'manager', 'cashier', 'regular']);
+  const [username, setUsername] = useState(null);
+
 
   async function handleLogin(e) {
     e.preventDefault();
     const user = document.getElementById("username").value;
+    //console.log("username: " + user);
+    setUsername(user);
+
     const pass = document.getElementById("password").value;
     const allRoles = ['superuser', 'manager', 'cashier', 'regular'];
     const body = {"utorid": user, "password": pass};
     const { ok, data } = await log_in(body);
-    localStorage.setItem("token", ok ? data.token : "");
+    // localStorage.setItem("token", ok ? data.token : "");
+    // localStorage.setItem("loggedIn", ok ? "true" : "false");
+    if(ok) {
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("loggedIn", "true");
+    } else {
+      sessionStorage.setItem("token", "");
+      sessionStorage.setItem("loggedIn", "false");
+    }
 
     const curr_role = (await callBackend('GET', '/users/me', {})).data.role;
     setRole(curr_role);
@@ -38,11 +52,23 @@ export default function Navbar() {
     }
   }
 
+  function handleLogout() {
+    sessionStorage.setItem("token", "");
+    sessionStorage.setItem("loggedIn", "false");
+    setLoggedIn(false);
+    setRole("");
+    setOpen(false);
+    navigate('/');
+  }
+
+  if (loadingRole) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <header >
-      {/* Navbar is here */}
+    <header>
       <div onClick={() => navigate("/")}>
-        <img className="navLogo" src="../../../src/assets/varsity_logo.png" />
+        <img className="navLogo" src="../src/assets/varsity_logo.png" />
         <h1 className="websiteTitle">Varsity Mart</h1>
       </div>
 
@@ -53,15 +79,15 @@ export default function Navbar() {
         {loggedIn && (
           <div className="featureContainer">
             <div className="pageLinks">
-              <Link to="/search">Transactions</Link>
+              <Link to="/transactions">Transactions</Link>
               <Link to="/events">Events</Link>
-              <Link to="/search">Promotions</Link>
+              <Link to="#promotions">Promotions</Link>
             </div>
             <div className="roleLevel">
               <label for="fruitSelect">Switch View:</label>
               <select value={role} onChange={(e) => setRole(e.target.value)}>
                   <option value="" disabled>-- Select a role --</option>
-                  {allowedRoles.map(r => (
+                  {allowedRoles?.map(r => (
                     <option key={r} value={r}>{r}</option>
                   ))}
               </select>
@@ -71,21 +97,25 @@ export default function Navbar() {
 
         {/* Profile icon only */}
         <div className="profileIcon" onClick={() => setOpen(!open)}>
-          <img src="../../../src/assets/profile.png" />
+          <img src="../src/assets/profile.png" />
         </div>
 
         {/* Dropdown menu */}
         {open && (
           <div className="profileDropdown">
             <div className="profileIcon">
-              <img src="../../../src/assets/profile.png" />
+              <img src="../src/assets/profile.png" />
               <i className="fa-regular fa-circle-xmark" onClick={() => setOpen(!open)}></i>
             </div>
 
             <div className="infoContainer">
               <div>
                 {loggedIn &&  (
+                  <>
+                  <p>Hello, {username}!</p>
                   <Link to="/profile" onClick={() => setOpen(!open)}>Profile</Link>
+                  <button onClick={handleLogout}>Log Out</button>
+                  </>
                 )}
                 {!loggedIn && (
                   <p>Sign In</p>
@@ -102,8 +132,9 @@ export default function Navbar() {
                 </div>
                 <div>
                   <input type="text" className="log-input" id="username" required />
-                  <input type="password" className="log-input" id="password" required />
+                  <input type="text" className="log-input" id="password" required />
                 </div>
+
               </form>
             )}
           </div>

@@ -434,7 +434,9 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
     
     · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
     */
+   console.log("i am here");
     const user = req.user;
+    console.log("user is logged in: " + user);
     
     const findUser = await prisma.user.findUnique({
         where: {id: user.id},
@@ -1066,7 +1068,7 @@ app.post('/transactions', get_logged_in, async (req, res) => {
 
         for (const promotionId of promotionIds) {
             console.log(`Checking promotion ${promotionId}...`);
-            const promotion = await prisma.promotion.findUnique({ where: { id: promotionId } });
+            const promotion = await prisma.promotion.findUnique({ where: { id: parseInt(promotionId) } });
 
             if (!promotion) {
                 console.log(`❌ Promotion ${promotionId} not found`);
@@ -1170,6 +1172,10 @@ app.post('/transactions', get_logged_in, async (req, res) => {
                 return res.status(400).json({ error: 'amount must be a number' });
             }
 
+            if(user.points + amount < 0) {
+                return res.status(400).json({ error: 'The adjusted total points would be negative!' });
+            }
+
             const relatedTransaction = await prisma.transaction.findUnique({
                 where: { id: parseInt(relatedId, 10) },
             });
@@ -1185,7 +1191,7 @@ app.post('/transactions', get_logged_in, async (req, res) => {
                     utorid,
                     type,
                     amount,
-                    relatedId: parseInt(relatedId, 10),
+                    relatedTxId: parseInt(relatedId, 10),
                     spent: 0,
                     earned: 0,
                     remark,
@@ -1230,7 +1236,7 @@ app.post('/transactions', get_logged_in, async (req, res) => {
             response.earned = transaction.earned;
         } else {
             response.amount = transaction.amount;
-            response.relatedId = transaction.relatedId;
+            response.relatedId = transaction.relatedTxId;
         }
 
         console.log('Final response object:', response);
@@ -1275,11 +1281,12 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
      · Event: the ID of the event from which points were disbursed.
  */
 
-    const { name, createdBy, suspicious, promotionId, type, relatedId, amount, operator, page: qpage, limit } = req.query;
+    const { name, createdBy, suspicious, promotionId, type, relatedId, amount, operator, page: qpage, limit, order } = req.query;
     try {
         let page = 1;
         let take = 10;
         const filters = {};
+        let orderBy = {};
 
         if (name) {
             filters.utorid = { contains: name.toLowerCase() };
@@ -1305,7 +1312,14 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
             if (!type) {
                 return res.status(400).json({ error: 'relatedId must be used with type' });
             }
-            filters.relatedId = parseInt(relatedId);
+            console.log("relatedId: " + relatedId);
+            if(type === "event") {
+                filters.relatedEventId = parseInt(relatedId);
+            }
+            else {
+
+                filters.relatedTxId = parseInt(relatedId);
+            }
         }
 
         if (amount !== null && amount !== undefined) {
@@ -1335,8 +1349,13 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
 
         const count = await prisma.transaction.count({ where: filters });
 
+        if(order !== undefined) {
+            orderBy[order] = 'asc';
+        }
+
         const transactions = await prisma.transaction.findMany({
             where: filters,
+            orderBy,
             skip: skip,
             take: take,
             include: {
@@ -1356,20 +1375,30 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
             const baseResponse = {
                 id: transaction.id,
                 utorid: transaction.utorid,
-                amount: transaction.type.toLowerCase() === 'event' ? transaction.earned : transaction.amount,
+                // amount: transaction.type.toLowerCase() === 'event' ? transaction.awarded : transaction.amount,
+                amount: transaction.amount,
+                awarded: transaction.awarded,
+                earned: transaction.earned,
                 type: transaction.type,
                 spent: transaction.spent,
+                sender: transaction.sender,
                 promotionIds: transaction.promotions.map((promotion) => promotion.id),
                 suspicious: transaction.suspicious,
                 remark: transaction.remark,
                 createdBy: transaction.createdBy,
                 //createdAt: transaction.createdAt,
+               
                 name: transaction.user?.name || null
             };
 
-            if (['adjustment', 'transfer', 'redemption', 'event']
+            if (['adjustment', 'transfer', 'redemption']
                 .includes(transaction.type.toLowerCase())) {
-                baseResponse.relatedId = transaction.processedBy;
+                baseResponse.relatedTxId = transaction.relatedTxId;
+            }
+
+            if(transaction.type === "event") {
+                baseResponse.relatedEventId = transaction.relatedEventId;
+            
             }
 
             if (transaction.type.toLowerCase() === 'redemption') {
@@ -1418,6 +1447,7 @@ When marking a transaction as suspicious (changing the flag from false to true),
         });
 
         if (!transaction) {
+            console.log("transaction doesnt exist");
             return res.status(404).json({ error: 'transaction not found' });
         }
 
@@ -1426,6 +1456,7 @@ When marking a transaction as suspicious (changing the flag from false to true),
         });
 
         if (!user) {
+            console.log("user doesnt exist");
             return res.status(404).json({ error: 'user not found' });
         }
 
@@ -1584,38 +1615,47 @@ app.post('/users/me/transactions', get_logged_in, async (req, res) => {
 app.get('/users/me/transactions', get_logged_in, async (req, res) => {
     const currentUser = req.user;
 
-    const { type, relatedId, promotionId, amount, operator, page: qpage, limit } = req.query;
+    const { type, relatedId, promotionId, amount, operator, page: qpage, limit, order } = req.query;
     let where = { utorid: currentUser.utorid };
     let page = 1;
     let take = 10;
+    let orderBy = {};
+    console.log(type === undefined);
+    console.log(relatedId && relatedId !== undefined);
+
+    if((type !== undefined && relatedId === undefined) || (type === undefined && relatedId !== undefined)) {
+        if (type === "event" || type === "transfer" || type === "adjustment" || relatedId !== undefined) {
+            return res.status(400).json({ "error": "You must enter a relatedId for event transactions or transfer transactions" });
+        }
+    }
 
     if (type !== undefined) {
         if (type === 'transfer') {
             if (relatedId !== undefined) {
 
                 where.type = type;
-                where.relatedId = relatedId;
+                where.relatedTxId = parseInt(relatedId);
 
             }
             else {
                 return res.status(400).json({ "error": "Invalid payload" });
             }
         }
-        else if (type === "promotion") {
-            if (relatedId !== undefined) {
-                where.type = type;
-                where.relatedId = relatedId;
+        // else if (type === "promotion") {
+        //     if (relatedId !== undefined) {
+        //         where.type = type;
+        //         where.relatedId = parseInt(relatedId);
 
-            }
-            else {
-                return res.status(400).json({ "error": "Invalid payload" });
-            }
-        }
+        //     }
+        //     else {
+        //         return res.status(400).json({ "error": "Invalid payload" });
+        //     }
+        // }
         else if (type === "event") {
             if (relatedId !== undefined) {
 
                 where.type = type;
-                where.relatedId = relatedId;
+                where.relatedEventId = parseInt(relatedId);
 
             }
             else {
@@ -1627,8 +1667,15 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
         }
     }
 
+    // console.log(where);
+    // console.log(where.JSON.stringify());
+    if(order !== undefined) {
+            orderBy[order] = 'asc';
+    }
+
     const transactions = await prisma.transaction.findMany({
         where,
+        orderBy,
         include: { promotions: true }
     })
 
@@ -1686,12 +1733,47 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
 
     const skip = (page - 1) * take;
 
-    const result = roundTwo.map(e => {
-        const { id, type, spent, amount, remark, createdBy, promotions, ...rest } = e;
-        const promotionIds = promotions.map(promo => {
-            return promo.id;
-        })
-        return { id, type, spent, amount, promotionIds, remark, createdBy };
+    const result = roundTwo.map(transaction => {
+        // const { id, type, spent, amount, remark, createdBy, promotions, awarded, ...rest } = transaction;
+        // const promotionIds = promotions.map(promo => {
+        //     return promo.id;
+        // })
+        //return { id, type, spent, amount, promotionIds, remark, createdBy, awarded, ...rest };
+
+        const baseResponse = {
+                id: transaction.id,
+                utorid: transaction.utorid,
+                // amount: transaction.type.toLowerCase() === 'event' ? transaction.awarded : transaction.amount,
+                amount: transaction.amount,
+                awarded: transaction.awarded,
+                earned: transaction.earned,
+                type: transaction.type,
+                spent: transaction.spent,
+                sender: transaction.sender,
+                promotionIds: transaction.promotions.map((promotion) => promotion.id),
+                suspicious: transaction.suspicious,
+                remark: transaction.remark,
+                createdBy: transaction.createdBy,
+                //createdAt: transaction.createdAt,
+               
+                name: transaction.user?.name || null
+            }; 
+
+            if (['adjustment', 'transfer', 'redemption']
+                .includes(transaction.type.toLowerCase())) {
+                baseResponse.relatedTxId = transaction.relatedTxId;
+            }
+
+            if(transaction.type === "event") {
+                baseResponse.relatedEventId = transaction.relatedEventId;
+            
+            }
+
+            if (transaction.type.toLowerCase() === 'redemption') {
+                baseResponse.redeemed = Math.abs(transaction.amount);
+            }
+
+        return baseResponse;
     }).slice(skip, take + skip);
 
 
@@ -1853,7 +1935,7 @@ app.get('/events', get_logged_in, async (req, res) => {
         where.location = location;
     }
 
-    const now = new Date().toISOString();
+    // const now = new Date().toISOString();
     // console.log(now);
     // console.log(started);
 
@@ -1922,16 +2004,7 @@ app.get('/events', get_logged_in, async (req, res) => {
     if(order !== undefined) {
         orderBy[order] = 'asc';
     }
-    //console.log(order);
-    //console.log(orderBy);
-    // console.log(where.startTime);
-
-    console.log("Server now local: ", new Date());
-    console.log("Server now ISO:   ", new Date().toISOString());
-
-    console.log("where: " + JSON.stringify(where));
-    console.log("orderBy: " + JSON.stringify(orderBy));
-
+    
     const events = await prisma.event.findMany({
                     where,
                     orderBy,
@@ -1940,10 +2013,6 @@ app.get('/events', get_logged_in, async (req, res) => {
                     }
                 })
    
-    console.log("Event startTime raw:", events.map(e => e.startTime));
-    console.log("Event startTime ISO:", events.map(e => e.startTime.toISOString()));
-
-
     let filtered = events;
 
     if (showFull !== undefined) {
@@ -2653,6 +2722,9 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
         if (typeof utorid !== "string") {
             return res.status(400).json({ "error": "Invalid payload" });
         }
+        if(utorid === currentUser.utorid && currentUserAlready) {
+            return res.status(400).json({"error": "recipient cannot be the event organizer"})
+        }
         const findUser = await prisma.user.findUnique({
             where: { utorid: utorid }
         })
@@ -2679,14 +2751,16 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
                 recipient: utorid,
                 awarded: amount, //must be <= pointsRemain
                 type: type, //event
-                relatedId: parseInt(eid), //related event
+                relatedEventId: parseInt(eid), //related event
                 remark: req.body.remark,
                 createdBy: currentUser.utorid,
                 suspicious: false,
                 processed: false,
-                amount: 0
+                amount: amount
             }
         })
+
+        newTransaction.processedBy = null;
 
         const prevPoints = findUser.points;
         const newPoints = prevPoints + amount;
@@ -2748,12 +2822,12 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
                     recipient: user.utorid,
                     awarded: amount, //must be <= pointsRemain
                     type: type, //event
-                    relatedId: parseInt(eid), //related event
+                    relatedEventId: parseInt(eid), //related event
                     remark: req.body.remark,
                     createdBy: currentUser.utorid,
                     suspicious: false,
                     processed: false,
-                    amount: 0
+                    amount: amount
                 }
             })
 

@@ -7,7 +7,7 @@
 - [ ] A page that displays the QR code of an unprocessed redemption request.
 - [ ] A page that displays all available promotions.
 - [x] A page that displays all published events.
-- [ ] A page that displays a specific event and allows a user to RSVP to an event.
+- [x] A page that displays a specific event and allows a user to RSVP to an event.
 - [ ] A page that displays all past transactions for the current logged in user (with filters, order-by, and pagination).
     - Each transaction card should be displayed "nicely", e.g., instead of relatedId, it should display the utorid of the sender/receiver.
     - Some way to make each transaction type distinct in appearance, e.g., using different colors.
@@ -21,7 +21,7 @@
 **Managers**
 - [ ] A page that displays all users with filters, order-by, and pagination.
 - [ ] A page that allows managers to update users, e.g., make a user verified, promote a user to cashier, etc.
-- [ ] A page that displays ALL transactions (with filters, order-by, and pagination).
+- [x] A page that displays ALL transactions (with filters, order-by, and pagination).
 - [ ] A page that displays a specific transaction, with the option of creating an adjustment transaction for it, and marking it as suspicious.
 - [ ] A page that allows managers to create new promotions.
 - [ ] A page that displays all promotions (with filters, order-by, and pagination).
@@ -65,17 +65,17 @@
 - [ ] User Management (10 marks): Mangers can verify a user and make a cashier either suspicious or not. Managers or higher can promote/demote users.
 
 **Transactions (50 marks)**
-- [ ] Purchase (10 marks):
-    - Cashiers can create purchase transactions.
+- [x] Purchase (10 marks):
+    - Cashiers can create purchase transactions. post '/transactions'
     - Cashiers can correctly apply promotions to transactions.
 - [ ] Redemption (10 marks):
-    - Users can make a redemption request.
+    - Users can make a redemption request. post '/users/me/transactions'
     - Cashiers can process the redemption request.
-- [ ] Adjustment (5 marks):
-    - Managers can create adjustment transactions.
+- [x] Adjustment (5 marks):
+    - Managers can create adjustment transactions. post '/transactions'
 - [ ] Transfer (10 marks):
-    - Users can transfer points to another user.
-- [ ] Transaction Listing (15 marks) Users can see their past transactions. Managers can see ALL transactions.
+    - Users can transfer points to another user. post '/users/:userId/transactions'
+- [x] Transaction Listing (15 marks) Users can see their past transactions. Managers can see ALL transactions.
 
 **Events (45 marks)**
 - [x] Event Management (15 marks):
