@@ -9,15 +9,9 @@ const prisma = new PrismaClient();
 async function seedData() {
     const mockUsers = [
         {
-<<<<<<< HEAD
-            utorid: "person456",
-            name: "john",
-            email: "person@mail.utoronto.ca",
-=======
             utorid: "alice123",
             name: "alice",
             email: "alice@mail.utoronto.ca",
->>>>>>> events-frontend
             password: "Password123!",
             birthday: new Date("2000-01-01"),
             role: "regular",
@@ -25,8 +19,6 @@ async function seedData() {
             avatarUrl: "",
             suspicious: false,
             verified: true,
-<<<<<<< HEAD
-=======
             // token: "token",
             createdAt: "2025-02-22T00:00:00.000Z",
             expiresAt: "2025-11-22T00:00:00.000Z",
@@ -124,7 +116,6 @@ async function seedData() {
             suspicious: false,
             verified: true,
             // token: "token",
->>>>>>> events-frontend
             createdAt: "2025-02-22T00:00:00.000Z",
             expiresAt: "2025-11-22T00:00:00.000Z",
             lastLogin: "2025-02-24T00:00:00.000Z"
