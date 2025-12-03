@@ -299,9 +299,8 @@ export default function LandingPage() {
           <AdminDash />
         </div>
       )}
-      {console.log("Rendering promotions with role ", role)}
       {/* Promotions Listing and Management */}
-      { user && <Promotions role={role} /> }
+      { user && <Promotions /> }
     </div>
   );
 }

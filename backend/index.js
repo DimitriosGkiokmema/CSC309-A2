@@ -24,7 +24,6 @@ const { v4: uuidv4 } = require("uuid");
 const jwt = require('jsonwebtoken');
 const app = express();
 const cors = require('cors');
-const ImageKit = require('imagekit');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const get_logged_in = require("./middleware/auth.js");
@@ -33,38 +32,6 @@ const resetRate = {};
 const ROLE_LEVELS = { "regular": 0, "cashier": 1, "manager": 2, "superuser": 3 };
 app.use(cors());
 app.use(express.json());
-
-// Set up cors to allow requests from your React frontend
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000'
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// ImageKit Functions
-const imagekit = new ImageKit({                  // from ImageKit dashboard
-    urlEndpoint: "https://ik.imagekit.io/dimi",
-    publicKey: "public_Ezy+fEYaGELwaZbrca1PEAsLYH8=",
-    privateKey: "private_ZOpakAqQw0hN35OGs99WiOgubW0="
-});
-
-app.get('/img/auth', function (req, res) {
-  var result = imagekit.getAuthenticationParameters();
-  res.send(result);
-});
 
 // A2 Functions
 function generateToken(utorid, time) {
@@ -394,10 +361,9 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
             if (bday < Date()) {
                 return res.status(400).json({ "error": "Birthday cannot be in the past" });
             }
-            
-            const [datePart] = birthday.split("T"); // "2025-11-28"
-            const [year, month, day] = datePart.split("-").map(Number);
-            
+
+            const [year, month, day] = birthday.split("-").map(Number);
+
             if (!(
                 bday.getUTCFullYear() === year &&
                 bday.getUTCMonth() + 1 === month &&
@@ -419,7 +385,7 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
             data
         });
 
-        const bday = updated_user === null ? "" : updated_user.birthday.toISOString().split("T")[0];
+        const bday = updated_user.birthday.toISOString().split("T")[0];
 
         // Respond with updated note
         return res.status(200).json({
@@ -460,7 +426,6 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
     return res.status(200).json({
         id: user.id,
         utorid: user.utorid,
-        password: user.password,
         name: user.name,
         email: user.email,
         birthday: user.birthday,
@@ -1375,7 +1340,7 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
 
             if (['adjustment', 'transfer', 'redemption', 'event']
                 .includes(transaction.type.toLowerCase())) {
-                baseResponse.relatedId = transaction.processedBy;
+                baseResponse.relatedId = transaction.relatedId;
             }
 
             if (transaction.type.toLowerCase() === 'redemption') {
@@ -1844,11 +1809,10 @@ app.patch('/transactions/:transactionId/processed', get_logged_in, check_clearan
 
 app.get('/events', get_logged_in, async (req, res) => {
     const currentUser = req.user;
-   
-    const {name, location, started, ended, showFull, page: qpage, limit, published, order} = req.query;
-    
+
+    const { name, location, started, ended, showFull, page: qpage, limit, published } = req.query;
+
     let where = {};
-    let orderBy = {};
     let page = 1;
     let take = 10;
     //start filtering
@@ -1920,19 +1884,10 @@ app.get('/events', get_logged_in, async (req, res) => {
         }
     }
 
-
-    if(order !== undefined) {
-        orderBy[order] = 'asc';
-    }
-    //console.log(order);
-    //console.log(orderBy);
-
     const events = await prisma.event.findMany({
-                    where,
-                    orderBy,
-                    include: {guests: true}
-                })
-   
+        where,
+        include: { guests: true }
+    })
 
 
     let filtered = events;
@@ -1971,8 +1926,6 @@ app.get('/events', get_logged_in, async (req, res) => {
     else {
         return res.status(200).json({ count: filtered.length, results: resultRegular });
     }
-
-    //return res.status(200).json({count: filtered.length, results: resultRegular}); 
 })
 
 app.post('/events', get_logged_in, check_clearance("manager"), async (req, res) => { //checked HTTP requests
@@ -2001,8 +1954,8 @@ app.post('/events', get_logged_in, check_clearance("manager"), async (req, res) 
         //validate the payload data types
         let dateobj = new Date(startTime);
         let dateobj2 = new Date(endTime);
-        if(isNaN(dateobj.getTime()) || isNaN(dateobj2.getTime()) || (dateobj > dateobj2)) { //not a valid date
-            return res.status(400).json({"error": "Invalid start and end times"}); //passed
+        if (isNaN(dateobj.getTime()) || isNaN(dateobj2.getTime()) || (dateobj > dateobj2)) { //not a valid date
+            return res.status(400).json({ "error": "Invalid date format" }); //passed
         }
 
         if (capacity !== undefined && !isNaN(capacity) && capacity < 0) {
@@ -2066,11 +2019,10 @@ app.get('/events/:eventId', get_logged_in, async (req, res) => {
         return res.status(200).json({ ...rest, numGuests: guests.length });
     }
 
-    else if(alreadyOrganizer.length !== 0 || currentUser.role === 'manager' || currentUser.role === 'superuser') {
-        const {guests, ...rest} = event;
-        return res.status(200).json({...rest, numGuests: guests.length});
-    } 
-    
+    else if (alreadyOrganizer.length !== 0 || currentUser.role === 'manager' || currentUser.role === 'superuser') {
+        return res.status(200).json(event);
+    }
+
 })
 
 app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked https requests
@@ -2121,7 +2073,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid name"});
+            return res.status(400).json({ "error": "Invalid payload" });
         }
     }
 
@@ -2132,7 +2084,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid description"});
+            return res.status(400).json({ "error": "Invalid payload" });
         }
     }
     if (location !== undefined && location !== null) {
@@ -2142,7 +2094,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid location"});
+            return res.status(400).json({ "error": "Invalid payload" });
         }
     }
     if (startTime !== undefined && startTime !== null) {
@@ -2156,7 +2108,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid start time"});
+            return res.status(400).json({ "error": "Invalid payload" });
         }
     }
     if (endTime !== undefined && endTime !== null) {
@@ -2169,7 +2121,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid end time"});
+            return res.status(400).json({ "error": "Invalid payload" });
         }
     }
     if (capacity !== undefined && capacity !== null) { //has to be a positive number
@@ -2182,7 +2134,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid capacity"});
+            return res.status(400).json({ "error": "Invalid payload" });
         }
     }
     if (points !== undefined && points !== null) {
@@ -2201,7 +2153,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid points"});
+            return res.status(400).json({ "error": "Invalid payload" });
         }
     }
     if (published !== undefined && published !== null) {
@@ -2216,7 +2168,7 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
             }
         }
         else {
-            return res.status(400).json({"error": "Invalid published value"});
+            return res.status(400).json({ "error": "Invalid payload" });
         }
     }
 
@@ -2563,26 +2515,16 @@ app.delete('/events/:eventId/guests/:userId', get_logged_in, check_clearance("ma
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const isGuest = event.guests.filter(guest => {
-        if(guest.id === user.id) {
-            return guest;
+    if (event.capacity >= event.guests.length) {
+        return res.status(410).json({ "error": "Invalid" });
+    }
+
+    event.guests.filter(guest => {
+        if (guest === user) {
+            event.guests.remove(guest);
+            return res.status(204);
         }
     })
-
-    if(isGuest.length !== 0) {
-
-        await prisma.event.update({
-            where: {id: parseInt(eid)},
-            data: {
-                guests: {disconnect: {id: parseInt(uid)}}
-            }
-        })
-        
-        return res.status(204).send();
-    }
-    else {
-        return res.status(410).json({"error": "This user is not a guest"});
-    }
 })
 
 app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { //checked https requests
@@ -2929,6 +2871,7 @@ app.get('/promotions', get_logged_in, async (req, res) => {
                 id: true,
                 name: true,
                 type: true,
+                description: true,
                 ...(userRole === 'MANAGER' || userRole === 'SUPERUSER' ? { startTime: true } : {}),
                 endTime: true,
                 minSpending: true,
