@@ -65,11 +65,11 @@ export default function Events() {
           
     }
 
-    async function createEvent(e) {
-        e.preventDefault();
-        // redirect to create event page (form)
-        navigate(`/event-new`);
-    }
+    // async function createEvent(e) {
+    //     e.preventDefault();
+    //     // redirect to create event page (form)
+    //     navigate(`/event-new`);
+    // }
 
     // fetch user info
     async function load() {
@@ -170,26 +170,6 @@ export default function Events() {
         
     }
 
-    // async function fetchPage(page) {
-    //     // after user clicks on < or > button, the currentPage changes, limit is still whatever was set from the filter
-    //     setCurrentPage(page);
-    //     const params = new URLSearchParams();
-    //     params.append("page", page);
-    //     if(order) params.append("order", order);
-    //     const newquery = query + "&" + params.toString();
-    //     console.log(newquery);
-    //     const res = await callBackend("GET", `/events?${newquery}`, {});
-    //     if(res.status !== 200) {
-    //             setSearch(false);
-    //             console.log(res.data.error);
-    //             setMessage("Event not found: " + res.data.error);
-    //         }
-    //         else {
-    //             setSearch(false);
-    //             setEvents(res.data.results); // put the single event in an array
-    //         }
-    // }
-
 
     //clearance
     let addEvent;
@@ -247,7 +227,7 @@ if(!search) {
                     onChange={(e) => {setEventId(e.target.value)}}
                 />
                 <input type="button" value="Search" onClick={handleSearch}/>
-                {addEvent}
+                {/* {addEvent} */}
             </div>
 
             {/* filter bar */}

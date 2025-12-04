@@ -48,9 +48,9 @@ export default function CreateEvent() {
      
     }
 
-    async function goBack() {
-        navigate("/events");
-    };
+    // async function goBack() {
+    //     navigate("/events");
+    // };
 
     return (
         <div>
@@ -79,7 +79,7 @@ export default function CreateEvent() {
                 <br/>
 
                 <input className="submitButton" type="submit" value="Submit"></input> 
-                <input className="cancelButton" type="button" value="Cancel" onClick={goBack}></input>
+                {/* <input className="cancelButton" type="button" value="Cancel" onClick={goBack}></input> */}
             </form>
 
             <div className="message">{message}</div>
