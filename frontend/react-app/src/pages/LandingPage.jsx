@@ -3,7 +3,7 @@ import { callBackend, resetPassword } from '../js/backend.js';
 import { jsonToQRUrl } from '../js/create_qr.js';
 import '../styles/LandingPage.css';
 import TransactionItem from "../components/TransactionItem";
-import CreateItem from "../components/CreateItem";
+import CreateItem from "../components/CreatePurchase/index.jsx";
 import ProcessRedemption from "../components/ProcessRedemption";
 import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
@@ -24,7 +24,6 @@ export default function LandingPage() {
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
   const { role, loadingRole, setPic } = useUser();
-  console.log("User role is ", role)
 
   // fetch user info
   async function load() {
@@ -53,7 +52,7 @@ export default function LandingPage() {
     setTransactions(tx.data);
 
     const r = await callBackend('GET', '/users/me/transactions?type=redemption&relatedId=null', {});
-    const filtered = r.data.results.filter(obj => obj.type === 'redemption');
+    const filtered = r.data.results.filter(obj => obj.type === 'redemption' && obj.processed === true);
     setRedemptions(filtered);
 
     // Get event data
@@ -255,27 +254,24 @@ export default function LandingPage() {
         <div className="row">
           <div className="col-8 offset-2">
             <CreateItem />
-            <h1>My Redemptions</h1>
-            {redemptions.map((item) => 
-            (
-              <ProcessRedemption
-                key={item.id}
-                id={item.id}
-                utorid={item.utorid}
-                amount={item.amount}
-                type={item.type}
-                spent={item.spent}
-                remark={item.remark}
-              />
-            ))}
+            <h1>Redemption Processing</h1>
+            {redemptions.length === 0 ? (
+              <p className="placeHolder">No redemptions to display.</p>
+            ) : (
+              redemptions.map((item) => (
+                <ProcessRedemption
+                  key={item.id}
+                  id={item.id}
+                  utorid={item.utorid}
+                  amount={item.amount}
+                  type={item.type}
+                  spent={item.spent}
+                  remark={item.remark}
+                />
+              ))
+            )}
           </div>
         </div>
-      )}
-
-
-      {/* Overview of Users Listings */}
-      {(role === 'manager' || role === 'superuser') && (
-        <UsersListing />
       )}
 
       {/* Overview of events, promotions, and user management */}
@@ -299,9 +295,6 @@ export default function LandingPage() {
           <AdminDash />
         </div>
       )}
-      {console.log("Rendering promotions with role ", role)}
-      {/* Promotions Listing and Management */}
-      { user && <Promotions role={role} /> }
     </div>
   );
 }

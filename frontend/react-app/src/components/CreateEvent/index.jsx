@@ -1,7 +1,7 @@
-import "../styles/CreateEvent.css";
+import "../../styles/CreateEvent.css";
 import {useState} from "react";
 
-import {callBackend} from "../js/backend.js";
+import {callBackend} from "../../js/backend.js";
 import {useNavigate} from 'react-router-dom';
 
 export default function CreateEvent() {

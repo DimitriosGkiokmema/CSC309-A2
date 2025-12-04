@@ -13,12 +13,12 @@ import { UserProvider } from "../components/UserContext";
 export default function App() {
   useEffect(() => {
     // run immediately
-    sessionStorage.setItem("loggedIn", "false");
-    sessionStorage.setItem("token", "");
+    // localStorage.setItem("loggedIn", "false");
+    // localStorage.setItem("token", "");
 
     const handleBeforeUnload = () => {
-        sessionStorage.setItem("loggedIn", "false");
-        sessionStorage.setItem("token", "");
+        // localStorage.setItem("loggedIn", "false");
+        // localStorage.setItem("token", "");
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);

@@ -46,7 +46,7 @@ export default function CreateItem({ id, utorid, amount, type, spent, remark }) 
                 </div>
                 <div>
                     <p>Spent:</p>
-                    <p><i className="fa-solid fa-dollar-sign"></i>{spent}</p>
+                    <p><i className="fa-solid fa-dollar-sign"></i> {spent}</p>
                 </div>
 
                 {remark !== "" && (

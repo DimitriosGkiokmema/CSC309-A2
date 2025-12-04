@@ -1,3 +1,14 @@
 #redeem {
     margin-right: 10px;
 }
+
+.transaction-item {
+}
+
+.userInfo, .transInfo {
+    padding: 5px 20px;
+}
+
+.userInfo input {
+    margin: 0 15px 0 5px;
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { callBackend } from '../js/backend.js';
 import EventItem from "../components/EventItem/EventItem.jsx";
+import CreateEvent from "../components/CreateEvent/index.jsx";
 import "../styles/Events.css"
 
 export default function Events() {
@@ -181,6 +182,7 @@ export default function Events() {
     if (events === null) {
         return (
             <div>
+                <CreateEvent />
                 <h1>All Events</h1>
                 <div>Loading...</div>
             </div>
@@ -191,6 +193,7 @@ export default function Events() {
     if (events.length === 0) {
         return (
             <div>
+                <CreateEvent />
                 <h1>All Events</h1>
                 <div >No events at this time</div>
             </div>
@@ -201,6 +204,7 @@ if(!search) {
     return (
         
         <div>
+            <CreateEvent />
             <h1>All Events</h1>
             <div className="eventSearch">
                 <input
@@ -282,6 +286,7 @@ if(!search) {
 else if (search && !message) {
     return (
         <div>
+            <CreateEvent />
             <h1>{events[0].name}</h1>
 
             <div className="eventSearch">
@@ -335,6 +340,7 @@ else if (search && !message) {
 else {
     return (
        <div>
+            <CreateEvent />
             <h1>{events[0].name}</h1>
 
             <div className="eventSearch">

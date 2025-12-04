@@ -13,7 +13,7 @@ export function UserProvider({ children }) {
     async function initRoleFromBackend() {
       // Fetch user info from backend to get role
       try {
-        const token = sessionStorage.getItem("token");
+        const token = localStorage.getItem("token");
         if (!token) {
           setRole("regular");
           setLoadingRole(false);
@@ -23,9 +23,10 @@ export function UserProvider({ children }) {
         const response = await callBackend('GET', '/users/me', {});
         if (response.ok) {
           setRole(response.data.role);
+          setPic(response.data.avatarUrl);
         } else {
-          sessionStorage.setItem("token", "");
-          sessionStorage.setItem("loggedIn", "false");
+          localStorage.setItem("token", "");
+          localStorage.setItem("loggedIn", "false");
           setRole("regular");
         }
         setLoadingRole(false);

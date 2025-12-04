@@ -8,9 +8,17 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(
-    sessionStorage.getItem("loggedIn") === "true"
+    localStorage.getItem("loggedIn") === "true"
   );
   const [allowedRoles, setRoles] = useState(['superuser', 'manager', 'cashier', 'regular']);
+
+  async function isLogged() {
+    const user = await callBackend('GET', '/users/me', {});
+
+    if (!user.ok) {
+      setLoggedIn(false);
+    }
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -19,16 +27,14 @@ export default function Navbar() {
     const allRoles = ['superuser', 'manager', 'cashier', 'regular'];
     const body = {"utorid": user, "password": pass};
     const { ok, data } = await log_in(body);
-    sessionStorage.setItem("token", ok ? data.token : "");
-    console.log("auth token: ", sessionStorage.getItem("token"))
+    localStorage.setItem("token", ok ? data.token : "");
 
     const curr_user = (await callBackend('GET', '/users/me', {})).data;
     setRole(curr_user.role);
-    console.log("logged in user: ", curr_user)
 
     if (ok) {
-      sessionStorage.setItem("token", data.token);
-      sessionStorage.setItem("loggedIn", "true");
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("loggedIn", "true");
 
       setRoles(
         allRoles.slice(
@@ -39,14 +45,13 @@ export default function Navbar() {
       setOpen(false);
       
       if (curr_user.avatarUrl !== null) {
-        console.log("SETTING PF PIC: ", curr_user.avatarUrl)
         setPic(curr_user.avatarUrl);
       }
 
       navigate('/profile');
     } else {
-      sessionStorage.setItem("token", "");
-      sessionStorage.setItem("loggedIn", "false");
+      localStorage.setItem("token", "");
+      localStorage.setItem("loggedIn", "false");
       alert("Invalid Credentials");
     }
   }
@@ -61,8 +66,8 @@ export default function Navbar() {
   }
   
   function handleLogout() {
-    sessionStorage.setItem("token", "");
-    sessionStorage.setItem("loggedIn", "false");
+    localStorage.setItem("token", "");
+    localStorage.setItem("loggedIn", "false");
     setLoggedIn(false);
     setRole("");
     setOpen(false);
@@ -73,6 +78,7 @@ export default function Navbar() {
     return <div>Loading...</div>;
   }
 
+  isLogged();
   return (
     <header >
       {/* Navbar is here */}
@@ -88,14 +94,6 @@ export default function Navbar() {
         {/* Show these pages if logged in */}
         {loggedIn && (
           <div className="featureContainer">
-            <div className="pageLinks">
-              <Link to="/search">Transactions</Link>
-              <Link to="/search">Promotions</Link>
-              <Link to="/events">Events</Link>
-              <Link to="/event-new">New Event</Link>
-              <Link to="/registration">Registration</Link>
-              <Link to="/promotions">Promotions</Link>
-            </div>
             <div className="roleLevel">
               <label for="roleSelect">Switch View:</label>
               <select value={role} onChange={(e) => setRole(e.target.value)}>
@@ -127,7 +125,13 @@ export default function Navbar() {
               <div>
                 {loggedIn &&  (
                   <>
-                  <Link to="/profile" onClick={() => setOpen(!open)}>Profile</Link>
+                  <div className="pageLinks">
+                    <Link to="/profile" onClick={() => setOpen(!open)}>Profile</Link>
+                    <Link to="/search" onClick={() => setOpen(!open)}>Transactions</Link>
+                    <Link to="/promotions" onClick={() => setOpen(!open)}>Promotions</Link>
+                    <Link to="/events" onClick={() => setOpen(!open)}>Events</Link>
+                    <Link to="/management" onClick={() => setOpen(!open)}>User Management</Link>
+                  </div>
                   <button onClick={handleLogout}>Log Out</button>
                   </>
                 )}

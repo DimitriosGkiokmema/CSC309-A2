@@ -811,7 +811,7 @@ app.post('/auth/tokens', async (req, res) => {
         return res.status(400).json({ error: "Utorid or password missing" });
     }
 
-    const jwt = generateToken(utorid, '7d');
+    const jwt = generateToken(utorid, '1h');
     let curr_time = new Date().toISOString();
     let week_later = new Date();
     week_later.setDate(week_later.getDate() + 7);

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { callBackend } from "../js/backend";
+import { useUser } from "../components/UserContext"
 
-export default function Promotions({ role }) {
-    console.log("Promotions component received role:", role);
+export default function Promotions() {
+    const role = useUser().role;
+    // console.log("Promotions component received role:", role);
     const isManagerOrHigher = role === 'manager' || role === 'superuser';
-    console.log("Is user manager or higher?", isManagerOrHigher);
+    // console.log("Is user manager or higher?", isManagerOrHigher);
 
     const [promotions, setPromotions] = useState([]);
     const [formData, setFormData] = useState({

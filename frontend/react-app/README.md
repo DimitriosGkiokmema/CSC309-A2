@@ -47,13 +47,12 @@
 - [x] Cashiers (3 points):
     - Quick access to transaction creation and redemption processing.
 - [x] Managers & Superusers (4 points):
-- [x] Managers & Superusers (4 points):
     - Overview of events, promotions, and user management.
 
 **Accounts (60 marks)**
 - [x] Login (5 marks):
     - Users can log in with their credentials.
-- [ ] Registration (5 marks):
+- [x] Registration (5 marks):
     - Cashiers (or higher) can create accounts for users.
 - [x] Profile Management (5 marks):
     - Users can update their account information and passwords.
@@ -63,12 +62,12 @@
     - Users can switch between different interfaces (e.g., cashier, event organizer, manager).
     - For example, a manager can switch to the regular user interface to accumulate points, while a regular user who is also an event organizer can switch to the organizer interface to manage events.
 - [x] User Listing (15 marks): Managers can view a list of users.
-- [ ] User Management (10 marks): Mangers can verify a user and make a cashier either suspicious or not. Managers or higher can promote/demote users.
+- [x] User Management (10 marks): Mangers can verify a user and make a cashier either suspicious or not. Managers or higher can promote/demote users.
 
 **Transactions (50 marks)**
 - [ ] Purchase (10 marks):
-    - Cashiers can create purchase transactions.
-    - Cashiers can correctly apply promotions to transactions.
+    - [x] Cashiers can create purchase transactions.
+    - [ ] Cashiers can correctly apply promotions to transactions.
 - [ ] Redemption (10 marks):
     - Users can make a redemption request.
     - Cashiers can process the redemption request.
@@ -93,9 +92,9 @@
     - Managers and event organizers can award points to guests.
 
 **Promotions (25 marks)**
-- [ ] Promotion Management (10 marks):
+- [x] Promotion Management (10 marks):
     - Managers can create, update, and delete promotions.
-- [ ] Promotion Listing (15 marks):
+- [x] Promotion Listing (15 marks):
     - All logged in users can view the list of promotions.
 
 

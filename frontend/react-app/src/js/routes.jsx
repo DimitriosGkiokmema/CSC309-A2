@@ -4,9 +4,8 @@ import LandingPage from "../pages/LandingPage";
 import SearchPage from "../pages/SearchPage";
 import Events from "../pages/Events";
 import EventUpdates from "../pages/EventUpdates";
-import CreateEvent from "../pages/CreateEvent";
 import Promotions from "../pages/Promotions";
-import Registration from "../pages/Registration";
+import Management from "../pages/Management"
 
 export default function App() {
   return (
@@ -16,9 +15,8 @@ export default function App() {
       <Route path="/search" element={<SearchPage />} />
       <Route path="/events" element={<Events />} />
       <Route path="/event-updates/:eventId" element={<EventUpdates />} />
-      <Route path="/event-new" element={<CreateEvent />} />
-      <Route path="/registration" element={<Registration />} />
       <Route path="/promotions" element={<Promotions />} />
+      <Route path="/management" element={<Management />} />
     </Routes>
   );
 }
