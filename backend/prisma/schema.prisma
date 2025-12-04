@@ -46,8 +46,8 @@ model User {
   expiresAt   DateTime?
   lastLogin   DateTime?
   // promotions  Promotion[]
-  buyers      Transaction[] @relation("buyer") //recipient
-  cashiers Transaction[] @relation("cashier") //creator
+  // buyers      Transaction[] @relation("buyer") //recipient
+  // cashiers Transaction[] @relation("cashier") //creator
   organizer    Event[] @relation("eventOrganizer")
   guest    Event[] @relation("eventGuest")
   usages    Usage[]
@@ -81,7 +81,7 @@ model Transaction {
 	remark String?
 	
 	createdBy String
-	cashier User? @relation("buyer", fields: [createdBy], references: [utorid])
+	// cashier User? @relation("cashier", fields: [createdBy], references: [utorid])
 	suspicious Boolean
 
 
@@ -91,7 +91,7 @@ model Transaction {
 
 	awarded Int?
 
-	transfer User? @relation("cashier", fields: [recipient], references: [utorid])
+	// buyer User? @relation("buyer", fields: [recipient], references: [utorid])
 	event Event? @relation(fields: [relatedEventId], references: [id])
   transaction Transaction? @relation("TransactionToTransaction", fields: [relatedTxId], references: [id])
   reverseTransaction Transaction[] @relation("TransactionToTransaction")

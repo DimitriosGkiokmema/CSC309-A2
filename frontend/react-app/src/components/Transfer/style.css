@@ -24,7 +24,6 @@
 
 .formInput {
     padding: 0.6rem 0.75rem;
-    width: 100% !important;
     border: 1px solid #cccccc;
     border-radius: 8px;
     font-size: 1rem;
@@ -39,7 +38,6 @@
 }
 
 .formButton {
-    height: 100%;
     padding: 0.8rem;
     border: none;
     border-radius: 8px;
@@ -49,6 +47,9 @@
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.15s ease;
+    display: flex;
+      align-items: center;
+      justify-content: center;
 }
 
 .formButton:hover {

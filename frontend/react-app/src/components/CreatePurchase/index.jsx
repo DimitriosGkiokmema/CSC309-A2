@@ -45,6 +45,9 @@ export default function CreateItem() {
         if(res.status === 400) {
             setMessage(res.data.error);
         }
+        else {
+            setMessage("Purchase created!");
+        }
 
         // Clear fields
         setUtorid("");

@@ -29,7 +29,7 @@ export default function Registration() {
             return;
         }
 
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         if (!token) {
             setError("You must be logged in to register");
             setLoading(false);

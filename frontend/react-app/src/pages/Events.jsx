@@ -13,13 +13,15 @@ export default function Events() {
     const loc = useLocation();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const { role } = useUser();
+    const [eventId, setEventId] = useState("");
 
-    const [name, setName] = useState(null); // string, text
-    const [location, setLocation] = useState(null); //string, text
-    const [started, setStart] = useState(null); //boolean, checkbox
-    const [ended, setEnd] = useState(null); //boolean, checkbox  
-    const [published, setPublished] = useState(null); //boolean, checkbox
+    const {role} = useUser();
+
+    const [name, setName] = useState(""); // string, text
+    const [location, setLocation] = useState(""); //string, text
+    const [started, setStart] = useState(""); //boolean, checkbox
+    const [ended, setEnd] = useState(""); //boolean, checkbox  
+    const [published, setPublished] = useState(""); //boolean, checkbox
     const [limit, setLimit] = useState(5);
     const [order, setOrder] = useState(null);
     const [query, setQuery] = useState("");
@@ -45,8 +47,8 @@ export default function Events() {
 
 
         // if you get to this point then there must be at least one event that loaded
-        const eventId = document.getElementById("searchInput").value;
-        if(eventId.trim() !== "") {
+        // const eventId = document.getElementById("searchInput").value;
+        if(eventId && eventId.trim() !== "") {
 
             const res = await callBackend("GET", `/events/${eventId}`, {});
             console.log(res.data);
@@ -91,16 +93,32 @@ export default function Events() {
     }
 
     useEffect(() => {
+        if(!user) return;
         load();
-    }, [currentPage, limit, query]);
+    }, [user, currentPage, limit, query]);
 
     useEffect(() => {
         // when a user clicks on the events link in the navbar, loads all events again
         if (loc.pathname === "/events") {
-            setSearch(false);  // reset search state
-            load();
+            setSearch(false);
+            setMessage("");
+            setQuery("");
+            setCurrentPage(1);
+            setEventId("");
+            // load();
         }
-    }, [loc]);
+    }, [loc.key]);
+
+     async function goBack() {
+        setEventId("");
+        setSearch(false);
+        setMessage("");
+        setQuery("");
+        setCurrentPage(1);
+        
+        navigate("/events");
+        load();
+    };
 
     async function handleFilter(e) {
          e.preventDefault();
@@ -141,6 +159,13 @@ export default function Events() {
 
         console.log(query);
 
+        setName("");
+        setLocation("");
+        setOrder("");
+        setStart("");
+        setEnd("");
+        setPublished("");
+
         // const res = await callBackend("GET", `/events?${query}`, {});
         
     }
@@ -168,8 +193,12 @@ export default function Events() {
 
     //clearance
     let addEvent;
-    const clearance = user && role === "manager";
-    if(clearance) {
+    // const clearance = user && user.role === "manager";
+    // if(clearance) {
+    //     addEvent = <button onClick={createEvent}>Add event</button>
+    // }
+
+    if(role === "manager") {
         addEvent = <button onClick={createEvent}>Add event</button>
     }
 
@@ -214,6 +243,8 @@ if(!search) {
                     id="searchInput"
                     type="number"
                     placeholder="Search events by id..."
+                    value={eventId}
+                    onChange={(e) => {setEventId(e.target.value)}}
                 />
                 <input type="button" value="Search" onClick={handleSearch}/>
                 {addEvent}
@@ -222,30 +253,29 @@ if(!search) {
             {/* filter bar */}
             <div className="filterOptions">
                 
-                <input id="filterName" type="text" placeholder="Event name" onChange={(e) => {setName(e.target.value)}}></input>
-                <input id="filterLocation" type="text" placeholder="Event location" onChange={(e) => {setLocation(e.target.value)}}></input>
+                <input id="filterName" type="text" placeholder="Event name" value={name} onChange={(e) => {setName(e.target.value)}}></input>
+                <input id="filterLocation" type="text" placeholder="Event location" value={location} onChange={(e) => {setLocation(e.target.value)}}></input>
                 <div id="start">
-                    <input id="filterStart" type="checkbox" onChange={(e) => {setStart(e.target.checked)}}></input>
+                    <input id="filterStart" type="checkbox" value={started} onChange={(e) => {setStart(e.target.checked)}}></input>
                     <label>Started</label>
                 </div>
                 <div id="end">
-                    <input id="filterEnd" type="checkbox" onChange={(e) => {setEnd(e.target.checked)}}></input>
+                    <input id="filterEnd" type="checkbox" value={ended} onChange={(e) => {setEnd(e.target.checked)}}></input>
                     <label>Ended</label>
                 </div>
                 <div id="publish">
-                    <input id="filterPublished" type="checkbox" onChange={(e) => {setPublished(e.target.checked)}}></input>
+                    <input id="filterPublished" type="checkbox" value={published} onChange={(e) => {setPublished(e.target.checked)}}></input>
                     <label>Published</label>
                 </div>
                 
-                <select onChange={(e) => {setOrder(e.target.value)}}>
+                <select value={order} onChange={(e) => {setOrder(e.target.value)}}>
                     <option disabled selected>Order By</option>
                     <option value={"name"}>Name</option>
                     <option value={"location"}>Location</option>
                     <option value={"description"}>Description</option>
                     <option value={"startTime"}>Start time</option>
                     <option value={"endTime"}>End time</option>
-                    {/* capacity?? */}
-                    <option value={"capacity"}>Capacity</option> 
+                    
                 </select>
 
                 {/* pagination */}
@@ -301,33 +331,14 @@ else if (search && !message) {
                 <input
                     id="searchInput"
                     type="number"
+                    value={eventId}
                     placeholder="Search events..."
+                    onChange={(e) => {setEventId(e.target.value)}}
                 />
                 {/* search for a new event */}
                 <input type="button" value="Search" onClick={handleSearch}/> 
-                {addEvent}
+                <input type="button" value="Go back" onClick={goBack}></input>
             </div>
-
-            {/* filter bar */}
-            {/* <div className="filterOptions">
-                
-                <input type="text" placeholder="Event name" onChange={(e) => {setName(e.target.value)}}></input>
-                <input type="text" placeholder="Event location" onChange={(e) => {setLocation(e.target.value)}}></input>
-                <div id="start">
-                    <input type="checkbox" onChange={(e) => {setStart(e.target.checked)}}></input>
-                    <label>Started</label>
-                </div>
-                <div id="end">
-                    <input type="checkbox" onChange={(e) => {setEnd(e.target.checked)}}></input>
-                    <label>Ended</label>
-                </div>
-                <div id="publish">
-                    <input type="checkbox" onChange={(e) => {setPublished(e.target.checked)}}></input>
-                    <label>Published</label>
-                </div>
-
-                <input type="button" value="Filter" onClick={handleFilter}></input>
-            </div> */}
 
             {events.map(event => (
                 <EventItem
@@ -361,36 +372,21 @@ else {
                     id="searchInput"
                     type="number"
                     placeholder="Search events..."
+                    value={eventId}
+                    onChange={(e) => {setEventId(e.target.value)}}
                 />
                 {/* search for a new event */}
                 <input type="button" value="Search" onClick={handleSearch}/> 
-                {addEvent}
+                <input type="button" value="Go back" onClick={goBack}></input>
             </div>
 
-            {/* filter bar */}
-            <div className="filterOptions">
-                
-                <input type="text" placeholder="Event name" onChange={(e) => {setName(e.target.value)}}></input>
-                <input type="text" placeholder="Event location" onChange={(e) => {setLocation(e.target.value)}}></input>
-                <div id="start">
-                    <input type="checkbox" onChange={(e) => {setStart(e.target.checked)}}></input>
-                    <label>Started</label>
-                </div>
-                <div id="end">
-                    <input type="checkbox" onChange={(e) => {setEnd(e.target.checked)}}></input>
-                    <label>Ended</label>
-                </div>
-                <div id="publish">
-                    <input type="checkbox" onChange={(e) => {setPublished(e.target.checked)}}></input>
-                    <label>Published</label>
-                </div>
-
-                <input type="button" value="Filter" onClick={handleFilter}></input>
-            </div>
 
             <p className="error">{message}</p>
         </div> 
     )
 }
+
+
+
 
 }

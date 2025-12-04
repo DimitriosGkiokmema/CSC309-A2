@@ -36,29 +36,31 @@ export default function Navbar() {
     const { ok, data } = await log_in(body);
     // localStorage.setItem("token", ok ? data.token : "");
     // localStorage.setItem("loggedIn", ok ? "true" : "false");
+    if (ok) {
+      sessionStorage.setItem("token", data.token);
+    }
 
     const curr_user = (await callBackend('GET', '/users/me', {})).data;
     setRole(curr_user.role);
 
     if (ok) {
-      sessionStorage.setItem("token", data.token);
       sessionStorage.setItem("loggedIn", "true");
 
-      setRoles(
-        allRoles.slice(
-            allRoles.indexOf(curr_user.role)
-        )
-      );
+      allRoles.slice(allRoles.indexOf(curr_user.role));
+      if (curr_user.organizer && (curr_user.organizer.length !== 0)) {
+        allRoles.push('event organizer');
+      }
+      setRoles(allRoles);
       setLoggedIn(true);
       setOpen(false);
       
+      console.log(curr_user.avatarUrl)
       if (curr_user.avatarUrl !== null) {
         setPic(curr_user.avatarUrl);
       }
 
       navigate('/profile');
     } else {
-      sessionStorage.setItem("token", "");
       sessionStorage.setItem("loggedIn", "false");
       alert("Invalid Credentials");
     }

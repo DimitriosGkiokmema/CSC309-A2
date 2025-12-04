@@ -8,6 +8,8 @@ import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
 import ImgKit from "../components/ImgKit";
 import EventItem from "../components/EventItem/EventItem.jsx"
+import Transfer from "../components/Transfer";
+import RedeemPoints from "../components/RedeemPoints";
 import { useUser } from "../components/UserContext";
 import '../styles/LandingPage.css';
 
@@ -22,7 +24,8 @@ export default function LandingPage() {
   const [edit, setEdit] = useState(false);
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
-  const { role } = useUser();
+  const { role, leadingRole } = useUser();
+  // console.log("User is ", role)
 
   // fetch user info
   async function load() {
@@ -47,11 +50,11 @@ export default function LandingPage() {
     });
     setFormData(userInfo);
 
-      const tx = await callBackend('GET', '/users/me/transactions', {});
-      setTransactions(tx.data);
+    const tx = await callBackend('GET', '/users/me/transactions', {});
+    setTransactions(tx.data);
 
-    const r = await callBackend('GET', '/users/me/transactions?type=redemption&relatedId=null', {});
-    const filtered = r.data.results.filter(obj => obj.type === 'redemption' && obj.processed === true);
+    const r = await callBackend('GET', '/transactions?type=redemption', {});
+    const filtered = r.data.results.filter(obj => obj.type === 'redemption' && !obj.processed);
     setRedemptions(filtered);
 
     // Get event data
@@ -121,6 +124,10 @@ export default function LandingPage() {
     </div>
     );
   }
+
+  // if(redemptions !== []) {
+  //   console.log("redemptions: " + redemptions[0].processed)
+  // }
 
   return (
     <div className="page">
@@ -236,14 +243,32 @@ export default function LandingPage() {
             {transactions['results'].map((item) => 
             (
               <TransactionItem
-                id={item.id}
-                utorid={item.utorid}
-                amount={item.amount}
-                type={item.type}
-                spent={item.spent}
-                remark={item.remark}
+                  id={item.id}
+                  utorid={item.utorid}
+                  awarded={item.awarded} // for events
+                  amount={item.amount} // for adjustments, purchases, negative for redemption and sending transfers
+
+                  earned={item.earned} // for purchases 
+                  spent={item.spent} // for purchases
+                  
+                  sender={item.sender} // transfer
+                  type={item.type} // transfer
+                  remark={item.remark} 
+
+                  relatedEventId={item.relatedEventId} // for events and adjustments (related tx)
+                  relatedTxId={item.relatedTxId}
               />
             ))}
+          </div>
+
+          {/* create a transfer */}
+          <div>
+            <Transfer />
+          </div>
+
+          {/* create a transfer */}
+          <div>
+            <RedeemPoints />
           </div>
         </div>
       )}
@@ -253,22 +278,23 @@ export default function LandingPage() {
         <div className="row">
           <div className="col-8 offset-2">
             <CreateItem />
-            <h1>Redemption Processing</h1>
-            {redemptions.length === 0 ? (
-              <p className="placeHolder">No redemptions to display.</p>
-            ) : (
-              redemptions.map((item) => (
-                <ProcessRedemption
-                  key={item.id}
-                  id={item.id}
-                  utorid={item.utorid}
-                  amount={item.amount}
-                  type={item.type}
-                  spent={item.spent}
-                  remark={item.remark}
-                />
-              ))
-            )}
+
+            <h1>Redemption requests</h1>
+            {redemptions.map((item) => 
+            
+            ( 
+              <ProcessRedemption
+                key={item.id}
+                id={item.id}
+                utorid={item.utorid}
+                amount={item.amount}
+                type={item.type}
+                spent={item.spent}
+                remark={item.remark}
+              />
+            )
+          
+          )}
           </div>
         </div>
       )}
@@ -297,21 +323,21 @@ export default function LandingPage() {
 
 
       {/* if this user is an event organizer, show their events */}
-      {(user.organizer && (user.organizer.length !== 0)) && (
+      {(role === 'event organizer' && user.organizer && (user.organizer.length !== 0)) && (
         <div>
           <h1>My organized events</h1>
           {user.organizer.map((event) => 
               <EventItem
-                id={event.id}
-                    name={event.name}
-                    location={event.location}
-                    startTime={event.startTime} 
-                    endTime={event.endTime}
-                    capacity={event.capacity} 
-                    numGuests={event.guests.length}  
-                    published={event.published} 
-                    organizer={true}
-                    profile={true}
+                  id={event.id}
+                  name={event.name}
+                  location={event.location}
+                  startTime={event.startTime} 
+                  endTime={event.endTime}
+                  capacity={event.capacity} 
+                  numGuests={event.guests.length}  
+                  published={event.published} 
+                  organizer={true}
+                  profile={true}
               />
 
           )}
@@ -319,6 +345,5 @@ export default function LandingPage() {
         </div>
       )}
     </div>
-    
   );
 }

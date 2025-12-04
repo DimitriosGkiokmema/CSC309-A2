@@ -19,7 +19,7 @@ export default function CreateEvent() {
     const [message, setMessage] = useState("");
    
     async function createEvent(e) {
-        // call PATCH /events/:id  
+        
         e.preventDefault();
         const payload = {
             name: name && name.trim() !== "" ? name.trim() : null,

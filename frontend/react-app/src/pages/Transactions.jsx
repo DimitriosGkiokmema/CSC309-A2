@@ -1,7 +1,9 @@
+import "../styles/allTransactions.css";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { callBackend } from '../js/backend.js';
 import TransactionItem from "../components/TransactionItem";
+import { useUser } from "../components/UserContext";
 
 export default function Transactions() {
     const [user, setUser] = useState(null);
@@ -9,16 +11,19 @@ export default function Transactions() {
     const [transactions, setTransactions] = useState(null);
     const loc = useLocation();
     const navigate = useNavigate();
-    const [name, setName] = useState(false);
-    const [suspicious, setSuspicious] = useState(false);
-    const [createdBy, setCreatedBy] = useState(null);
-    const [amount, setAmount] = useState(0);
-    const [operator, setOperator] = useState(null);
-    const [type, setType] = useState(null);
+    const [name, setName] = useState("");
+    const [suspicious, setSuspicious] = useState("");
+    const [createdBy, setCreatedBy] = useState("");
+    const [amount, setAmount] = useState("");
+    const [operator, setOperator] = useState("");
+    const [type, setType] = useState("");
+    const [txId, setTxId] = useState("");
+
+    const {role} = useUser();
 
     const [mytransactions, setMyTx] = useState(null);
-    const [related, setRelatedId] = useState(null);
-    const [promo, setPromotionId] = useState(null);
+    const [related, setRelatedId] = useState("");
+    const [promo, setPromotionId] = useState("");
 
     // const [page, setPage] = useState(1);
     const [query, setQuery] = useState("");
@@ -31,6 +36,12 @@ export default function Transactions() {
 
      useEffect(() => {
             // fetch user info
+            setSearch(false);  // reset search state
+            setQuery("");          // FULL RESET
+            setCurrentPage(1);
+            setLimit(5);
+            setMessage("");
+
             async function loadUser() {
                 const me = await callBackend('GET', '/users/me', {});
                 if (!me.ok) return; // user not logged in or error
@@ -39,7 +50,7 @@ export default function Transactions() {
             }
             
             loadUser();
-            setMessage("");
+            
     }, []);
 
     // fetch user info
@@ -47,16 +58,28 @@ export default function Transactions() {
         // Get all transactions data
         setMessage("");
         setSearch(null);
-        let res = await callBackend('GET', `/transactions?page=${currentPage}&limit=${limit}&${query}`, {});
+        let res;
+        if(query) {
+            console.log("im here");
+            res = await callBackend('GET', `/transactions?page=${currentPage}&limit=${limit}&${query}`, {});
+        }
+        else {
+            console.log("no im here");
+            res = await callBackend('GET', `/transactions?page=${currentPage}&limit=${limit}`, {});
+        }
         // setTransactions(res.data.results);
-        console.log(`page=${currentPage}&limit=${limit}&${query}`);
+        //console.log(`page=${currentPage}&limit=${limit}&${query}`);
         // const res = await callBackend("GET", `/transactions?${query}`, {});
         if(res.status !== 200) {
+                console.log("im also here");
                 setSearch(false);
                 console.log(res.data.error);
-                setMessage("Transaction not found: " + res.data.error);
+                if(role === "manager") {
+                    setMessage("Transaction not found: " + res.data.error);
+                }
             }
         else if (res.data.results.length === 0) {
+            console.log("but really i am here");
             console.log("there is a returned array but it is empty: " + res.data.results.length)
             setMessage("Transaction not found");
         }
@@ -73,19 +96,30 @@ export default function Transactions() {
 
     async function myTransactions() {
         setMessage("");
-        let res = await callBackend("GET", `/users/me/transactions?page=${currentPage}&limit=${limit}&${query}`, {});
+        let res;
+
+        if(query) {
+
+            res = await callBackend('GET', `/users/me/transactions?page=${currentPage}&limit=${limit}&${query}`, {});
+        }
+        else {
+            res = await callBackend('GET', `/users/me/transactions?page=${currentPage}&limit=${limit}`, {});
+        }
         //console.log("there is a returned array but it is empty: " + res.data.results.length === 0)
         console.log(query);
         console.log(res.status);
         if(res.status !== 200) {
             setSearch(false);
-            setMessage("Transaction not found: " + res.data.error);
+            if(role !== "manager") {
+                setMessage("Transaction not found: " + res.data.error);
+            }
             if(message) {
                 console.log("there is message");
             }
         }
         else if (res.data.results.length === 0) {
-            console.log("there is a returned array but it is empty: " + res.data.results.length)
+            //console.log("HELLO");
+            //console.log("there is a returned array but it is empty: " + res.data.results.length)
             setMessage("Transaction not found");
         }
         else {
@@ -101,41 +135,38 @@ export default function Transactions() {
     }
 
     useEffect(() => {
-        if(user && user.role === "manager") {
-            loadTransactions();
-        }
 
-        else {
-            myTransactions();
-        }
-    }, [currentPage, limit, query]);
+        // if(user && user.role === "manager" && role === "manager") {
+        //     loadTransactions();
+        // }
+
+        // else if (user && user.role !== "manager" && role !== "manager") {
+        //     myTransactions();
+        // }
+
+         loadTransactions();
+         myTransactions();
+    }, [user, currentPage, limit, query]);
 
     useEffect(() => {
         // when a user clicks on the events link in the navbar, loads all events again
         if (loc.pathname === "/transactions") {
             setSearch(false);  // reset search state
-            if(user && user.role === "manager") {
-                
-                loadTransactions();
-            }
-            else {
-                if(user) {
-                    const exists = true;
-                    console.log("user exists: " + exists);
-                }
-                myTransactions();
-            } 
+            setQuery("");          // FULL RESET
+            setCurrentPage(1);
+            setLimit(5);
+            setMessage("");    
         }
-    }, [loc]);
+    }, [loc.key]);
 
     async function handleSearch(e) {
             e.preventDefault();
             setMessage("");
     
             // if you get to this point then there must be at least one transaction that loaded
-            const txId = document.getElementById("searchInput").value;
-            if(txId.trim() !== "") {
-    
+            // const txId = document.getElementById("searchInput").value;
+            if(txId && txId.trim() !== "") {
+                setTxId(txId);
                 const res = await callBackend("GET", `/transactions/${txId}`, {});
                 console.log(res.data);
                 if(res.status === 404) {
@@ -195,18 +226,22 @@ export default function Transactions() {
             params.append("order", order);
         }
 
-        
-
-        // if(order && order !== null) {
-        //     params.append("order", order);
-        // }
+       
         
         console.log("the current limit is: " + limit);
         const query = params.toString();
         setQuery(query);
 
-        console.log(query);
-
+        // console.log(query);
+        setName("");
+        setCreatedBy("");
+        setOperator("");
+        setAmount("");
+        setSuspicious("");
+        setOrder("");
+        setType("");
+        setRelatedId("");
+        setPromotionId("");
         
     }
 
@@ -214,32 +249,22 @@ export default function Transactions() {
          e.preventDefault();
          navigate("/transaction-new");
     }
-
-    // async function fetchPage(page) {
-    //     // after user clicks on < or > button, the currentPage changes, limit is still whatever was set from the filter
-    //     setCurrentPage(page);
-    //     const params = new URLSearchParams();
-    //     params.append("page", page);
-    //     // if(order) params.append("order", order);
-    //     const newquery = query + "&" + params.toString();
-    //     console.log(newquery);
-    //     const res = await callBackend("GET", `/transactions?${newquery}`, {});
-    //     if(res.status !== 200) {
-    //             setSearch(false);
-    //             console.log(res.data.error);
-    //             setMessage("Transaction not found: " + res.data.error);
-    //         }
-    //         else {
-    //             setSearch(false);
-    //             setTransactions(res.data.results); // put the single event in an array
-    //         }
-    // }
-
-   
+    
+    async function goBack() {
+        setTxId("");
+        setSearch(false);
+        setMessage("");
+        setQuery("");
+        setCurrentPage(1);
+        
+        navigate("/transactions");
+        loadTransactions();
+        
+    };
 
     if(!user){return(<div>Loading...</div>);}
 
-    if (user && user.role !== "manager") {
+    if (role === "cashier" || role === "regular" || role === "superuser") {
         if(mytransactions === null) {
             return (
                 <div>
@@ -249,7 +274,7 @@ export default function Transactions() {
             );
         }
         else {
-            if(!message && !search) {
+            // if(!search) {
 
                 return (
                     <div>
@@ -258,33 +283,33 @@ export default function Transactions() {
                         
                         <div className="filterOptions">
                                 
-                                <input id="filterName" type="number" placeholder="Related ID" onChange={(e) => {setRelatedId(e.target.value)}}></input>
-                                <input id="filterCreatedBy" type="number" placeholder="Promotion ID" onChange={(e) => {setPromotionId(e.target.value)}}></input>
+                                <input id="filterId" type="number" placeholder="Related ID" value={related} onChange={(e) => {setRelatedId(e.target.value)}}></input>
+                                <input id="filterPromo" type="number" placeholder="Promotion ID" value={promo} onChange={(e) => {setPromotionId(e.target.value)}}></input>
                                 <span>
-                                    <select onChange={(e) => {setOperator(e.target.value)}}>
-                                        <option disabled selected>choose</option>
+                                    <select value ={operator} onChange={(e) => {setOperator(e.target.value)}}>
+                                        <option selected>choose</option>
                                         <option value={"lte"} >&le;</option>
                                         <option value={"gte"}>&ge;</option>
                                     </select>
-                                    <input id="filterName" type="number" placeholder="Amount" onChange={(e) => {setAmount(e.target.value)}}></input>
+                                    <input id="filterAmount" type="number" placeholder="Amount" value={amount} onChange={(e) => {setAmount(e.target.value)}}></input>
                                 </span>
             
-                                <select onChange={(e) => {setType(e.target.value)}}>
-                                    <option disabled selected>Transaction Type</option>
+                                <select id="filterType" value={type} onChange={(e) => {setType(e.target.value)}}>
+                                    <option selected>Transaction Type</option>
                                     <option value={"purchase"}>Purchase</option>
                                     <option value={"adjustment"}>Adjustment</option>
                                     <option value={"transfer"}>Transfer</option>
                                     <option value={"event"}>Event</option>
                                 </select>
                                 
-                                <select onChange={(e) => {setOrder(e.target.value)}}>
-                                    <option disabled selected>Order By</option>
+                                <select id="filterOrder" value={order} onChange={(e) => {setOrder(e.target.value)}}>
+                                    <option selected>Order By</option>
                                     <option value={"amount"}>Amount</option> 
                                     <option value={"type"}>Transaction Type</option> 
                                 </select>
             
                                 {/* pagination */}
-                                <select onChange={(e) => {setLimit(Number(e.target.value))}}>
+                                <select value={limit} onChange={(e) => {setLimit(Number(e.target.value))}}>
                                     <option value={1}>1 per page</option>
                                     <option value={2}>2 per page</option>
                                     <option value={5} selected>5 per page</option>
@@ -293,6 +318,8 @@ export default function Transactions() {
             
                                 <input type="button" value="Filter" onClick={handleFilter}></input>
                             </div>
+
+                            <p className="error">{message}</p>
         
                             {mytransactions.map(tx => (
                                 <TransactionItem
@@ -303,8 +330,7 @@ export default function Transactions() {
         
                                     earned={tx.earned} // for purchases 
                                     spent={tx.spent} // for purchases
-                                    
-                                    recipient={tx.recipient}
+                                   
                                     sender={tx.sender} // transfer
                                     type={tx.type} // transfer
                                     remark={tx.remark} 
@@ -324,36 +350,11 @@ export default function Transactions() {
                     </div>
                 )
             }
-            else {
-                return (
-                <div>
-                        <h1>My Transactions</h1>
-        
-                        {/* <div className="transactionSearch">
-                            <input
-                                id="searchInput"
-                                type="number"
-                                placeholder="Search transactions..."
-                            />
-                            {/* search for a new event */}
-                            {/* <input type="button" value="Search" onClick={handleSearch}/>  */}
-                            
-                        {/* </div> */}
-        
-                        {/* filter bar */}
-                        
-        
-                        <p className="error">{message}</p>
-                    </div> 
-                )
-            }
-        }
+            
     }
-
-      
     
     //this is only for managers (all transactions)
-    else if(user && user.role === "manager") {
+    else if(role === "manager") {
         if(transactions === null) {
             return (
                 <div>
@@ -363,7 +364,7 @@ export default function Transactions() {
             );
         }
         else {
-            if(!search && !message) {
+            if(!search) {
                 return (
                     
                     <div>
@@ -373,6 +374,8 @@ export default function Transactions() {
                                 id="searchInput"
                                 type="number"
                                 placeholder="Search transactions by id..."
+                                value={txId}
+                                onChange={(e) => {setTxId(e.target.value)}}
                             />
                             <input type="button" value="Search" onClick={handleSearch}/>
                         </div>
@@ -380,37 +383,39 @@ export default function Transactions() {
                         {/* filter bar */}
                         <div className="filterOptions">
                             
-                            <input id="filterName" type="text" placeholder="utorid" onChange={(e) => {setName(e.target.value)}}></input>
-                            <input id="filterCreatedBy" type="text" placeholder="Created by" onChange={(e) => {setCreatedBy(e.target.value)}}></input>
+                            <input id="filterName" type="text" placeholder="utorid" value={name} onChange={(e) => {setName(e.target.value)}}></input>
+                            <input id="filterCreatedBy" type="text" placeholder="Created by" value={createdBy} onChange={(e) => {setCreatedBy(e.target.value)}}></input>
                             <span>
                                 <select onChange={(e) => {setOperator(e.target.value)}}>
-                                    <option value={"lte"} selected >&lt;</option>
-                                    <option value={"gte"}>&gt;</option>
+                                    <option selected >Choose</option> 
+                                    <option value={"lte"} >&le;</option>
+                                    <option value={"gte"}>&ge;</option>
                                 </select>
-                                <input id="filterName" type="number" placeholder="Amount" onChange={(e) => {setAmount(e.target.value)}}></input>
+                                <input id="filterAmount" type="number" placeholder="Amount" value={amount} onChange={(e) => {setAmount(e.target.value)}}></input>
                             </span>
         
-                            <select onChange={(e) => {setType(e.target.value)}}>
-                                <option disabled selected>Transaction Type</option>
+                            <select id="filterType" value={type} onChange={(e) => {setType(e.target.value)}}>
+                                <option selected>Transaction Type</option>
                                 <option value={"purchase"}>Purchase</option>
                                 <option value={"adjustment"}>Adjustment</option>
                                 <option value={"transfer"}>Transfer</option>
                                 <option value={"event"}>Event</option>
+                                <option value={"redemption"}>Redemption</option>
                             </select>
         
                             <div id="suspicious">
-                                <input id="filterSuspicious" type="checkbox" onChange={(e) => {setSuspicious(e.target.checked)}}></input>
+                                <input id="filterSuspicious" type="checkbox" value={suspicious} onChange={(e) => {setSuspicious(e.target.checked)}}></input>
                                 <label>Suspicious</label>
                             </div>
                             
-                            <select onChange={(e) => {setOrder(e.target.value)}}>
-                                <option disabled selected>Order By</option>
+                            <select id="filterOrder" value ={order} onChange={(e) => {setOrder(e.target.value)}}>
+                                <option selected>Order By</option>
                                 <option value={"utorid"}>Utorid</option>
                                 <option value={"amount"}>Amount</option> 
                             </select>
         
                             {/* pagination */}
-                            <select onChange={(e) => {setLimit(Number(e.target.value))}}>
+                            <select value={limit} onChange={(e) => {setLimit(Number(e.target.value))}}>
                                 <option value={1}>1 per page</option>
                                 <option value={2}>2 per page</option>
                                 <option value={5} selected>5 per page</option>
@@ -420,7 +425,7 @@ export default function Transactions() {
                             <input type="button" value="Filter" onClick={handleFilter}></input>
                         </div>
                         
-                        {/* <p className="error">{message}</p> */}
+                        <p className="error">{message}</p>
                         
                         {transactions.map(tx => (
                             <TransactionItem
@@ -432,7 +437,6 @@ export default function Transactions() {
                                 earned={tx.earned} // for purchases 
                                 spent={tx.spent} // for purchases
                                 
-                                recipient={tx.recipient}
                                 sender={tx.sender} // transfer
                                 type={tx.type} // transfer
                                 remark={tx.remark} 
@@ -457,16 +461,19 @@ export default function Transactions() {
             else if (search && !message) {
                 return (
                     <div>
-                        <h1>{transactions[0].name}</h1>
+                        <h1>Transaction #{transactions[0].id}</h1>
         
-                        <div className="transactionSearch">
+                        <div className="txSearch">
                             <input
                                 id="searchInput"
                                 type="number"
-                                placeholder="Search transactions..."
+                                placeholder="Search transactions by id..."
+                                value={txId}
+                                onChange={(e) => {setTxId(e.target.value)}}
                             />
                             {/* search for a new event */}
                             <input type="button" value="Search" onClick={handleSearch}/> 
+                            <input type="button" value="Go back" onClick={goBack}></input>
                             
                         </div>
         
@@ -480,7 +487,6 @@ export default function Transactions() {
                                 earned={tx.earned} // for purchases 
                                 spent={tx.spent} // for purchases
                                 
-                                recipient={tx.recipient}
                                 sender={tx.sender} // transfer
                                 type={tx.type} // transfer
                                 remark={tx.remark} 
@@ -496,16 +502,19 @@ export default function Transactions() {
             else {
                 return (
                 <div>
-                        <h1>{transactions[0].utorid}</h1>
+                        <h1>Transaction #{txId}</h1>
         
-                        <div className="transactionSearch">
+                        <div className="txSearch">
                             <input
                                 id="searchInput"
                                 type="number"
-                                placeholder="Search transactions..."
+                               placeholder="Search transactions by id..."
+                                value={txId}
+                                onChange={(e) => {setTxId(e.target.value)}}
                             />
                             {/* search for a new event */}
                             <input type="button" value="Search" onClick={handleSearch}/> 
+                            <input type="button" value="Go back" onClick={goBack}></input>
                             
                         </div>
         
@@ -520,15 +529,6 @@ export default function Transactions() {
 
     }
 
-
-
-
-    // if(user && user.role === "manager") {
-
-    //     return(
-    //         <h1>All transactions</h1>
-    //     )
-    // }
 
 
     // Loaded but empty
