@@ -3,12 +3,14 @@ import {useState, useEffect} from "react";
 import { callBackend } from "../../js/backend"; 
 import {useNavigate, useLocation} from 'react-router-dom';
 
-function EventItem({ id, name, location, startTime, endTime, capacity, numGuests, published }) {
+function EventItem({ id, name, location, startTime, endTime, capacity, numGuests, published, organizer, profile }) {
     const [user, setUser] = useState(null); // check the user's role
+    const [event, setEvent] = useState(null); 
     const [message, setMessage] = useState("");
     const [guests, setGuests] = useState(numGuests);
     const navigate = useNavigate();
     const loc = useLocation();
+    //const [organizer, setOrganizer] = useState(false);
 
     async function handleRSVP(e) {
         e.preventDefault();
@@ -16,8 +18,8 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         // check that the the user isnt already a guest for this event, otherwise add them (POST)
         
         const res = await callBackend("POST", `/events/${id}/guests/me`, {});
-        if(res.status === 400) {
-            setMessage("You have already RSVPed to this event.");
+        if(res.status !== 201) {
+            setMessage(res.data.error);
         }
         else {
             setGuests(prev => prev + 1);
@@ -28,7 +30,7 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
     async function handleUpdate(e) {
         e.preventDefault();
         // redirect to event update page (form)
-        navigate(`/event-updates/${id}`, {state: {name, location}});
+        navigate(`/event-updates/${id}`, {state: {name, location, organizer, profile}});
     }
 
     async function deleteItem() {
@@ -48,7 +50,15 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
                 const me = await callBackend('GET', '/users/me', {});
                 if (!me.ok) return; // user not logged in or error
                 setUser(me.data);
-    
+
+                // const event = await callBackend("GET", `/events/${id}`, {});
+                // if(!event.ok) return;
+                // setEvent(event.data);
+
+                // if(me.ok) {
+                //     const isOrganizer = event.data.organizers.some(org => org.id === me.data.id);
+                //     setOrganizer(isOrganizer);
+                // }
             }
             
             load();
@@ -62,6 +72,11 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         }
     }, [loc]);
 
+    // so the message doesnt stay during pagination
+    useEffect(() => {
+        setMessage("");
+    }, [id]);
+
     //rsvp functionality
      let available;
      let spots;
@@ -70,6 +85,8 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         spots = "Unlimited";
     }
     else {
+        console.log("numGuests: " + numGuests);
+        console.log("capacity :" + capacity);
         spots = capacity - guests;
         available = spots > 0;
     }
@@ -79,11 +96,13 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
     let rsvpInfo;
         if(over) {
             rsvpInfo = <p className="error">This event is over</p>
+        } else if (organizer) {
+            rsvpInfo = <p className="error">Organizers are not able to rsvp for their own event</p>
         } else if (!available) {
-            console.log("this event has this many spots in total: " + capacity);
-            console.log("this event has " + numGuests + " many guests");
-            console.log("this event is available: " + available);
-            console.log("this event has " + spots + " spots left")
+            // console.log("this event has this many spots in total: " + capacity);
+            // console.log("this event has " + numGuests + " many guests");
+            // console.log("this event is available: " + available);
+            // console.log("this event has " + spots + " spots left")
             rsvpInfo = (
             <div>
                 <button className="rsvp" disabled={true}>RSVP</button>
@@ -100,10 +119,13 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
             }   
 
 
-    // event update/edit functionality, only for managers and superusers (TODO: need to add condition for organizers later)
+    // event update/edit functionality, only for managers (TODO: need to add condition for organizers later)
     let updateInfo;
-
-    const clearance = user && (user.role === "manager")
+    
+    const clearance = user && (user.role === "manager" || organizer);
+    
+    console.log("user is an organizer: " + organizer + ", for event " + id);
+    
 
     if(clearance && !over) {
         updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>

@@ -5,7 +5,9 @@ import SearchPage from "../pages/SearchPage";
 import Events from "../pages/Events";
 import EventUpdates from "../pages/EventUpdates";
 import Promotions from "../pages/Promotions";
-import Management from "../pages/Management"
+import Management from "../pages/Management";
+import Transactions from "../pages/Transactions";
+import TransactionUpdates from "../pages/TransactionUpdates";
 
 export default function App() {
   return (
@@ -17,6 +19,8 @@ export default function App() {
       <Route path="/event-updates/:eventId" element={<EventUpdates />} />
       <Route path="/promotions" element={<Promotions />} />
       <Route path="/management" element={<Management />} />
+      <Route path="/transactions" element={<Transactions />} />
+      <Route path="/transaction-updates/:txId" element={<TransactionUpdates />} />
     </Routes>
   );
 }

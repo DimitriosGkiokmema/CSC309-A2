@@ -7,7 +7,7 @@
 - [ ] A page that displays the QR code of an unprocessed redemption request.
 - [ ] A page that displays all available promotions.
 - [x] A page that displays all published events.
-- [ ] A page that displays a specific event and allows a user to RSVP to an event.
+- [x] A page that displays a specific event and allows a user to RSVP to an event.
 - [ ] A page that displays all past transactions for the current logged in user (with filters, order-by, and pagination).
     - Each transaction card should be displayed "nicely", e.g., instead of relatedId, it should display the utorid of the sender/receiver.
     - Some way to make each transaction type distinct in appearance, e.g., using different colors.
@@ -21,7 +21,7 @@
 **Managers**
 - [ ] A page that displays all users with filters, order-by, and pagination.
 - [ ] A page that allows managers to update users, e.g., make a user verified, promote a user to cashier, etc.
-- [ ] A page that displays ALL transactions (with filters, order-by, and pagination).
+- [x] A page that displays ALL transactions (with filters, order-by, and pagination).
 - [ ] A page that displays a specific transaction, with the option of creating an adjustment transaction for it, and marking it as suspicious.
 - [ ] A page that allows managers to create new promotions.
 - [ ] A page that displays all promotions (with filters, order-by, and pagination).
@@ -32,10 +32,10 @@
 - [x] A page that allows managers to add or remove users from an event.
 
 **Event Organizer (and all Managers)**
-- [ ] A page that displays the events that the user is responsible for.
-- [ ] A page that allows the user to view/edit a specific event that he/she is responsible for.
-- [ ] A page that allows adding a user to the event that he/she is responsible for.
-- [ ] A page that allows awarding points to a single guest, or to all guests who have RSVPed.
+- [x] A page that displays the events that the user is responsible for.
+- [x] A page that allows the user to view/edit a specific event that he/she is responsible for.
+- [x] A page that allows adding a user to the event that he/she is responsible for.
+- [x] A page that allows awarding points to a single guest, or to all guests who have RSVPed.
 
 **Superuser**
 - [ ] The ability to promote any user to managers or superusers.
@@ -67,28 +67,28 @@
 **Transactions (50 marks)**
 - [ ] Purchase (10 marks):
     - [x] Cashiers can create purchase transactions.
-    - [ ] Cashiers can correctly apply promotions to transactions.
+    - [] Cashiers can correctly apply promotions to transactions.
 - [ ] Redemption (10 marks):
-    - Users can make a redemption request.
+    - Users can make a redemption request. post '/users/me/transactions'
     - Cashiers can process the redemption request.
-- [ ] Adjustment (5 marks):
-    - Managers can create adjustment transactions.
+- [x] Adjustment (5 marks):
+    - Managers can create adjustment transactions. post '/transactions'
 - [ ] Transfer (10 marks):
-    - Users can transfer points to another user.
-- [ ] Transaction Listing (15 marks) Users can see their past transactions. Managers can see ALL transactions.
+    - Users can transfer points to another user. post '/users/:userId/transactions'
+- [x] Transaction Listing (15 marks) Users can see their past transactions. Managers can see ALL transactions.
 
 **Events (45 marks)**
-- [ ] Event Management (15 marks):
+- [x] Event Management (15 marks):
     - Managers can create, update, and delete events. (DONE)
     - Managers can add event organizers. (DONE)
     - Event organizers can update events.
 - [x] Event Listing (15 marks):
     - All logged in users can view the list of events. (DONE)
-- [ ] RSVP and Attendance (10 marks):
+- [x] RSVP and Attendance (10 marks):
     - Users can RSVP to events. (DONE)
     - Managers and event organizers can add guests to an event. (only managers rn)
     - Managers can remove guests from an event. (DONE)
-- [ ] Point Allocation (5 marks):
+- [x] Point Allocation (5 marks):
     - Managers and event organizers can award points to guests.
 
 **Promotions (25 marks)**

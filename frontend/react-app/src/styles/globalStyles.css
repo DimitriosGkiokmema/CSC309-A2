@@ -135,6 +135,7 @@ header>div {
 .infoContainer p {
     margin: 0 5px;
     font-weight: bold;
+    text-align: center;
 }
 
 form {

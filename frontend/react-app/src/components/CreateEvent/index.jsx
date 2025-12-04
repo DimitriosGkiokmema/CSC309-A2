@@ -57,13 +57,13 @@ export default function CreateEvent() {
             <h1>New Event</h1>
             <form className="event-create-form" onSubmit={createEvent}>
                 <label>Name:</label>
-                <input id="name" type="text" required onChange={(e) => setName(e.target.value)}/>
+                <input id="name" type="text" placeholder="Enter event name" required onChange={(e) => setName(e.target.value)}/>
                 <br/>
                 <label>Description:</label>
-                <textarea id="description" type="text" required onChange={(e) => setDescription(e.target.value)}/>
+                <textarea id="description" type="text" placeholder="Enter event description" required onChange={(e) => setDescription(e.target.value)}/>
                 <br/>
                 <label>Location:</label>
-                <input type="text" required onChange={(e) => setLocation(e.target.value)}/>
+                <input type="text" required placeholder="Enter event location" onChange={(e) => setLocation(e.target.value)}/>
                 <br/>    
                 <label>Start:</label>
                 <input type="datetime-local" required onChange={(e) => setStartTime(e.target.value)}/>
@@ -72,10 +72,10 @@ export default function CreateEvent() {
                 <input type="datetime-local" required onChange={(e) => setEndTime(e.target.value)}/>
                 <br/>  
                 <label>Capacity:</label>
-                <input type="number" onChange={(e) => setCapacity(e.target.value)}/>
+                <input type="number" placeholder="Enter event capacity" onChange={(e) => setCapacity(e.target.value)}/>
                 <br/>
                 <label>Points:</label>
-                <input type="number" required onChange={(e) => setPoints(e.target.value)}/>
+                <input type="number" placeholder="Enter total award points" required onChange={(e) => setPoints(e.target.value)}/>
                 <br/>
 
                 <input className="submitButton" type="submit" value="Submit"></input> 

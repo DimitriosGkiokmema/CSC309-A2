@@ -22,7 +22,7 @@ export default function Events() {
     const [published, setPublished] = useState(null); //boolean, checkbox
     const [limit, setLimit] = useState(5);
     const [order, setOrder] = useState(null);
-
+    const [query, setQuery] = useState("");
     const [totalPages, setTotalPages] = useState(1); //default only one page
     const [currentPage, setCurrentPage] = useState(1); //default starts on page 1
     // showFull, page: qpage, limit, 
@@ -47,23 +47,9 @@ export default function Events() {
         // if you get to this point then there must be at least one event that loaded
         const eventId = document.getElementById("searchInput").value;
         if(eventId.trim() !== "") {
-            // setName(null);
-            // setLocation(null);
-            // setStart(null);
-            // setEnd(null);
-            // setPublished(null);
-            // const filtername = document.getElementById("filterName");
-            // filtername.value = "";
-            // const filterloc = document.getElementById("filterLocation");
-            // filterloc.value = "";
-            // const filterstart = document.getElementById("filterStart");
-            // filterstart.checked = false;
-            // const filterend = document.getElementById("filterEnd");
-            // filterend.checked = false;
-            // const filterpub = document.getElementById("filterPublished");
-            // filterpub.checked = false;
 
             const res = await callBackend("GET", `/events/${eventId}`, {});
+            console.log(res.data);
             if(res.status === 404) {
                 setSearch(true);
                 setMessage("Event not found, please try again.");
@@ -86,9 +72,27 @@ export default function Events() {
     // fetch user info
     async function load() {
         // Get all events data
-        let events = await callBackend('GET', '/events', {});
-        setEvents(events.data.results);
+        let res = await callBackend('GET', `/events?page=${currentPage}&limit=${limit}&${query}`, {});
+        // setEvents(res.data.results);
+        if(res.status !== 200) {
+                setSearch(false);
+                console.log(res.data.error);
+                setMessage("Event not found: " + res.data.error);
+            }
+        else {
+            setSearch(false);
+            console.log(res.data.count);
+            if(limit) {
+                setTotalPages(Math.ceil(res.data.count / limit)); // if total pages > 1, then show the navigation bar on the bottom of the page
+            }
+            setEvents(res.data.results); // put the single event in an array
+        }
+
     }
+
+    useEffect(() => {
+        load();
+    }, [currentPage, limit, query]);
 
     useEffect(() => {
         // when a user clicks on the events link in the navbar, loads all events again
@@ -126,9 +130,6 @@ export default function Events() {
             params.append("published", published);
         }
 
-        if(limit !== null) { //when they first set the filter, just gives them the first page
-            params.append("limit", limit);
-        }
 
         if(order && order !== null) {
             params.append("order", order);
@@ -136,42 +137,33 @@ export default function Events() {
         
         console.log("the current limit is: " + limit);
         const query = params.toString();
+        setQuery(query);
+
         console.log(query);
 
-        const res = await callBackend("GET", `/events?${query}`, {});
-        if(res.status !== 200) {
-                setSearch(false);
-                console.log(res.data.error);
-                setMessage("Event not found: " + res.data.error);
-            }
-            else {
-                setSearch(false);
-                console.log(res.data.count);
-                if(limit) {
-                    setTotalPages(Math.ceil(res.data.count / limit)); // if total pages > 1, then show the navigation bar on the bottom of the page
-                }
-                setEvents(res.data.results); // put the single event in an array
-            }
+        // const res = await callBackend("GET", `/events?${query}`, {});
+        
     }
 
-    async function fetchPage(page) {
-        // after user clicks on < or > button, the currentPage changes, limit is still whatever was set from the filter
-        setCurrentPage(page);
-        const params = new URLSearchParams();
-        params.append("page", page);
-        params.append("limit", limit);
-        const query = params.toString();
-        const res = await callBackend("GET", `/events?${query}`, {});
-        if(res.status !== 200) {
-                setSearch(false);
-                console.log(res.data.error);
-                setMessage("Event not found: " + res.data.error);
-            }
-            else {
-                setSearch(false);
-                setEvents(res.data.results); // put the single event in an array
-            }
-    }
+    // async function fetchPage(page) {
+    //     // after user clicks on < or > button, the currentPage changes, limit is still whatever was set from the filter
+    //     setCurrentPage(page);
+    //     const params = new URLSearchParams();
+    //     params.append("page", page);
+    //     if(order) params.append("order", order);
+    //     const newquery = query + "&" + params.toString();
+    //     console.log(newquery);
+    //     const res = await callBackend("GET", `/events?${newquery}`, {});
+    //     if(res.status !== 200) {
+    //             setSearch(false);
+    //             console.log(res.data.error);
+    //             setMessage("Event not found: " + res.data.error);
+    //         }
+    //         else {
+    //             setSearch(false);
+    //             setEvents(res.data.results); // put the single event in an array
+    //         }
+    // }
 
 
     //clearance
@@ -278,15 +270,17 @@ if(!search) {
                     endTime={event.endTime}
                     capacity={event.capacity} 
                     numGuests={event.numGuests} 
-                    published={event.published}    
+                    published={event.published}  
+                    organizer={(user && event.organizers) && event.organizers.some(org => org.id === user.id)}  
+                    profile={false}
                 />
             ))}
         
         {/* pagination navbar */}
         <div className="pagenav">
-            <button id="prevBtn" onClick={() => fetchPage(currentPage - 1)} disabled={currentPage === 1}>&lt;</button>
+            <button id="prevBtn" onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1}>&lt;</button>
             <span>{currentPage} of {totalPages}</span>
-            <button id="nextBtn" onClick={() => fetchPage(currentPage + 1)} disabled={currentPage === totalPages}>&gt;</button>
+            <button id="nextBtn" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>&gt;</button>
         </div>
     
         </div>
@@ -315,7 +309,7 @@ else if (search && !message) {
             </div>
 
             {/* filter bar */}
-            <div className="filterOptions">
+            {/* <div className="filterOptions">
                 
                 <input type="text" placeholder="Event name" onChange={(e) => {setName(e.target.value)}}></input>
                 <input type="text" placeholder="Event location" onChange={(e) => {setLocation(e.target.value)}}></input>
@@ -333,7 +327,7 @@ else if (search && !message) {
                 </div>
 
                 <input type="button" value="Filter" onClick={handleFilter}></input>
-            </div>
+            </div> */}
 
             {events.map(event => (
                 <EventItem
@@ -344,7 +338,9 @@ else if (search && !message) {
                     endTime={event.endTime}
                     capacity={event.capacity} 
                     numGuests={event.numGuests}  
-                    published={event.published}   
+                    published={event.published} 
+                    organizer={user && event.organizers.some(org => org.id === user.id)}
+                    profile={false}
                 />
             ))}
         </div>

@@ -22,6 +22,7 @@ require('dotenv').config();
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const jwt = require('jsonwebtoken');
+const cors = require("cors");
 const app = express();
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
@@ -32,6 +33,26 @@ const resetRate = {};
 const ROLE_LEVELS = { "regular": 0, "cashier": 1, "manager": 2, "superuser": 3 };
 app.use(cors());
 app.use(express.json());
+
+// Set up cors to allow requests from your React frontend
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // A2 Functions
 function generateToken(utorid, time) {
@@ -416,12 +437,23 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
     
     · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
     */
+   console.log("i am here");
     const user = req.user;
-
+    console.log("user is logged in: " + user);
+    
+    const findUser = await prisma.user.findUnique({
+        where: {id: user.id},
+        include: {organizer: {
+                include: {
+                    guests: true, organizers: true
+                }
+        }}
+    })
     const promos = await prisma.usage.findMany({
         where: { userId: user.id },
         include: { promotion: true },
     });
+
 
     return res.status(200).json({
         id: user.id,
@@ -435,7 +467,8 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         lastLogin: user.lastLogin,
         verified: user.verified,
         avatarUrl: user.avatarUrl,
-        promotions: promos
+        promotions: promos,
+        organizer: findUser.organizer
     });
 });
 
@@ -495,7 +528,7 @@ app.patch('/users/me/password', get_logged_in, check_clearance("regular"), async
     }
 });
 
-app.get('/users/:userId', get_logged_in, check_clearance("cashier"), async (req, res) => {
+app.get('/users/:userId', get_logged_in, async (req, res) => {
     /*
     · Method: GET
     · Description: Retrieve a specific user
@@ -1037,7 +1070,7 @@ app.post('/transactions', get_logged_in, async (req, res) => {
 
         for (const promotionId of promotionIds) {
             console.log(`Checking promotion ${promotionId}...`);
-            const promotion = await prisma.promotion.findUnique({ where: { id: promotionId } });
+            const promotion = await prisma.promotion.findUnique({ where: { id: parseInt(promotionId) } });
 
             if (!promotion) {
                 console.log(`❌ Promotion ${promotionId} not found`);
@@ -1141,6 +1174,10 @@ app.post('/transactions', get_logged_in, async (req, res) => {
                 return res.status(400).json({ error: 'amount must be a number' });
             }
 
+            if(user.points + amount < 0) {
+                return res.status(400).json({ error: 'The adjusted total points would be negative!' });
+            }
+
             const relatedTransaction = await prisma.transaction.findUnique({
                 where: { id: parseInt(relatedId, 10) },
             });
@@ -1156,7 +1193,7 @@ app.post('/transactions', get_logged_in, async (req, res) => {
                     utorid,
                     type,
                     amount,
-                    relatedId: parseInt(relatedId, 10),
+                    relatedTxId: parseInt(relatedId, 10),
                     spent: 0,
                     earned: 0,
                     remark,
@@ -1201,7 +1238,7 @@ app.post('/transactions', get_logged_in, async (req, res) => {
             response.earned = transaction.earned;
         } else {
             response.amount = transaction.amount;
-            response.relatedId = transaction.relatedId;
+            response.relatedId = transaction.relatedTxId;
         }
 
         console.log('Final response object:', response);
@@ -1246,11 +1283,12 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
      · Event: the ID of the event from which points were disbursed.
  */
 
-    const { name, createdBy, suspicious, promotionId, type, relatedId, amount, operator, page: qpage, limit } = req.query;
+    const { name, createdBy, suspicious, promotionId, type, relatedId, amount, operator, page: qpage, limit, order } = req.query;
     try {
         let page = 1;
         let take = 10;
         const filters = {};
+        let orderBy = {};
 
         if (name) {
             filters.utorid = { contains: name.toLowerCase() };
@@ -1276,7 +1314,14 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
             if (!type) {
                 return res.status(400).json({ error: 'relatedId must be used with type' });
             }
-            filters.relatedId = parseInt(relatedId);
+            console.log("relatedId: " + relatedId);
+            if(type === "event") {
+                filters.relatedEventId = parseInt(relatedId);
+            }
+            else {
+
+                filters.relatedTxId = parseInt(relatedId);
+            }
         }
 
         if (amount !== null && amount !== undefined) {
@@ -1306,8 +1351,13 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
 
         const count = await prisma.transaction.count({ where: filters });
 
+        if(order !== undefined) {
+            orderBy[order] = 'asc';
+        }
+
         const transactions = await prisma.transaction.findMany({
             where: filters,
+            orderBy,
             skip: skip,
             take: take,
             include: {
@@ -1327,20 +1377,30 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
             const baseResponse = {
                 id: transaction.id,
                 utorid: transaction.utorid,
-                amount: transaction.type.toLowerCase() === 'event' ? transaction.earned : transaction.amount,
+                // amount: transaction.type.toLowerCase() === 'event' ? transaction.awarded : transaction.amount,
+                amount: transaction.amount,
+                awarded: transaction.awarded,
+                earned: transaction.earned,
                 type: transaction.type,
                 spent: transaction.spent,
+                sender: transaction.sender,
                 promotionIds: transaction.promotions.map((promotion) => promotion.id),
                 suspicious: transaction.suspicious,
                 remark: transaction.remark,
                 createdBy: transaction.createdBy,
                 //createdAt: transaction.createdAt,
+               
                 name: transaction.user?.name || null
             };
 
-            if (['adjustment', 'transfer', 'redemption', 'event']
+            if (['adjustment', 'transfer', 'redemption']
                 .includes(transaction.type.toLowerCase())) {
-                baseResponse.relatedId = transaction.relatedId;
+                baseResponse.relatedTxId = transaction.relatedTxId;
+            }
+
+            if(transaction.type === "event") {
+                baseResponse.relatedEventId = transaction.relatedEventId;
+            
             }
 
             if (transaction.type.toLowerCase() === 'redemption') {
@@ -1389,6 +1449,7 @@ When marking a transaction as suspicious (changing the flag from false to true),
         });
 
         if (!transaction) {
+            console.log("transaction doesnt exist");
             return res.status(404).json({ error: 'transaction not found' });
         }
 
@@ -1397,6 +1458,7 @@ When marking a transaction as suspicious (changing the flag from false to true),
         });
 
         if (!user) {
+            console.log("user doesnt exist");
             return res.status(404).json({ error: 'user not found' });
         }
 
@@ -1555,38 +1617,47 @@ app.post('/users/me/transactions', get_logged_in, async (req, res) => {
 app.get('/users/me/transactions', get_logged_in, async (req, res) => {
     const currentUser = req.user;
 
-    const { type, relatedId, promotionId, amount, operator, page: qpage, limit } = req.query;
+    const { type, relatedId, promotionId, amount, operator, page: qpage, limit, order } = req.query;
     let where = { utorid: currentUser.utorid };
     let page = 1;
     let take = 10;
+    let orderBy = {};
+    console.log(type === undefined);
+    console.log(relatedId && relatedId !== undefined);
+
+    if((type !== undefined && relatedId === undefined) || (type === undefined && relatedId !== undefined)) {
+        if (type === "event" || type === "transfer" || type === "adjustment" || relatedId !== undefined) {
+            return res.status(400).json({ "error": "You must enter a relatedId for event transactions or transfer transactions" });
+        }
+    }
 
     if (type !== undefined) {
         if (type === 'transfer') {
             if (relatedId !== undefined) {
 
                 where.type = type;
-                where.relatedId = relatedId;
+                where.relatedTxId = parseInt(relatedId);
 
             }
             else {
                 return res.status(400).json({ "error": "Invalid payload" });
             }
         }
-        else if (type === "promotion") {
-            if (relatedId !== undefined) {
-                where.type = type;
-                where.relatedId = relatedId;
+        // else if (type === "promotion") {
+        //     if (relatedId !== undefined) {
+        //         where.type = type;
+        //         where.relatedId = parseInt(relatedId);
 
-            }
-            else {
-                return res.status(400).json({ "error": "Invalid payload" });
-            }
-        }
+        //     }
+        //     else {
+        //         return res.status(400).json({ "error": "Invalid payload" });
+        //     }
+        // }
         else if (type === "event") {
             if (relatedId !== undefined) {
 
                 where.type = type;
-                where.relatedId = relatedId;
+                where.relatedEventId = parseInt(relatedId);
 
             }
             else {
@@ -1598,8 +1669,15 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
         }
     }
 
+    // console.log(where);
+    // console.log(where.JSON.stringify());
+    if(order !== undefined) {
+            orderBy[order] = 'asc';
+    }
+
     const transactions = await prisma.transaction.findMany({
         where,
+        orderBy,
         include: { promotions: true }
     })
 
@@ -1657,12 +1735,47 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
 
     const skip = (page - 1) * take;
 
-    const result = roundTwo.map(e => {
-        const { id, type, spent, amount, remark, createdBy, promotions, ...rest } = e;
-        const promotionIds = promotions.map(promo => {
-            return promo.id;
-        })
-        return { id, type, spent, amount, promotionIds, remark, createdBy };
+    const result = roundTwo.map(transaction => {
+        // const { id, type, spent, amount, remark, createdBy, promotions, awarded, ...rest } = transaction;
+        // const promotionIds = promotions.map(promo => {
+        //     return promo.id;
+        // })
+        //return { id, type, spent, amount, promotionIds, remark, createdBy, awarded, ...rest };
+
+        const baseResponse = {
+                id: transaction.id,
+                utorid: transaction.utorid,
+                // amount: transaction.type.toLowerCase() === 'event' ? transaction.awarded : transaction.amount,
+                amount: transaction.amount,
+                awarded: transaction.awarded,
+                earned: transaction.earned,
+                type: transaction.type,
+                spent: transaction.spent,
+                sender: transaction.sender,
+                promotionIds: transaction.promotions.map((promotion) => promotion.id),
+                suspicious: transaction.suspicious,
+                remark: transaction.remark,
+                createdBy: transaction.createdBy,
+                //createdAt: transaction.createdAt,
+               
+                name: transaction.user?.name || null
+            }; 
+
+            if (['adjustment', 'transfer', 'redemption']
+                .includes(transaction.type.toLowerCase())) {
+                baseResponse.relatedTxId = transaction.relatedTxId;
+            }
+
+            if(transaction.type === "event") {
+                baseResponse.relatedEventId = transaction.relatedEventId;
+            
+            }
+
+            if (transaction.type.toLowerCase() === 'redemption') {
+                baseResponse.redeemed = Math.abs(transaction.amount);
+            }
+
+        return baseResponse;
     }).slice(skip, take + skip);
 
 
@@ -1823,6 +1936,10 @@ app.get('/events', get_logged_in, async (req, res) => {
         where.location = location;
     }
 
+    // const now = new Date().toISOString();
+    // console.log(now);
+    // console.log(started);
+
     if (started !== undefined) {
 
         if (started === 'true') {
@@ -1851,7 +1968,7 @@ app.get('/events', get_logged_in, async (req, res) => {
     }
 
     if (limit !== undefined) {
-        if (parseInt(limit) < 0 || isNaN(limit)) {
+        if (parseInt(limit) < 0) {
             return res.status(400).json({ "error": "Invalid type for limit" });
         }
 
@@ -1884,12 +2001,19 @@ app.get('/events', get_logged_in, async (req, res) => {
         }
     }
 
+
+    if(order !== undefined) {
+        orderBy[order] = 'asc';
+    }
+    
     const events = await prisma.event.findMany({
-        where,
-        include: { guests: true }
-    })
-
-
+                    where,
+                    orderBy,
+                    include: {guests: true,
+                        organizers: true
+                    }
+                })
+   
     let filtered = events;
 
     if (showFull !== undefined) {
@@ -1906,18 +2030,19 @@ app.get('/events', get_logged_in, async (req, res) => {
         })
     }
 
+    const paginated = filtered.slice(skip, take + skip);
     const resultRegular =
-        filtered.map(event => {
-            const { description, organizers, guests, published, pointsRemain, pointsAwarded, ...rest } = event;
+        paginated.map(event => {
+            const { description, guests, published, pointsRemain, pointsAwarded, ...rest } = event;
             return { ...rest, numGuests: guests.length };
-        }).slice(skip, take + skip);
+        })
 
 
     const resultHigher =
-        filtered.map(event => {
-            const { description, organizers, guests, ...rest } = event;
+        paginated.map(event => {
+            const { description, guests, ...rest } = event;
             return { ...rest, numGuests: guests.length };
-        }).slice(skip, take + skip);
+        })
 
     if (currentUser.role === 'manager' || currentUser.role === 'superuser') {
 
@@ -1926,6 +2051,7 @@ app.get('/events', get_logged_in, async (req, res) => {
     else {
         return res.status(200).json({ count: filtered.length, results: resultRegular });
     }
+
 })
 
 app.post('/events', get_logged_in, check_clearance("manager"), async (req, res) => { //checked HTTP requests
@@ -2006,23 +2132,28 @@ app.get('/events/:eventId', get_logged_in, async (req, res) => {
         return res.status(404).json({ "error": "Not found" });
     }
 
-    if (!event.published) {
-        return res.status(404).json({ "error": "Event not published yet" });
-    }
 
-    const alreadyOrganizer = event.organizers.filter(org => {
+    // console.log("organizers: " + event.organizers);
+    const alreadyOrganizer = event.organizers.some(org => {
+        //console.log(org.id);
         return org.id === currentUser.id;
     })
 
+
     if (currentUser.role === 'regular') {
+        if (!event.published) {
+        return res.status(404).json({ "error": "Event not published yet" });
+    }
+    
         const { guests, published, pointsRemain, pointsAwarded, ...rest } = event;
         return res.status(200).json({ ...rest, numGuests: guests.length });
     }
 
-    else if (alreadyOrganizer.length !== 0 || currentUser.role === 'manager' || currentUser.role === 'superuser') {
-        return res.status(200).json(event);
-    }
-
+    else if(alreadyOrganizer || currentUser.role === 'manager' || currentUser.role === 'superuser') {
+        const {guests, ...rest} = event;
+        return res.status(200).json({...rest, numGuests: guests.length});
+    } 
+    
 })
 
 app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked https requests
@@ -2042,12 +2173,15 @@ app.patch('/events/:eventId', get_logged_in, async (req, res) => { //checked htt
         return res.status(404).json({ "error": "Event not found" });
     }
 
-    const alreadyOrganizer = event.organizers.filter(org => {
+    const alreadyOrganizer = event.organizers.some(org => {
+        //console.log(org.id);
         return org.id === currentUser.id;
     })
-
+    //console.log(alreadyOrganizer);
+    // console.log("patch organizer: " + (alreadyOrganizer));
+    // console.log(currentUser.id);
     //general clearance check
-    if (!alreadyOrganizer.length !== 0 && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    if (!alreadyOrganizer && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
         return res.status(403).json({ "error": "Only managers or higher, or event organizers can update events" });
     }
 
@@ -2255,7 +2389,7 @@ app.post('/events/:eventId/organizers', get_logged_in, check_clearance("manager"
         return res.status(404).json({ "error": "Event not found" });
     }
 
-    const alreadyGuest = event.guests.filter(guest => {
+    const alreadyGuest = event.guests.some(guest => {
         return guest.id === user.id;
     })
 
@@ -2263,16 +2397,16 @@ app.post('/events/:eventId/organizers', get_logged_in, check_clearance("manager"
     if (event.endTime < new Date()) {
         return res.status(410).json({ "error": "Cannot add organizers to an event that has ended" });
     }
-    else if (alreadyGuest.length !== 0) {
+    else if (alreadyGuest) {
         return res.status(400).json({ "error": "User is already a guest of the event" });
     }
     else {
 
-        const alreadyOrganizer = event.organizers.filter(org => {
+        const alreadyOrganizer = event.organizers.some(org => {
             return org.id === user.id;
         })
 
-        if (alreadyOrganizer.length === 0) {
+        if (!alreadyOrganizer) {
             //console.log(event.organizers);
             const updatedEvent = await prisma.event.update({
                 where: { id: parseInt(eid) },
@@ -2283,12 +2417,22 @@ app.post('/events/:eventId/organizers', get_logged_in, check_clearance("manager"
 
             })
 
+            // link the organizer in the User model
+            // const updatedUser = await prisma.user.update({
+            //     where: {utorid: utorid},
+            //     data: {
+            //         organizer: {connect: {id: updatedEvent.id}}
+            //     }
+            // })
+
             const result = [];
             updatedEvent.organizers.forEach(org => {
                 //console.log(org);
                 const { id, utorid, name, ...rest } = org;
                 result.push({ id, utorid, name });
             })
+
+            
             return res.status(201).json({ id: event.id, name: event.name, location: event.location, organizers: result });
         }
         else {
@@ -2321,12 +2465,12 @@ app.delete('/events/:eventId/organizers/:userId', get_logged_in, check_clearance
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const validOrganizer = event.organizers.filter(org => {
+    const validOrganizer = event.organizers.some(org => {
         return org.id === user.id;
     })
 
-    if (validOrganizer.length !== 0) {
-        const deleteUser = validOrganizer[0].id;
+    if (validOrganizer) {
+        const deleteUser = user.id;
         const updatedEvent = await prisma.event.update({
             where: { id: parseInt(eid) },
             data: {
@@ -2354,11 +2498,11 @@ app.post('/events/:eventId/guests/me', get_logged_in, async (req, res) => { //ch
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const validGuest = event.guests.filter(guest => {
+    const validGuest = event.guests.some(guest => {
         return guest.id === user.id;
     })
 
-    if (validGuest.length !== 0) {
+    if (validGuest) {
         return res.status(400).json({ "error": "User is already a guest of the event" });
     }
     else if (event.capacity === event.guests.length || event.endTime < new Date()) {
@@ -2407,11 +2551,11 @@ app.delete('/events/:eventId/guests/me', get_logged_in, async (req, res) => { //
         return res.status(410).json({ "error": "Cannot remove guests from an event that has ended" });
     }
 
-    const validGuest = event.guests.filter(guest => {
+    const validGuest = event.guests.some(guest => {
         return guest.id === user.id;
     })
 
-    if (validGuest.length !== 0) {
+    if (validGuest) {
         const updatedEvent = await prisma.event.update({
             where: { id: parseInt(eid) },
             data: {
@@ -2450,26 +2594,26 @@ app.post('/events/:eventId/guests', get_logged_in, async (req, res) => { //check
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const currentUserAlready = event.organizers.filter(org => { //check if logged in user is an organizer
+    const currentUserAlready = event.organizers.some(org => { //check if logged in user is an organizer
         return org.id === currentUser.id;
     })
 
-    if (currentUserAlready.length === 0 && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    if (!currentUserAlready && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
         return res.status(403).json({ "error": "Only managers or higher, or event organizers can update events" });
     }
 
-    const alreadyOrganizer = event.organizers.filter(org => { //check if the payload user is an organizer
+    const alreadyOrganizer = event.organizers.some(org => { //check if the payload user is an organizer
         return org.id === user.id;
     })
 
-    const alreadyGuest = event.guests.filter(guest => { //check if the payload user is a guest
+    const alreadyGuest = event.guests.some(guest => { //check if the payload user is a guest
         return guest.id === user.id;
     })
 
-    if (alreadyOrganizer.length !== 0) {
+    if (alreadyOrganizer) {
         return res.status(400).json({ "error": "User is already an organizer of the event" });
     }
-    else if (alreadyGuest.length !== 0) {
+    else if (alreadyGuest) {
         return res.status(409).json({ "error": "User is already a guest of this event" });
     }
     else if (!event.published) {
@@ -2515,16 +2659,26 @@ app.delete('/events/:eventId/guests/:userId', get_logged_in, check_clearance("ma
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    if (event.capacity >= event.guests.length) {
-        return res.status(410).json({ "error": "Invalid" });
-    }
-
-    event.guests.filter(guest => {
-        if (guest === user) {
-            event.guests.remove(guest);
-            return res.status(204);
+    const isGuest = event.guests.some(guest => {
+        if(guest.id === user.id) {
+            return guest;
         }
     })
+
+    if(isGuest) {
+
+        await prisma.event.update({
+            where: {id: parseInt(eid)},
+            data: {
+                guests: {disconnect: {id: parseInt(uid)}}
+            }
+        })
+        
+        return res.status(204).send();
+    }
+    else {
+        return res.status(410).json({"error": "This user is not a guest"});
+    }
 })
 
 app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { //checked https requests
@@ -2541,15 +2695,18 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
         return res.status(404).json({ "error": "Not Found" });
     }
 
-    const currentUserAlready = event.organizers.filter(org => { //check if logged in user is an organizer
+    const currentUserAlready = event.organizers.some(org => { //check if logged in user is an organizer
         return org.id === currentUser.id;
     })
 
-    if (currentUserAlready.length === 0 && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
+    if (!currentUserAlready && currentUser.role !== 'manager' && currentUser.role !== 'superuser') {
         return res.status(403).json({ "error": "Only managers or higher, or event organizers can update events" });
     }
 
     if (type === undefined || typeof type !== "string" || type !== 'event' || !Number.isInteger(amount) || amount === undefined || amount < 0) {
+       console.log("faulty input");
+       console.log("the problem is type: " + !(type !== 'event'));
+       console.log("the problem is amount: " + !Number.isInteger(amount));
         return res.status(400).json({ "error": "Invalid payload" }); //passed
     }
     if (remark === undefined) {
@@ -2566,6 +2723,9 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
         if (typeof utorid !== "string") {
             return res.status(400).json({ "error": "Invalid payload" });
         }
+        if(utorid === currentUser.utorid && currentUserAlready) {
+            return res.status(400).json({"error": "recipient cannot be the event organizer"})
+        }
         const findUser = await prisma.user.findUnique({
             where: { utorid: utorid }
         })
@@ -2574,11 +2734,11 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
             return res.status(404).json({ "error": "Not found" });
         }
 
-        const alreadyGuest = event.guests.filter(guest => {
+        const alreadyGuest = event.guests.some(guest => {
             return guest.id === findUser.id;
         })
 
-        if (alreadyGuest.length === 0) {
+        if (!alreadyGuest) {
             return res.status(400).json({ "error": "User is not a guest of the event" }); //passed
         }
 
@@ -2592,14 +2752,16 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
                 recipient: utorid,
                 awarded: amount, //must be <= pointsRemain
                 type: type, //event
-                relatedId: parseInt(eid), //related event
+                relatedEventId: parseInt(eid), //related event
                 remark: req.body.remark,
                 createdBy: currentUser.utorid,
                 suspicious: false,
                 processed: false,
-                amount: 0
+                amount: amount
             }
         })
+
+        newTransaction.processedBy = null;
 
         const prevPoints = findUser.points;
         const newPoints = prevPoints + amount;
@@ -2633,6 +2795,9 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
 
         const numGuests = event.guests.length;
         if ((amount * numGuests) > event.pointsRemain) {
+            console.log("the problem is here");
+            console.log("points to give: " + amount * numGuests);
+            console.log("points we have: " + event.pointsRemain);
             return res.status(400).json({ "error": "Invalid payload" });
         }
 
@@ -2658,12 +2823,12 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
                     recipient: user.utorid,
                     awarded: amount, //must be <= pointsRemain
                     type: type, //event
-                    relatedId: parseInt(eid), //related event
+                    relatedEventId: parseInt(eid), //related event
                     remark: req.body.remark,
                     createdBy: currentUser.utorid,
                     suspicious: false,
                     processed: false,
-                    amount: 0
+                    amount: amount
                 }
             })
 

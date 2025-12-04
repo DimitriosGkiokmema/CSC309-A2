@@ -26,9 +26,15 @@ export default function App() {
   return (
     <UserProvider>
       <BrowserRouter>
-        <NavBar />
-        <SiteRoutes />
-        <Footer />
+        <div className="layout">
+          <NavBar />
+
+          <div className="content">
+            <SiteRoutes />
+          </div>
+          
+          <Footer />
+        </div>
       </BrowserRouter>
     </UserProvider>
   );

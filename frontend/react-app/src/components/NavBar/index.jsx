@@ -1,40 +1,48 @@
+
 import { useState } from "react";
 import { Link, useNavigate  } from 'react-router-dom';
 import { callBackend, log_in } from '../../js/backend.js';
-import { useUser } from "../UserContext/index.jsx";
+import { useUser } from "../UserContext";
 
 export default function Navbar() {
   const { role, setRole, pic, setPic, loadingRole } = useUser();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(
-    localStorage.getItem("loggedIn") === "true"
+    sessionStorage.getItem("loggedIn") === "true"
   );
   const [allowedRoles, setRoles] = useState(['superuser', 'manager', 'cashier', 'regular']);
+  const [username, setUsername] = useState(null);
 
   async function isLogged() {
     const user = await callBackend('GET', '/users/me', {});
 
     if (!user.ok) {
       setLoggedIn(false);
+    } else {
+      setUsername(user.data.utorid);
     }
   }
 
   async function handleLogin(e) {
     e.preventDefault();
     const user = document.getElementById("username").value;
+    // console.log("username: " + user);
+    setUsername(user);
+
     const pass = document.getElementById("password").value;
     const allRoles = ['superuser', 'manager', 'cashier', 'regular'];
     const body = {"utorid": user, "password": pass};
     const { ok, data } = await log_in(body);
-    localStorage.setItem("token", ok ? data.token : "");
+    // localStorage.setItem("token", ok ? data.token : "");
+    // localStorage.setItem("loggedIn", ok ? "true" : "false");
 
     const curr_user = (await callBackend('GET', '/users/me', {})).data;
     setRole(curr_user.role);
 
     if (ok) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("loggedIn", "true");
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("loggedIn", "true");
 
       setRoles(
         allRoles.slice(
@@ -50,24 +58,15 @@ export default function Navbar() {
 
       navigate('/profile');
     } else {
-      localStorage.setItem("token", "");
-      localStorage.setItem("loggedIn", "false");
+      sessionStorage.setItem("token", "");
+      sessionStorage.setItem("loggedIn", "false");
       alert("Invalid Credentials");
     }
   }
 
-  function getProfilePic() {
-    // const pic = (await callBackend("GET", "/users/me", {})).data.avatarUrl;
-    if (!loggedIn || pic === "" || pic === undefined) {
-      return  "../src/assets/profile.png";
-    }
-
-    return pic;
-  }
-  
   function handleLogout() {
-    localStorage.setItem("token", "");
-    localStorage.setItem("loggedIn", "false");
+    sessionStorage.setItem("token", "");
+    sessionStorage.setItem("loggedIn", "false");
     setLoggedIn(false);
     setRole("");
     setOpen(false);
@@ -78,12 +77,24 @@ export default function Navbar() {
     return <div>Loading...</div>;
   }
 
+  function getProfilePic() {
+    // const pic = (await callBackend("GET", "/users/me", {})).data.avatarUrl;
+    if (!loggedIn || pic === "" || pic === undefined) {
+      return  "../src/assets/profile.png";
+    }
+
+    return pic;
+  }
+
+  if (loadingRole) {
+    return <div>Loading...</div>;
+  }
+
   isLogged();
   return (
-    <header >
-      {/* Navbar is here */}
+    <header>
       <div onClick={() => navigate("/")}>
-        <img className="navLogo" src="../../../src/assets/varsity_logo.png" />
+        <img className="navLogo" src="../src/assets/varsity_logo.png" />
         <h1 className="websiteTitle">Varsity Mart</h1>
       </div>
 
@@ -98,7 +109,7 @@ export default function Navbar() {
               <label for="roleSelect">Switch View:</label>
               <select value={role} onChange={(e) => setRole(e.target.value)}>
                   <option value="" disabled>-- Select a role --</option>
-                  {allowedRoles.map(r => (
+                  {allowedRoles?.map(r => (
                     <option key={r} value={r}>{r}</option>
                   ))}
               </select>
@@ -125,6 +136,7 @@ export default function Navbar() {
               <div>
                 {loggedIn &&  (
                   <>
+                  <p>Hello, {username}!</p>
                   <div className="pageLinks">
                     <Link to="/profile" onClick={() => setOpen(!open)}>Profile</Link>
                     <Link to="/search" onClick={() => setOpen(!open)}>Transactions</Link>
@@ -150,8 +162,9 @@ export default function Navbar() {
                 </div>
                 <div>
                   <input type="text" className="log-input" id="username" required />
-                  <input type="password" className="log-input" id="password" required />
+                  <input type="text" className="log-input" id="password" required />
                 </div>
+
 
               </form>
             )}

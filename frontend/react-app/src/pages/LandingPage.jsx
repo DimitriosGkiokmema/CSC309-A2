@@ -7,6 +7,7 @@ import ProcessRedemption from "../components/ProcessRedemption";
 import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
 import ImgKit from "../components/ImgKit";
+import EventItem from "../components/EventItem/EventItem.jsx"
 import { useUser } from "../components/UserContext";
 import '../styles/LandingPage.css';
 
@@ -46,8 +47,8 @@ export default function LandingPage() {
     });
     setFormData(userInfo);
 
-    const tx = await callBackend('GET', '/users/me/transactions', {});
-    setTransactions(tx.data);
+      const tx = await callBackend('GET', '/users/me/transactions', {});
+      setTransactions(tx.data);
 
     const r = await callBackend('GET', '/users/me/transactions?type=redemption&relatedId=null', {});
     const filtered = r.data.results.filter(obj => obj.type === 'redemption' && obj.processed === true);
@@ -293,6 +294,31 @@ export default function LandingPage() {
           <AdminDash />
         </div>
       )}
+
+
+      {/* if this user is an event organizer, show their events */}
+      {(user.organizer && (user.organizer.length !== 0)) && (
+        <div>
+          <h1>My organized events</h1>
+          {user.organizer.map((event) => 
+              <EventItem
+                id={event.id}
+                    name={event.name}
+                    location={event.location}
+                    startTime={event.startTime} 
+                    endTime={event.endTime}
+                    capacity={event.capacity} 
+                    numGuests={event.guests.length}  
+                    published={event.published} 
+                    organizer={true}
+                    profile={true}
+              />
+
+          )}
+
+        </div>
+      )}
     </div>
+    
   );
 }
