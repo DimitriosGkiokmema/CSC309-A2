@@ -2,7 +2,7 @@ const API_BASE = "http://localhost:3000";
 const ROLE_LEVELS = {"regular": 0, "cashier": 1, "manager": 2, "superuser": 3};
 
 export async function callBackend(method, path, params) {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     let body = {
         method,
         headers: {
