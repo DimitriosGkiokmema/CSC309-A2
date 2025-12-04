@@ -21,7 +21,7 @@ export default function LandingPage() {
   const [edit, setEdit] = useState(false);
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
-  const { role, loadingRole, setPic } = useUser();
+  const { role } = useUser();
 
   // fetch user info
   async function load() {
