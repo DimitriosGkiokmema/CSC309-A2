@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate  } from 'react-router-dom';
 import { callBackend, log_in } from '../../js/backend.js';
 import { useUser } from "../UserContext";
@@ -21,8 +21,16 @@ export default function Navbar() {
       setLoggedIn(false);
     } else {
       setUsername(user.data.utorid);
+
+      if (user.data.organizer && (user.data.organizer.length !== 0)) {
+        setRoles(['superuser', 'manager', 'cashier', 'regular', 'event organizer']);
+      }
     }
   }
+
+  useEffect(() => {
+    isLogged();
+  }, []);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -92,7 +100,6 @@ export default function Navbar() {
     return <div>Loading...</div>;
   }
 
-  isLogged();
   return (
     <header>
       <div onClick={() => navigate("/")}>
@@ -166,8 +173,6 @@ export default function Navbar() {
                   <input type="text" className="log-input" id="username" required />
                   <input type="text" className="log-input" id="password" required />
                 </div>
-
-
               </form>
             )}
           </div>
