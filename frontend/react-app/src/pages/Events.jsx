@@ -172,15 +172,15 @@ export default function Events() {
 
 
     //clearance
-    let addEvent;
+    // let addEvent;
     // const clearance = user && user.role === "manager";
     // if(clearance) {
     //     addEvent = <button onClick={createEvent}>Add event</button>
     // }
 
-    if(role === "manager") {
-        addEvent = <button onClick={createEvent}>Add event</button>
-    }
+    // if(role === "manager") {
+    //     addEvent = <button onClick={createEvent}>Add event</button>
+    // }
 
     if (events === null) {
         return (
@@ -236,15 +236,15 @@ if(!search) {
                 <input id="filterName" type="text" placeholder="Event name" value={name} onChange={(e) => {setName(e.target.value)}}></input>
                 <input id="filterLocation" type="text" placeholder="Event location" value={location} onChange={(e) => {setLocation(e.target.value)}}></input>
                 <div id="start">
-                    <input id="filterStart" type="checkbox" value={started} onChange={(e) => {setStart(e.target.checked)}}></input>
+                    <input id="filterStart" type="checkbox" checked={started} onChange={(e) => {setStart(e.target.checked)}}></input>
                     <label>Started</label>
                 </div>
                 <div id="end">
-                    <input id="filterEnd" type="checkbox" value={ended} onChange={(e) => {setEnd(e.target.checked)}}></input>
+                    <input id="filterEnd" type="checkbox" checked={ended} onChange={(e) => {setEnd(e.target.checked)}}></input>
                     <label>Ended</label>
                 </div>
                 <div id="publish">
-                    <input id="filterPublished" type="checkbox" value={published} onChange={(e) => {setPublished(e.target.checked)}}></input>
+                    <input id="filterPublished" type="checkbox" checked={published} onChange={(e) => {setPublished(e.target.checked)}}></input>
                     <label>Published</label>
                 </div>
                 
