@@ -208,7 +208,7 @@ export default function EventUpdates() {
 
     async function goBack() {
         if(state.profile) {
-            navigate("/profile");
+            return navigate("/profile");
         }
         navigate("/events");
     };

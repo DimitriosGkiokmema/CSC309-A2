@@ -84,7 +84,7 @@ export default function Navbar() {
               <Link to="#promotions">Promotions</Link>
             </div>
             <div className="roleLevel">
-              <label for="fruitSelect">Switch View:</label>
+              <label htmlFor="fruitSelect">Switch View:</label>
               <select value={role} onChange={(e) => setRole(e.target.value)}>
                   <option value="" disabled>-- Select a role --</option>
                   {allowedRoles?.map(r => (

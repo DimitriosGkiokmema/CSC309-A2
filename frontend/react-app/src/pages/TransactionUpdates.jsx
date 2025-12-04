@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import {callBackend} from "../js/backend.js";
 import { useLocation } from 'react-router-dom';
 import {useNavigate} from 'react-router-dom';
+import "../styles/TransactionUpdates.css";
 
 export default function TransactionUpdates() {
     const {txId} = useParams();
@@ -51,8 +52,9 @@ export default function TransactionUpdates() {
                 setMessage("Transaction adjustment was not completed: " + res.data.error);
             }
         }
-
-        if(suspicious) {
+        console.log(suspicious);
+        
+        if(suspicious !== null) {
             let body = {suspicious : suspicious};
             let res = await callBackend("PATCH", `/transactions/${state.id}/suspicious`, body);
             console.log(res.data.error);
@@ -80,8 +82,15 @@ export default function TransactionUpdates() {
                 <br/>
                 
                 <hr/>
-                <label>Suspicious:</label>
-                <input type="checkbox" onChange={(e) => setSuspicious(e.target.checked)}/>
+                <label>Suspicious?</label>
+                {/* <input type="checkbox" onChange={(e) => setSuspicious(e.target.checked)}/> */}
+                <span id="editSuspicious">
+                    <input id="trueSuspicious" name ="suspicious" type="radio" onChange={() => setSuspicious(true)}></input>
+                    <label htmlFor="trueSuspicious">Yes</label>
+                    
+                    <input id="falseSuspicious" name="suspicious" type="radio" onChange={() => setSuspicious(false)}></input>
+                    <label htmlFor="falseSuspicious">No</label>
+                </span>
                 <br/><br/>
                 <div className="formButtons">
                     <input className="submitButton" type="submit" value="Submit"></input> 

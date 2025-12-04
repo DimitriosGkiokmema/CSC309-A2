@@ -22,7 +22,7 @@
 - [ ] A page that displays all users with filters, order-by, and pagination.
 - [ ] A page that allows managers to update users, e.g., make a user verified, promote a user to cashier, etc.
 - [x] A page that displays ALL transactions (with filters, order-by, and pagination).
-- [ ] A page that displays a specific transaction, with the option of creating an adjustment transaction for it, and marking it as suspicious.
+- [x] A page that displays a specific transaction, with the option of creating an adjustment transaction for it, and marking it as suspicious.
 - [ ] A page that allows managers to create new promotions.
 - [ ] A page that displays all promotions (with filters, order-by, and pagination).
 - [ ] A page that allows managers to view/edit/delete a specific promotion.
@@ -66,15 +66,15 @@
 
 **Transactions (50 marks)**
 - [x] Purchase (10 marks):
-    - Cashiers can create purchase transactions. post '/transactions'
+    - Cashiers can create purchase transactions.
     - Cashiers can correctly apply promotions to transactions.
-- [ ] Redemption (10 marks):
-    - Users can make a redemption request. post '/users/me/transactions'
+- [x] Redemption (10 marks):
+    - Users can make a redemption request.
     - Cashiers can process the redemption request.
 - [x] Adjustment (5 marks):
-    - Managers can create adjustment transactions. post '/transactions'
-- [ ] Transfer (10 marks):
-    - Users can transfer points to another user. post '/users/:userId/transactions'
+    - Managers can create adjustment transactions.
+- [x] Transfer (10 marks):
+    - Users can transfer points to another user. 
 - [x] Transaction Listing (15 marks) Users can see their past transactions. Managers can see ALL transactions.
 
 **Events (45 marks)**

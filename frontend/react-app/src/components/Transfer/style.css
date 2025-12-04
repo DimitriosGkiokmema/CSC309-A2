@@ -47,6 +47,9 @@
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.15s ease;
+    display: flex;
+      align-items: center;
+      justify-content: center;
 }
 
 .formButton:hover {

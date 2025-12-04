@@ -5,8 +5,8 @@
     gap: 1.5em;
     background-color: white;
     margin: 10px auto;
-    border-radius: 15px;
-    border: 3px solid rgb(103, 181, 245);
+    border-radius: 20px;
+    /* border: 3px solid rgb(103, 181, 245); */
     padding: 20px;
     width: 100vh;
 }
@@ -21,6 +21,7 @@
 
 .eventName {
     width: 20px;
+    padding-left: 60px;
 }
 
 .trashCan {

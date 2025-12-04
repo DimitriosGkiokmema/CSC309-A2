@@ -1252,7 +1252,7 @@ app.post('/transactions', get_logged_in, async (req, res) => {
 
 
 
-app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, res) => {
+app.get('/transactions', get_logged_in, check_clearance("cashier"), async (req, res) => {
     /*
  · Method: GET
  · Description: Retrieve a list of transactions
@@ -1387,9 +1387,12 @@ app.get('/transactions', get_logged_in, check_clearance("manager"), async (req, 
                 remark: transaction.remark,
                 createdBy: transaction.createdBy,
                 //createdAt: transaction.createdAt,
-               
+                processed: transaction.processed,
                 name: transaction.user?.name || null
             };
+            if(type === "redemption") {
+                console.log("redemption" + transaction.processed);
+            }
 
             if (['adjustment', 'transfer', 'redemption']
                 .includes(transaction.type.toLowerCase())) {
@@ -1590,7 +1593,7 @@ app.post('/users/me/transactions', get_logged_in, async (req, res) => {
             return res.status(400).json({ "error": "Invalid transaction amount" });
         }
     }
-    if (remark !== undefined) {
+    if (remark !== undefined && remark !== null) {
         if (typeof remark === 'string') {
             data.remark = remark;
         }
@@ -1606,7 +1609,7 @@ app.post('/users/me/transactions', get_logged_in, async (req, res) => {
     const correspondingUser = await prisma.user.update({
         where: { id: currentUser.id },
         data: {
-            cashiers: { connect: { id: redeem.id } }
+            // cashiers: { connect: { id: redeem.id } }
         }
     })
     return res.status(201).json({ id: redeem.id, utorid: redeem.utorid, type: type, processedBy: redeem.processedBy, amount: amount, remark: remark, createdBy: redeem.createdBy })
@@ -1624,13 +1627,13 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
     console.log(relatedId && relatedId !== undefined);
 
     if((type !== undefined && relatedId === undefined) || (type === undefined && relatedId !== undefined)) {
-        if (type === "event" || type === "transfer" || type === "adjustment" || relatedId !== undefined) {
-            return res.status(400).json({ "error": "You must enter a relatedId for event transactions or transfer transactions" });
+        if (type === "event" || type === "adjustment" || type === "transfer" || relatedId !== undefined) {
+            return res.status(400).json({ "error": "You must enter a relatedId for event, transfer or adjustment transactions" });
         }
     }
 
     if (type !== undefined) {
-        if (type === 'transfer') {
+        if (type === 'adjustment') {
             if (relatedId !== undefined) {
 
                 where.type = type;
@@ -1651,7 +1654,7 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
         //         return res.status(400).json({ "error": "Invalid payload" });
         //     }
         // }
-        else if (type === "event") {
+        else if (type === "event" || type === "redemption") {
             if (relatedId !== undefined) {
 
                 where.type = type;
@@ -1754,6 +1757,7 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
                 suspicious: transaction.suspicious,
                 remark: transaction.remark,
                 createdBy: transaction.createdBy,
+                processed: false,
                 //createdAt: transaction.createdAt,
                
                 name: transaction.user?.name || null
@@ -1793,6 +1797,10 @@ app.post('/users/:userId/transactions', get_logged_in, async (req, res) => {
         where: { id: parseInt(userid) }
     })
 
+    if(!findUser) {
+        return res.status(404).json({"error": "Could not find user"});
+    }
+
     console.log(findUser);
 
     const { type, amount, remark } = req.body;
@@ -1800,15 +1808,15 @@ app.post('/users/:userId/transactions', get_logged_in, async (req, res) => {
         return res.status(400).json({ "error": "Empty payload" });
     }
     else if (type === undefined || amount === undefined) {
-        return res.status(400).json({ "error": "Invalid payload" });
+        return res.status(400).json({ "error": "Enter an amount to transfer" });
     }
 
     if (currentUser.points < amount) {
         return res.status(400).json({ "error": "Insufficient points" }); //passed up to here
     }
 
-    const dataSender = { relatedId: parseInt(userid), sender: currentUser.utorid, createdBy: currentUser.utorid, recipient: findUser.utorid, utorid: currentUser.utorid, spent: 0, earned: 0, suspicious: false, awarded: 0, processed: false };
-    const dataRecipient = { relatedId: currentUser.id, sender: currentUser.utorid, createdBy: currentUser.utorid, recipient: findUser.utorid, utorid: findUser.utorid, spent: 0, earned: 0, suspicious: false, awarded: 0, processed: false };
+    const dataSender = { sender: currentUser.utorid, createdBy: currentUser.utorid, recipient: findUser.utorid, utorid: currentUser.utorid, spent: 0, earned: 0, suspicious: false, awarded: 0, processed: false };
+    const dataRecipient = { sender: currentUser.utorid, createdBy: currentUser.utorid, recipient: findUser.utorid, utorid: findUser.utorid, spent: 0, earned: 0, suspicious: false, awarded: 0, processed: false };
 
     if (type !== undefined) {
         if (typeof type === 'string' && type === 'transfer') {
@@ -1825,18 +1833,23 @@ app.post('/users/:userId/transactions', get_logged_in, async (req, res) => {
             dataRecipient.amount = amount;
         }
         else {
-            return res.status(400).json({ "error": "Invalid transaction amount" });
+            return res.status(400).json({ "error": "Invalid transaction amount, must be positive" });
         }
     }
-    if (remark !== undefined) {
+    console.log(remark);
+    if (remark !== undefined && remark !== null) {
         if (typeof remark === 'string') {
+            console.log("im here");
             dataSender.remark = remark;
             dataRecipient.remark = remark;
         }
         else {
+            console.log("actually i got here");
             return res.status(400).json({ "error": "Invalid transaction remark" });
         }
     }
+
+    console.log("skipped remark check");
 
     const sender = await prisma.transaction.create({
         data: dataSender
@@ -1847,7 +1860,7 @@ app.post('/users/:userId/transactions', get_logged_in, async (req, res) => {
     await prisma.user.update({
         where: { id: currentUser.id },
         data: {
-            cashiers: { connect: { id: sender.id } },
+            // cashiers: { connect: { id: sender.id } },
             points: newPoints
         }
     })
@@ -1861,10 +1874,13 @@ app.post('/users/:userId/transactions', get_logged_in, async (req, res) => {
     await prisma.user.update({
         where: { id: findUser.id },
         data: {
-            buyers: { connect: { id: sender.id } },
+            // buyers: { connect: { id: sender.id } },
             points: receivedPoints
         }
     })
+
+    sender.relatedTxId = recipient.id;
+    recipient.relatedTxId = sender.id;
 
     return res.status(201).json({ id: sender.id, sender: sender.sender, recipient: sender.recipient, type: sender.type, sent: amount, remark: sender.remark, createdBy: sender.createdBy });
 })
@@ -1908,7 +1924,7 @@ app.patch('/transactions/:transactionId/processed', get_logged_in, check_clearan
         where: { id: user.id },
         data: {
             points: newPoints, //should be less
-            cashiers: { connect: { id: parseInt(tid) } } //recipient of this transaction
+            // cashiers: { connect: { id: parseInt(tid) } } //recipient of this transaction
         }
     })
 
@@ -2776,11 +2792,11 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
         const updatedUser = await prisma.user.update({
             where: { id: findUser.id },
             data: {
-                buyers: {
-                    connect: {
-                        id: newTransaction.id
-                    }
-                },
+                // buyers: {
+                //     connect: {
+                //         id: newTransaction.id
+                //     }
+                // },
                 guest: { connect: { id: updatedEvent.id } },
                 points: newPoints
             }
@@ -2837,11 +2853,11 @@ app.post('/events/:eventId/transactions', get_logged_in, async (req, res) => { /
             const updatedUser = await prisma.user.update({
                 where: { id: user.id },
                 data: {
-                    buyers: {
-                        connect: { //recipient of a transaction
-                            id: newTransaction.id
-                        }
-                    },
+                    // buyers: {
+                    //     connect: { //recipient of a transaction
+                    //         id: newTransaction.id
+                    //     }
+                    // },
                     guest: { connect: { id: updatedEvent.id } },
                     points: newPoints
                 }

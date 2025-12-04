@@ -2,12 +2,12 @@ import "./style.css";
 import { useEffect, useState } from "react";
 import { callBackend } from "../../js/backend"; 
 import {useNavigate} from "react-router-dom";
-import {useLocation} from 'react-router-dom';
+import { useUser } from "../UserContext";
 
-function TransactionItem({ id, utorid, awarded, amount, earned, spent, recipient, sender, type, remark, relatedEventId, relatedTxId }) {
+function TransactionItem({ id, utorid, awarded, amount, earned, spent, sender, type, remark, relatedEventId, relatedTxId }) {
     const [user, setUser] = useState(null); // check the user's role
     const navigate = useNavigate();
-    const loc = useLocation();
+    const {role} = useUser();
 
     useEffect(() => {
                 // fetch user info
@@ -20,29 +20,11 @@ function TransactionItem({ id, utorid, awarded, amount, earned, spent, recipient
                 load();
         }, []);
 
-    // useEffect(() => {
-    //     // when a user clicks on the transactions link in the navbar, loads all events again
-    //     if (loc.pathname === "/transactions") {
-    //         // reset search state
-           
-    //     }
-    // }, [loc]);
-
-
     async function handleUpdate(e) {
         e.preventDefault();
         // redirect to event update page (form)
         navigate(`/transaction-updates/${id}`, {state: {utorid, id}});
     }
-
-
-    // const [message, setMessage] = useState("");
-
-    // if(type === "purchase") {
-    //     if(amount !== earned) {
-    //         setMessage("This transaction is suspicious");
-    //     }
-    // }
 
     console.log("amount: " + amount);
     console.log("awarded points: " + awarded);
@@ -50,8 +32,12 @@ function TransactionItem({ id, utorid, awarded, amount, earned, spent, recipient
 
     let updateInfo;
 
-    const clearance = user && user.role === "manager";
-    if(clearance) {
+    // const clearance = user && user.role === "manager";
+    // if(clearance) {
+    //     updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
+    // }
+    
+    if(role === "manager") {
         updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
     }
 
@@ -59,27 +45,27 @@ function TransactionItem({ id, utorid, awarded, amount, earned, spent, recipient
         return (
         <div className="transaction-item row">
             <div className="col userInfo">
-                <p>Transaction {id}</p>
-                <p><strong>{utorid}</strong></p>
+                <p><strong>Transaction {id}:</strong></p>
+                <p><strong>Utorid: {utorid}</strong></p>
                 {updateInfo}
             </div>
-            <div className="col-4 transInfo">
+            <div className="col-6 transInfo">
                 <div>
-                    <p>Type:</p>
-                    <p>{type}</p>
+                    <p><strong>Type:</strong></p>
+                    <p className="typeEvent">{type}</p>
                 </div>
                 <div>
                     
-                    <p>Awarded:</p>
+                    <p><strong>Awarded:</strong></p>
                     <p>{awarded}</p>
                 </div>
                 <div>
-                    <p>Related event (id):</p>
+                    <p><strong>Related event (id):</strong></p>
                     <p>{relatedEventId}</p>
                 </div>
                 {remark !== "" && (
                     <div>
-                        <p>Remark:</p>
+                        <p><strong>Remark:</strong></p>
                         <p>{remark}</p>
                     </div>
                 )}
@@ -92,27 +78,28 @@ function TransactionItem({ id, utorid, awarded, amount, earned, spent, recipient
         return (
         <div className="transaction-item row">
             <div className="col userInfo">
-                <p>Transaction {id}</p>
-                <p><strong>{utorid}</strong></p>
+                <p><strong>Transaction {id}:</strong></p>
+                <p><strong>Utorid: {utorid}</strong></p>
+                {updateInfo}
             </div>
-            <div className="col-4 transInfo">
+            <div className="col-5 transInfo">
                 <div>
-                    <p>Type:</p>
-                    <p>{type}</p>
+                    <p><strong>Type:</strong></p>
+                    <p className="typePurchase">{type}</p>
                 </div>
                 <div>
                     
-                    <p>Earned points:</p>
+                    <p><strong>Earned points:</strong></p>
                     <p>{earned}</p>
                     
                 </div>
                 <div>
-                    <p>Spent:</p>
-                    <p><i className="fa-solid fa-dollar-sign"></i>{spent}</p>
+                    <p><strong>Spent:</strong></p>
+                    <p>${spent}</p>
                 </div>
                 {remark !== "" && (
                     <div>
-                        <p>Remark:</p>
+                        <p><strong>Remark:</strong></p>
                         <p>{remark}</p>
                     </div>
                 )}
@@ -125,26 +112,27 @@ function TransactionItem({ id, utorid, awarded, amount, earned, spent, recipient
         return (
         <div className="transaction-item row">
             <div className="col userInfo">
-                <p>Transaction {id}</p>
-                <p><strong>{utorid}</strong></p>
+                <p><strong>Transaction {id}:</strong></p>
+                <p><strong>Utorid: {utorid}</strong></p>
+                {updateInfo}
             </div>
             <div className="col-4 transInfo">
                 <div>
-                    <p>Type:</p>
-                    <p>{type}</p>
+                    <p><strong>Type:</strong></p>
+                    <p className="typeAdjustment">{type}</p>
                 </div>
                 <div>
                     
-                    <p>Adjusted points:</p>
+                    <p><strong>Adjusted points:</strong></p>
                     <p>{amount}</p>
                 </div>
                 <div>
-                    <p>Related Transaction (id):</p>
+                    <p><strong>Related Transaction (id):</strong></p>
                     <p>{relatedTxId}</p>
                 </div>
                 {remark !== "" && (
                     <div>
-                        <p>Remark:</p>
+                        <p><strong>Remark:</strong></p>
                         <p>{remark}</p>
                     </div>
                 )}
@@ -157,26 +145,23 @@ function TransactionItem({ id, utorid, awarded, amount, earned, spent, recipient
         return (
         <div className="transaction-item row">
             <div className="col userInfo">
-                <p>Transaction {id}</p>
-                <p><strong>{utorid}</strong></p>
+                <p><strong>Transaction {id}:</strong></p>
+                <p><strong>Utorid: {utorid}</strong></p>
+                {updateInfo}
             </div>
             <div className="col-4 transInfo">
                 <div>
-                    <p>Type:</p>
-                    <p>{type}</p>
+                    <p><strong>Type:</strong></p>
+                    <p className="typeRedemption">{type}</p>
                 </div>
                 <div>
                     
-                    <p>Redeemed points:</p>
+                    <p><strong>Redeemed points:</strong></p>
                     <p>{amount}</p>
                 </div>
-                {/* <div>
-                    <p>Related Transaction (id):</p>
-                    <p><i className="fa-solid fa-dollar-sign"></i>{relatedId}</p>
-                </div> */}
                 {remark !== "" && (
                     <div>
-                        <p>Remark:</p>
+                        <p><strong>Remark:</strong></p>
                         <p>{remark}</p>
                     </div>
                 )}
@@ -189,30 +174,27 @@ function TransactionItem({ id, utorid, awarded, amount, earned, spent, recipient
         return (
         <div className="transaction-item row">
             <div className="col userInfo">
-                <p>Transaction {id}</p>
-                <p><strong>{utorid}</strong></p>
+                <p><strong>Transaction {id}:</strong></p>
+                <p><strong>Utorid: {utorid}</strong></p>
+                {updateInfo}
             </div>
             <div className="col-4 transInfo">
                 <div>
-                    <p>Type:</p>
-                    <p>{type}</p>
+                    <p><strong>Type:</strong></p>
+                    <p className="typeTransfer">{type}</p>
                 </div>
                 <div>
                     
-                    <p>Transferred points:</p>
+                    <p><strong>Transferred points:</strong></p>
                     <p>{amount}</p>
                 </div>
                 <div>
-                    <p>Sender:</p>
+                    <p><strong>Sender:</strong></p>
                     <p>{sender}</p>
-                </div>
-                <div>
-                    <p>Recipient:</p>
-                    <p>{recipient}</p>
                 </div>
                 {remark !== "" && (
                     <div>
-                        <p>Remark:</p>
+                        <p><strong>Remark:</strong></p>
                         <p>{remark}</p>
                     </div>
                 )}

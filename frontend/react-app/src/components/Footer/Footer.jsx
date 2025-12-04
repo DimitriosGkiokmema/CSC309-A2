@@ -23,9 +23,9 @@ export default function Footer() {
                 </div>
                 <div className="col-2 offset-7">
                     <h3>User</h3>
-                    <a href="">Sign In</a>
+                    {/* <a href="">Sign In</a> */}
                     <Link to="/registration">Register</Link>
-                    <a href="">Log Out</a>
+                    
                 </div>
             </div>
         </footer>

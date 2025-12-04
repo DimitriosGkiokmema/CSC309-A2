@@ -8,10 +8,14 @@
     align-items: center;
     justify-content: center;
     border-radius: 20px;
+    margin: 10px auto;
+    width: 100vh;
 }
 
 .profileInfo {
-    padding: 20px;
+    margin-right: 40px;
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 .profileInfo div {
@@ -26,7 +30,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 30px;
+    margin-left: 40px;
 }
 
 .qrContainer img {
@@ -131,5 +135,8 @@ h1 {
 /* Buttons */
 .editActions button {
   padding: 8px 14px;
-  font-size: 14px
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
