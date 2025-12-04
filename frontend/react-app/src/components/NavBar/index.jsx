@@ -54,15 +54,13 @@ export default function Navbar() {
     if (ok) {
       sessionStorage.setItem("loggedIn", "true");
 
-      allRoles.slice(allRoles.indexOf(curr_user.role));
       if (curr_user.organizer && (curr_user.organizer.length !== 0)) {
         allRoles.push('event organizer');
       }
-      setRoles(allRoles);
+      setRoles(allRoles.slice(allRoles.indexOf(curr_user.role)));
       setLoggedIn(true);
       setOpen(false);
       
-      console.log(curr_user.avatarUrl)
       if (curr_user.avatarUrl !== null) {
         setPic(curr_user.avatarUrl);
       }
@@ -71,6 +69,7 @@ export default function Navbar() {
     } else {
       sessionStorage.setItem("loggedIn", "false");
       alert("Invalid Credentials");
+      setPic("");
     }
   }
 
@@ -79,6 +78,7 @@ export default function Navbar() {
     sessionStorage.setItem("loggedIn", "false");
     setLoggedIn(false);
     setRole("");
+    setPic("");
     setOpen(false);
     navigate('/');
   }
@@ -89,7 +89,7 @@ export default function Navbar() {
 
   function getProfilePic() {
     // const pic = (await callBackend("GET", "/users/me", {})).data.avatarUrl;
-    if (!loggedIn || pic === "" || pic === undefined) {
+    if (!loggedIn || pic === "" || pic === undefined || pic === null) {
       return  "../src/assets/profile.png";
     }
 
