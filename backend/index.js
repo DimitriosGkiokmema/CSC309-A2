@@ -22,16 +22,48 @@ require('dotenv').config();
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const jwt = require('jsonwebtoken');
+const cors = require("cors");
 const app = express();
-const cors = require('cors');
+const ImageKit = require('imagekit');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const get_logged_in = require("./middleware/auth.js");
 const SECRET_KEY = process.env.JWT_SECRET;
 const resetRate = {};
 const ROLE_LEVELS = { "regular": 0, "cashier": 1, "manager": 2, "superuser": 3 };
-app.use(cors());
 app.use(express.json());
+
+// Set up cors to allow requests from your React frontend
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// ImageKit Functions
+const imagekit = new ImageKit({                  // from ImageKit dashboard
+    urlEndpoint: "https://ik.imagekit.io/dimi",
+    publicKey: "public_Ezy+fEYaGELwaZbrca1PEAsLYH8=",
+    privateKey: "private_ZOpakAqQw0hN35OGs99WiOgubW0="
+});
+
+app.get('/img/auth', function (req, res) {
+  var result = imagekit.getAuthenticationParameters();
+  res.send(result);
+});
 
 // A2 Functions
 function generateToken(utorid, time) {
