@@ -148,7 +148,7 @@ export default function Navbar() {
                   <p>Hello, {username}!</p>
                   <div className="pageLinks">
                     <Link to="/profile" onClick={() => setOpen(!open)}>Profile</Link>
-                    <Link to="/search" onClick={() => setOpen(!open)}>Transactions</Link>
+                    <Link to="/transactions" onClick={() => setOpen(!open)}>Transactions</Link>
                     <Link to="/promotions" onClick={() => setOpen(!open)}>Promotions</Link>
                     <Link to="/events" onClick={() => setOpen(!open)}>Events</Link>
                     <Link to="/management" onClick={() => setOpen(!open)}>User Management</Link>

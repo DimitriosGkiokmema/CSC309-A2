@@ -2,8 +2,30 @@
     margin-right: 10px;
 }
 
+.redeem-container {
+    display: flex;
+    flex-direction:row;
+    justify-content: center;
+    align-items: center;
+}
+
+.redeem-container input[type="checkbox"] {
+  margin: 0;         
+  padding: 0;
+  align-items: left;
+}
+
+.redeem-container label {
+  margin-right: 220px;           /* remove default margin */
+  padding: 0;          /* remove default padding */
+}
+
 .transaction-item {
 }
+
+/* .userInfo {
+    padding: 0;
+} */
 
 .userInfo, .transInfo {
     padding: 5px 20px;

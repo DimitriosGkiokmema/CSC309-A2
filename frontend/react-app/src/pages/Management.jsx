@@ -1,6 +1,6 @@
-import UsersListing from "../components/UsersListing/UsersListing";
 import Registration from "./Registration";
 import { useUser } from "../components/UserContext/index.jsx";
+import UsersListing from "./UsersListing.jsx";
 
 export default function Management() {
     const { role } = useUser();
