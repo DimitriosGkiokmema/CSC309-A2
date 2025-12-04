@@ -130,9 +130,13 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
     }
 
-    if(clearance) {
+    if (role === "event organizer" && organizer && !over) {
         updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
     }
+
+    // if(clearance) {
+    //     updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
+    // }
 
     let deleteIcon;
     
