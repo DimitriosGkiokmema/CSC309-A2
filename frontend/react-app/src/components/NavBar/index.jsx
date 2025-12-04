@@ -89,12 +89,12 @@ export default function Navbar() {
         {loggedIn && (
           <div className="featureContainer">
             <div className="pageLinks">
+              <Link to="/users">Users</Link>
+              <Link to="/promotions">Promotions</Link>
               <Link to="/search">Transactions</Link>
-              <Link to="/search">Promotions</Link>
               <Link to="/events">Events</Link>
               <Link to="/event-new">New Event</Link>
               <Link to="/registration">Registration</Link>
-              <Link to="/promotions">Promotions</Link>
             </div>
             <div className="roleLevel">
               <label for="roleSelect">Switch View:</label>

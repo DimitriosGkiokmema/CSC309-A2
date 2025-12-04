@@ -22,7 +22,14 @@ export default function Promotions() {
 
     const [page, setPage] = useState(1);
     const [count, setCount] = useState(0);
-    const [limit, setLimit] = useState(1);
+    const [limit, setLimit] = useState(5);
+
+    // filters and order state
+    const [searchName, setSearchName] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
+
+    const [orderBy, setOrderBy] = useState('id');
+    const [orderDir, setOrderDir] = useState('asc');
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -43,23 +50,84 @@ export default function Promotions() {
     const [formError, setFormError] = useState(null);
     const [formSuccess, setFormSuccess] = useState(null);
 
+    function sortPromotions(list) {
+        if (orderBy === "default") {
+            return list;
+        }
+
+        const sorted = [...list]
+
+        sorted.sort((a, b) => {
+            const field = orderBy;
+
+            let av = a[field];
+            let bv = b[field];
+
+            const misssingA = av === null || av === undefined;
+            const misssingB = bv === null || bv === undefined;
+
+            if (misssingA && !misssingB) return 1;
+            if (!misssingA && misssingB) return -1;
+            if (misssingA && misssingB) return 0;
+
+            let comparison = 0;
+
+            if (field === 'name' || field === 'type') {
+                av = av.toLowerCase();
+                bv = bv.toLowerCase();
+                comparison = av.localeCompare(bv);
+            } else if (field === 'startTime' || field === 'endTime') {
+                comparison = new Date(av) - new Date(bv);
+            } else {
+                comparison = av - bv;
+            }
+
+            return orderDir === 'asc' ? comparison : -comparison;
+        });
+
+        return sorted;
+    }
+
     async function fetchPromotions(currentPage = 1) {
         setLoading(true);
         setError(null);
         try {
-            const response = await callBackend('GET', `/promotions?page=${currentPage}&limit=${limit}`, {});
+
+            const params = new URLSearchParams();
+            params.set('page', currentPage);
+            params.set('limit', limit);
+
+            if (filterStatus !== 'all') {
+                params.set('status', filterStatus);
+            }
+
+            if (filterStatus === "started") {
+                params.set('started', 'true');
+            } else if (filterStatus === "not-started") {
+                params.set('started', 'false');
+            } else if (filterStatus === "ended") {
+                params.set('ended', 'true');
+            } else if (filterStatus === "not-ended") {
+                params.set('ended', 'false');
+            }
+
+            const url = `/promotions?${params.toString()}`;
+
+            const response = await callBackend('GET', url, {});
             if (!response.ok) {
-                setError("Failed to fetch promotions");
+                setError(response.data?.error || "Failed to fetch promotions");
                 setLoading(false);
                 setPromotions([]);
                 setCount(0);
                 return;
             }
-            console.log("Fetched promotions:", response.data.results);
-            setPromotions(response.data.results || []);
-            setCount(
-                typeof response.data.count === 'number' ? response.data.count : (response.data.results || []).length
-            )
+
+            const rawResults = response.data.results || [];
+            const sortedResults = sortPromotions(rawResults);
+
+            setPromotions(sortedResults);
+            setCount(response.data.count || rawResults.length);
+
         } catch (err) {
             setError("An error occurred while fetching promotions");
             setPromotions([]);
@@ -70,8 +138,9 @@ export default function Promotions() {
     }
 
     useEffect(() => {
+        console.log("component mounted or page/filter/order changed");
         fetchPromotions(page);
-    }, [page, limit]);
+    }, [page, limit, filterStatus, orderBy, orderDir]);
 
     const totalPages = Math.max(1, Math.ceil(count / limit));
     console.log("Total pages: ", totalPages);
@@ -284,6 +353,11 @@ export default function Promotions() {
         return <div>Error: {error}</div>;
     }
 
+    const filteredPromotions = promotions.filter((promo) => {
+        if (!searchName.trim()) return true;
+        return promo.name.toLowerCase().includes(searchName.toLowerCase());
+    });
+
     return (
         <div id="promotions">
             <div className="container">
@@ -291,24 +365,81 @@ export default function Promotions() {
                     <div className="col">
                         <h1>Promotions Overview</h1>
 
-                        <div className="d-flex align-items-center gap-2 mb-2">
-                            <label htmlFor="limitSelect">Promotions per page:</label>
-                            <select
-                                id="limitSelect"
-                                value={limit}
-                                onChange={(e) => {
-                                    setLimit(Number(e.target.value));
-                                    setPage(1); // Reset to first page when limit changes
-                                }}
-                            >
-                                <option value={1}>1</option>
-                                <option value={5}>5</option>
-                                <option value={10}>10</option>
-                                <option value={20}>20</option>
-                            </select>
+                        <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <div>
+                                <label htmlFor="limitSelect">Promotions per page:</label>
+                                <select
+                                    id="limitSelect"
+                                    value={limit}
+                                    onChange={(e) => {
+                                        setLimit(Number(e.target.value));
+                                        setPage(1); // Reset to first page when limit changes
+                                    }}
+                                >
+                                    <option value={5}>5</option>
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="searchName">Filter by Name:</label>
+                                <input
+                                    type="text"
+                                    id="searchName"
+                                    value={searchName}
+                                    onChange={(e) => {
+                                        setSearchName(e.target.value);
+                                    }}
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="filterStatus">Filter by Status:</label>
+                                <select
+                                    id="filterStatus"
+                                    value={filterStatus}
+                                    onChange={(e) => {
+                                        setFilterStatus(e.target.value);
+                                        setPage(1); // Reset to first page when filter changes
+                                    }}
+                                >
+                                    <option value="all">All</option>
+                                    <option value="started">Started</option>
+                                    <option value="not-started">Not Started</option>
+                                    <option value="ended">Ended</option>
+                                    <option value="not-ended">Not Ended</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="orderBy">Sort by:</label>
+                                <select
+                                    id="orderBy"
+                                    value={orderBy}
+                                    onChange={(e) => setOrderBy(e.target.value)}
+                                >
+                                    <option value="default">Default</option>
+                                    <option value="name">Name</option>
+                                    <option value="type">Type</option>
+                                    <option value="startTime">Start Time</option>
+                                    <option value="endTime">End Time</option>
+                                    <option value="minSpending">Min Spending</option>
+                                    <option value="rate">Rate</option>
+                                    <option value="points">Points</option>
+                                </select>
+                                <select
+                                    id="orderDir"
+                                    value={orderDir}
+                                    onChange={(e) => setOrderDir(e.target.value)}
+                                >
+                                    <option value="asc">Ascending</option>
+                                    <option value="desc">Descending</option>
+                                </select>
+                            </div>
                         </div>
 
-                        {!loading && promotions.length > 0 && (
+                        {!loading && filteredPromotions.length === 0  && (
+                            <div>No promotions found.</div>
+                        )}
+                        {!loading && filteredPromotions.length > 0 && (
                             <table className="table table-striped table-bordered">
                                 <thead>
                                     <tr>
@@ -324,7 +455,7 @@ export default function Promotions() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {promotions.map((promo) => (
+                                    {filteredPromotions?.map((promo) => (
                                         <tr key={promo.id}>
                                             <td>{promo.id}</td>
                                             <td>{promo.name}</td>

@@ -9,7 +9,7 @@ import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
 import ImgKit from "../components/ImgKit";
 import { useUser } from "../components/UserContext";
-import UsersListing from "../components/UsersListing/UsersListing.jsx";
+import UsersListing from "./UsersListing.jsx";
 import Promotions from "./Promotions.jsx";
 
 export default function LandingPage() {

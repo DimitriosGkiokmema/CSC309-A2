@@ -7,6 +7,7 @@ import EventUpdates from "../pages/EventUpdates";
 import CreateEvent from "../pages/CreateEvent";
 import Promotions from "../pages/Promotions";
 import Registration from "../pages/Registration";
+import UsersListing from "../pages/UsersListing";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/profile" element={<LandingPage />} />
       <Route path="/search" element={<SearchPage />} />
+      <Route path="/users" element={<UsersListing />} />
       <Route path="/events" element={<Events />} />
       <Route path="/event-updates/:eventId" element={<EventUpdates />} />
       <Route path="/event-new" element={<CreateEvent />} />
