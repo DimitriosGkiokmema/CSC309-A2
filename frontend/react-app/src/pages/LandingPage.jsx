@@ -250,25 +250,30 @@ export default function LandingPage() {
         <div className="row">
           <div className="transactionsContainer col-8 offset-2">
             <h1>My Transactions</h1>
-            {transactions['results'].map((item) => 
-            (
-              <TransactionItem
-                  id={item.id}
-                  utorid={item.utorid}
-                  awarded={item.awarded} // for events
-                  amount={item.amount} // for adjustments, purchases, negative for redemption and sending transfers
+            {transactions.length !== 0 && (
+              transactions['results'].map((item) => 
+              (
+                <TransactionItem
+                    id={item.id}
+                    utorid={item.utorid}
+                    awarded={item.awarded} // for events
+                    amount={item.amount} // for adjustments, purchases, negative for redemption and sending transfers
 
-                  earned={item.earned} // for purchases 
-                  spent={item.spent} // for purchases
-                  
-                  sender={item.sender} // transfer
-                  type={item.type} // transfer
-                  remark={item.remark} 
+                    earned={item.earned} // for purchases 
+                    spent={item.spent} // for purchases
+                    
+                    sender={item.sender} // transfer
+                    type={item.type} // transfer
+                    remark={item.remark} 
 
-                  relatedEventId={item.relatedEventId} // for events and adjustments (related tx)
-                  relatedTxId={item.relatedTxId}
-              />
-            ))}
+                    relatedEventId={item.relatedEventId} // for events and adjustments (related tx)
+                    relatedTxId={item.relatedTxId}
+                />
+              ))
+            )}
+            {transactions.length === 0 && (
+              <p>No Transactions to display!</p>
+            )}
           </div>
 
           {/* create a transfer */}
