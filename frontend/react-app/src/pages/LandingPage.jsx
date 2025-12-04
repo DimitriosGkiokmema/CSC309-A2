@@ -45,9 +45,14 @@ export default function LandingPage() {
       password: me.data.password,
     };
 
-    jsonToQRUrl(userInfo).then(url => {
+    jsonToQRUrl({
+      name: userInfo.name,
+      utorid: userInfo.utorid,
+      email: userInfo.email      
+    }).then(url => {
       setQR(url);
     });
+    console.log(userInfo.birthday)
     setFormData(userInfo);
 
     const tx = await callBackend('GET', '/users/me/transactions', {});
@@ -110,7 +115,11 @@ export default function LandingPage() {
     }
 
     // setUser();
-    jsonToQRUrl(user).then(url => {
+    jsonToQRUrl({
+      name: user.name,
+      utorid: user.utorid,
+      email: user.email
+    }).then(url => {
       setQR(url);
     });
     setEdit(false);

@@ -382,7 +382,8 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
                 return res.status(400).json({ "error": "Birthday cannot be in the past" });
             }
 
-            const [year, month, day] = birthday.split("-").map(Number);
+            const [datePart] = birthday.split("T"); // "2025-11-28"
+            const [year, month, day] = datePart.split("-").map(Number);
 
             if (!(
                 bday.getUTCFullYear() === year &&
