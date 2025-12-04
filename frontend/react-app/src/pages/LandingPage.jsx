@@ -122,6 +122,7 @@ export default function LandingPage() {
     }).then(url => {
       setQR(url);
     });
+    setUser(updates);
     setEdit(false);
     load();
   }
