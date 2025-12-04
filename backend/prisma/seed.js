@@ -9,12 +9,12 @@ const prisma = new PrismaClient();
 async function seedData() {
     const mockData = {
         "users": [{
-            utorid: "person456",
-            name: "john",
-            email: "person@mail.utoronto.ca",
-            password: "Password123!",
+            utorid: "clive123",
+            name: "Clive Thompson",
+            email: "clive@mail.utoronto.ca",
+            password: "SuperUser123!",
             birthday: new Date("2000-01-01"),
-            role: "regular",
+            role: "superuser",
             points: 0,
             avatarUrl: "",
             suspicious: false,
