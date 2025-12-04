@@ -65,11 +65,11 @@ export default function Events() {
           
     }
 
-    async function createEvent(e) {
-        e.preventDefault();
-        // redirect to create event page (form)
-        navigate(`/event-new`);
-    }
+    // async function createEvent(e) {
+    //     e.preventDefault();
+    //     // redirect to create event page (form)
+    //     navigate(`/event-new`);
+    // }
 
     // fetch user info
     async function load() {
@@ -170,37 +170,17 @@ export default function Events() {
         
     }
 
-    // async function fetchPage(page) {
-    //     // after user clicks on < or > button, the currentPage changes, limit is still whatever was set from the filter
-    //     setCurrentPage(page);
-    //     const params = new URLSearchParams();
-    //     params.append("page", page);
-    //     if(order) params.append("order", order);
-    //     const newquery = query + "&" + params.toString();
-    //     console.log(newquery);
-    //     const res = await callBackend("GET", `/events?${newquery}`, {});
-    //     if(res.status !== 200) {
-    //             setSearch(false);
-    //             console.log(res.data.error);
-    //             setMessage("Event not found: " + res.data.error);
-    //         }
-    //         else {
-    //             setSearch(false);
-    //             setEvents(res.data.results); // put the single event in an array
-    //         }
-    // }
-
 
     //clearance
-    let addEvent;
+    // let addEvent;
     // const clearance = user && user.role === "manager";
     // if(clearance) {
     //     addEvent = <button onClick={createEvent}>Add event</button>
     // }
 
-    if(role === "manager") {
-        addEvent = <button onClick={createEvent}>Add event</button>
-    }
+    // if(role === "manager") {
+    //     addEvent = <button onClick={createEvent}>Add event</button>
+    // }
 
     if (events === null) {
         return (
@@ -247,7 +227,7 @@ if(!search) {
                     onChange={(e) => {setEventId(e.target.value)}}
                 />
                 <input type="button" value="Search" onClick={handleSearch}/>
-                {addEvent}
+                {/* {addEvent} */}
             </div>
 
             {/* filter bar */}
@@ -256,15 +236,15 @@ if(!search) {
                 <input id="filterName" type="text" placeholder="Event name" value={name} onChange={(e) => {setName(e.target.value)}}></input>
                 <input id="filterLocation" type="text" placeholder="Event location" value={location} onChange={(e) => {setLocation(e.target.value)}}></input>
                 <div id="start">
-                    <input id="filterStart" type="checkbox" value={started} onChange={(e) => {setStart(e.target.checked)}}></input>
+                    <input id="filterStart" type="checkbox" checked={started} onChange={(e) => {setStart(e.target.checked)}}></input>
                     <label>Started</label>
                 </div>
                 <div id="end">
-                    <input id="filterEnd" type="checkbox" value={ended} onChange={(e) => {setEnd(e.target.checked)}}></input>
+                    <input id="filterEnd" type="checkbox" checked={ended} onChange={(e) => {setEnd(e.target.checked)}}></input>
                     <label>Ended</label>
                 </div>
                 <div id="publish">
-                    <input id="filterPublished" type="checkbox" value={published} onChange={(e) => {setPublished(e.target.checked)}}></input>
+                    <input id="filterPublished" type="checkbox" checked={published} onChange={(e) => {setPublished(e.target.checked)}}></input>
                     <label>Published</label>
                 </div>
                 

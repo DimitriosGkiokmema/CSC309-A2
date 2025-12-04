@@ -67,9 +67,7 @@ export default function Transactions() {
             console.log("no im here");
             res = await callBackend('GET', `/transactions?page=${currentPage}&limit=${limit}`, {});
         }
-        // setTransactions(res.data.results);
-        //console.log(`page=${currentPage}&limit=${limit}&${query}`);
-        // const res = await callBackend("GET", `/transactions?${query}`, {});
+
         if(res.status !== 200) {
                 console.log("im also here");
                 setSearch(false);
@@ -245,10 +243,6 @@ export default function Transactions() {
         
     }
 
-    async function addTx(e) {
-         e.preventDefault();
-         navigate("/transaction-new");
-    }
     
     async function goBack() {
         setTxId("");
@@ -471,7 +465,7 @@ export default function Transactions() {
                                 value={txId}
                                 onChange={(e) => {setTxId(e.target.value)}}
                             />
-                            {/* search for a new event */}
+                            {/* search for a new transaction */}
                             <input type="button" value="Search" onClick={handleSearch}/> 
                             <input type="button" value="Go back" onClick={goBack}></input>
                             
