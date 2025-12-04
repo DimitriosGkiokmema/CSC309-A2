@@ -62,7 +62,7 @@ export default function Registration() {
             <div className="container">
                 <div className="row">
                     <div className="col">
-                        <h1 className="mt-2">Register</h1>
+                        <h1 className="mt-2">Register User</h1>
 
                         {error && <div className="alert alert-danger">{error}</div>}
                         {success && <div className="alert alert-success">{success}</div>}

@@ -1,7 +1,7 @@
-import "../styles/CreateEvent.css";
+import "../../styles/CreateEvent.css";
 import {useState} from "react";
 
-import {callBackend} from "../js/backend.js";
+import {callBackend} from "../../js/backend.js";
 import {useNavigate} from 'react-router-dom';
 
 export default function CreateEvent() {
@@ -19,7 +19,7 @@ export default function CreateEvent() {
     const [message, setMessage] = useState("");
    
     async function createEvent(e) {
-        // call PATCH /events/:id  
+        
         e.preventDefault();
         const payload = {
             name: name && name.trim() !== "" ? name.trim() : null,
@@ -48,22 +48,22 @@ export default function CreateEvent() {
      
     }
 
-    async function goBack() {
-        navigate("/events");
-    };
+    // async function goBack() {
+    //     navigate("/events");
+    // };
 
     return (
         <div>
             <h1>New Event</h1>
             <form className="event-create-form" onSubmit={createEvent}>
                 <label>Name:</label>
-                <input id="name" type="text" required onChange={(e) => setName(e.target.value)}/>
+                <input id="name" type="text" placeholder="Enter event name" required onChange={(e) => setName(e.target.value)}/>
                 <br/>
                 <label>Description:</label>
-                <textarea id="description" type="text" required onChange={(e) => setDescription(e.target.value)}/>
+                <textarea id="description" type="text" placeholder="Enter event description" required onChange={(e) => setDescription(e.target.value)}/>
                 <br/>
                 <label>Location:</label>
-                <input type="text" required onChange={(e) => setLocation(e.target.value)}/>
+                <input type="text" required placeholder="Enter event location" onChange={(e) => setLocation(e.target.value)}/>
                 <br/>    
                 <label>Start:</label>
                 <input type="datetime-local" required onChange={(e) => setStartTime(e.target.value)}/>
@@ -72,14 +72,14 @@ export default function CreateEvent() {
                 <input type="datetime-local" required onChange={(e) => setEndTime(e.target.value)}/>
                 <br/>  
                 <label>Capacity:</label>
-                <input type="number" onChange={(e) => setCapacity(e.target.value)}/>
+                <input type="number" placeholder="Enter event capacity" onChange={(e) => setCapacity(e.target.value)}/>
                 <br/>
                 <label>Points:</label>
-                <input type="number" required onChange={(e) => setPoints(e.target.value)}/>
+                <input type="number" placeholder="Enter total award points" required onChange={(e) => setPoints(e.target.value)}/>
                 <br/>
 
                 <input className="submitButton" type="submit" value="Submit"></input> 
-                <input className="cancelButton" type="button" value="Cancel" onClick={goBack}></input>
+                {/* <input className="cancelButton" type="button" value="Cancel" onClick={goBack}></input> */}
             </form>
 
             <div className="message">{message}</div>

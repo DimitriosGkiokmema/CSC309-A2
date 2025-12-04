@@ -22,6 +22,7 @@ export function UserProvider({ children }) {
       const response = await callBackend('GET', '/users/me', {});
       if (response.ok) {
         setRole(response.data.role);
+        setPic(response.data.avatarUrl);
       } else {
         sessionStorage.setItem("token", "");
         sessionStorage.setItem("loggedIn", "false");

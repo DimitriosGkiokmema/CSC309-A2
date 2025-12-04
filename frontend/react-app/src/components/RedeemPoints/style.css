@@ -1,49 +1,53 @@
-.event-item {
+.transaction-item {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 1.5em;
     background-color: white;
     margin: 10px auto;
-    border-radius: 20px;
-    border: 3px solid rgb(103, 181, 245);
+    border-radius:20px;
+    /* border: 3px solid rgb(103, 181, 245); */
     padding: 20px;
     width: 100vh;
 }
 
 
-.eventInfo div {
+.transInfo div {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1em;
 }
 
-.eventName {
+.userInfo{
     width: 20px;
     padding-left: 60px;
 }
 
-.trashCan {
-    padding-top: 3px;
+
+.typePurchase {
+    color:cornflowerblue;
+    font-weight: bold;
+    /* background-color: aqua; */
+    /* font-style: italic; */
+}
+.typeRedemption {
+    color:crimson;
+    font-weight: bold;
+}
+.typeTransfer {
+    color:darkorchid;
+    font-weight: bold;
+}
+.typeEvent {
+    color:darkcyan;
+    font-weight: bold;
+}
+.typeAdjustment {
+    color:maroon;
+    font-weight: bold;
 }
 
-.trashCan a {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 50px;
-    
-}
-
-.trashCan a img {
-    height: 1.5rem;
-}
-
-.conditional {
-    display: flex;
-}
 
 .updateButton:hover {
     background-color: grey;

@@ -24,34 +24,35 @@ export default function CreateItem({ id, utorid, amount, type, spent, remark }) 
     return (
         <div className="transaction-item row">
             <div className="col userInfo">
-                <p>Transaction {id}</p>
-                <p><strong>{utorid}</strong></p>
-
-                <input
-                    type="checkbox"
-                    id={`redeem-${id}`}
-                    onChange={handleRedeem}
-                />
-                <label htmlFor={`redeem-${id}`}>Redeem Transaction</label>
+                <p><strong>Transaction {id}:</strong></p>
+                <p><strong>Utorid: {utorid}</strong></p>
+                <div className="redeem-container">
+                    <input
+                        type="checkbox"
+                        id="redeem"
+                        onChange={handleRedeem}
+                    />
+                    <label htmlFor="redeem">Redeem Transaction</label>
+                </div>
             </div>
 
-            <div className="col-4 transInfo">
+            <div className="col-6 transInfo">
                 <div>
-                    <p>Type:</p>
-                    <p>{type}</p>
+                    <p><strong>Type:</strong></p>
+                    <p id="typeColour">{type}</p>
                 </div>
                 <div>
-                    <p>Amount:</p>
+                    <p><strong>Amount:</strong></p>
                     <p>{amount}</p>
                 </div>
                 <div>
-                    <p>Spent:</p>
-                    <p><i className="fa-solid fa-dollar-sign"></i>{spent}</p>
+                    <p><strong>Spent:</strong></p>
+                    <p>${spent}</p>
                 </div>
 
                 {remark !== "" && (
                     <div>
-                        <p>Remark:</p>
+                        <p><strong>Remark:</strong></p>
                         <p>{remark}</p>
                     </div>
                 )}

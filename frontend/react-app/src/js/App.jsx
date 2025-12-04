@@ -6,13 +6,35 @@ import Footer from '../components/Footer/Footer';
 import { UserProvider } from "../components/UserContext";
 
 export default function App() {
+  useEffect(() => {
+    // run immediately
+    // localStorage.setItem("loggedIn", "false");
+    // localStorage.setItem("token", "");
+
+    const handleBeforeUnload = () => {
+        // localStorage.setItem("loggedIn", "false");
+        // localStorage.setItem("token", "");
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
   return (
     <UserProvider>
       <BrowserRouter>
-        <NavBar />
-        <SiteRoutes />
-        <Footer />
+        <div className="layout">
+          <NavBar />
+
+          <div className="content">
+            <SiteRoutes />
+          </div>
+          
+          <Footer />
+        </div>
       </BrowserRouter>
     </UserProvider>
   );

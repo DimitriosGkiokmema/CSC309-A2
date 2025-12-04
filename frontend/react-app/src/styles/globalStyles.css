@@ -59,13 +59,11 @@ header>div {
 }
 
 .pageLinks {
-    background-color: rgb(216, 214, 214);
     width: fit-content;
     margin: 20px;
     border-radius: 10px;
     margin-right: 5vw;
-    display: flex;
-    align-items: center;
+    gap: 5px;
 }
 
 .pageLinks a {
@@ -74,21 +72,23 @@ header>div {
 
 .profileDropdown {
     background-color: rgb(184, 180, 180);
-    width: 20vw;
+    width:15vw;
     position: absolute;
     top: 1vh;
     right: 5px;
+    border-radius: 10px;
 }
 
 .profileIcon {
-    display: grid;
-    align-items: center;
+    display: flex;
+    justify-content: center;
     grid-template-columns: 3fr 1fr;
 }
 
 .picContainer {
     display: flex;
     justify-content: center;
+    margin-top: 10px;
 }
 
 .profileIcon img {
@@ -99,7 +99,9 @@ header>div {
 }
 
 .profileIcon > i {
+    position: absolute;
     font-size: 30px;
+    right: 0;
     padding: 5px 5px 0 0;
 }
 
@@ -111,15 +113,29 @@ header>div {
 
 .infoContainer div {
     margin: 10px;
+    display: grid;
+    text-align: left;
+    width: 90%;
 }
 
 .infoContainer a {
     margin: 0 5px;
+    text-decoration: none;
+    color: black;
+    background-color: rgb(213, 220, 226);
+    border-radius: 15px;
+    padding: 5px 10px;
+}
+
+.infoContainer a:hover {
+    background-color: rgb(154, 159, 164);
+    font-size: large;
 }
 
 .infoContainer p {
     margin: 0 5px;
     font-weight: bold;
+    text-align: center;
 }
 
 form {
@@ -132,7 +148,6 @@ form div input {
 }
 
 #pageRoutes {
-  /* font-family: sans-serif; */
   width: 100%;
   padding: 0;
   margin:0;
@@ -145,4 +160,11 @@ form div input {
   
 }
 
-
+.placeHolder {
+    text-align: center;
+    background-color: rgb(223, 227, 230);
+    padding: 50px;
+    margin: 50px;
+    border-radius: 15px;
+    font-size: 25px;
+}

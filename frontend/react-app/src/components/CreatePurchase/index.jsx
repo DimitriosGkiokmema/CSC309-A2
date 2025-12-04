@@ -7,6 +7,7 @@ export default function CreateItem() {
     const [spent, setSpent] = useState("");
     const [promotionIds, setPromotionIds] = useState("");
     const [remark, setRemark] = useState("");
+    const [message, setMessage] = useState("");
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -40,13 +41,24 @@ export default function CreateItem() {
             body.remark = remark.trim();
         }
 
-        await callBackend("POST", "/transactions", body);
+        let res = await callBackend("POST", "/transactions", body);
+        if(res.status === 400) {
+            setMessage(res.data.error);
+        }
+        else {
+            setMessage("Purchase created!");
+        }
 
         // Clear fields
         setUtorid("");
         setSpent("");
         setPromotionIds("");
         setRemark("");
+
+        setTimeout(() => {
+            setMessage("");           
+        }, 1500); // 1.5 seconds
+        
     }
 
     return (
@@ -58,6 +70,7 @@ export default function CreateItem() {
                 <input
                     className="formInput"
                     value={utorid}
+                    type="text"
                     onChange={e => setUtorid(e.target.value)}
                     placeholder="alice123"
                     required
@@ -85,6 +98,7 @@ export default function CreateItem() {
                 <input
                     className="formInput"
                     value={promotionIds}
+                    type="text"
                     onChange={e => setPromotionIds(e.target.value)}
                     placeholder="promo123,promoABC"
                 />
@@ -100,7 +114,7 @@ export default function CreateItem() {
                     placeholder="Optional remark"
                 />
             </div>
-
+             {message}
             <button className="formButton" type="submit">Submit</button>
         </form>
     );

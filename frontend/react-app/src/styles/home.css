@@ -1,7 +1,7 @@
+/* Location */
 .storeContainer {
     display: flex;
     justify-content: center;
-    margin: 20vh;
 }
 
 .storeLocation {
@@ -19,4 +19,76 @@
     height: 30vh;
     margin: 20px;
     margin-left: auto;
+}
+
+/* Overall layout */
+.homepage {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-bottom: 80px;
+  gap: 100px;
+}
+
+/* HERO */
+.hero {
+  display: flex;
+  justify-content: center;
+}
+
+.hero-content {
+  margin: 0 auto;
+  width: 80%;
+  padding: 60px 0;
+  margin-top: 50px;
+  background: #2d65d4; /* Varsity Blues dark navy */
+  color: white;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+
+/* HIGHLIGHTS */
+.highlights {
+  padding: 0 40px;
+}
+
+.highlights h2 {
+  font-size: 2rem;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.highlight-grid {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.highlight-card {
+  flex: 1;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.highlight-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+
+.highlight-card p {
+  font-size: 1rem;
+  line-height: 1.5;
 }

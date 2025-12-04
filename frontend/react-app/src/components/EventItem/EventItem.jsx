@@ -1,14 +1,20 @@
 import "./style.css";
 import {useState, useEffect} from "react";
 import { callBackend } from "../../js/backend"; 
-import {useNavigate, useLocation} from 'react-router-dom';
+import {useNavigate} from "react-router-dom";
+import {useLocation} from 'react-router-dom';
+import { useUser } from "../UserContext";
 
-function EventItem({ id, name, location, startTime, endTime, capacity, numGuests, published }) {
+function EventItem({ id, name, location, startTime, endTime, capacity, numGuests, published, organizer, profile }) {
     const [user, setUser] = useState(null); // check the user's role
+    const [event, setEvent] = useState(null); 
     const [message, setMessage] = useState("");
     const [guests, setGuests] = useState(numGuests);
     const navigate = useNavigate();
     const loc = useLocation();
+    //const [organizer, setOrganizer] = useState(false);
+
+    const {role} = useUser();
 
     async function handleRSVP(e) {
         e.preventDefault();
@@ -16,8 +22,8 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         // check that the the user isnt already a guest for this event, otherwise add them (POST)
         
         const res = await callBackend("POST", `/events/${id}/guests/me`, {});
-        if(res.status === 400) {
-            setMessage("You have already RSVPed to this event.");
+        if(res.status !== 201) {
+            setMessage(res.data.error);
         }
         else {
             setGuests(prev => prev + 1);
@@ -28,7 +34,7 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
     async function handleUpdate(e) {
         e.preventDefault();
         // redirect to event update page (form)
-        navigate(`/event-updates/${id}`, {state: {name, location}});
+        navigate(`/event-updates/${id}`, {state: {name, location, organizer, profile}});
     }
 
     async function deleteItem() {
@@ -48,7 +54,7 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
                 const me = await callBackend('GET', '/users/me', {});
                 if (!me.ok) return; // user not logged in or error
                 setUser(me.data);
-    
+
             }
             
             load();
@@ -62,6 +68,11 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         }
     }, [loc]);
 
+    // so the message doesnt stay during pagination
+    useEffect(() => {
+        setMessage("");
+    }, [id]);
+
     //rsvp functionality
      let available;
      let spots;
@@ -70,6 +81,8 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         spots = "Unlimited";
     }
     else {
+        console.log("numGuests: " + numGuests);
+        console.log("capacity :" + capacity);
         spots = capacity - guests;
         available = spots > 0;
     }
@@ -79,11 +92,10 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
     let rsvpInfo;
         if(over) {
             rsvpInfo = <p className="error">This event is over</p>
+        } else if (organizer) {
+            rsvpInfo = <p className="error">Organizers are not able to rsvp for their own event</p>
         } else if (!available) {
-            console.log("this event has this many spots in total: " + capacity);
-            console.log("this event has " + numGuests + " many guests");
-            console.log("this event is available: " + available);
-            console.log("this event has " + spots + " spots left")
+         
             rsvpInfo = (
             <div>
                 <button className="rsvp" disabled={true}>RSVP</button>
@@ -100,23 +112,43 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
             }   
 
 
-    // event update/edit functionality, only for managers and superusers (TODO: need to add condition for organizers later)
+    // event update/edit functionality, only for managers (TODO: need to add condition for organizers later)
     let updateInfo;
+    
+    const clearance = organizer;
+    // if(role === "manager")      
+    
+    console.log("user is an organizer: " + organizer + ", for event " + id);
+    
 
-    const clearance = user && (user.role === "manager")
+    // if(clearance && !over) {
+    //     updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
+    // }
 
-    if(clearance && !over) {
+    if(role === "manager" && !over)
+    {
         updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
     }
+
+    if (role === "event organizer" && organizer && !over) {
+        updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
+    }
+
+    // if(clearance) {
+    //     updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
+    // }
 
     let deleteIcon;
     
     if(publish && !published) {
-        deleteIcon = (<span className="trashCan">
-                <a onClick={deleteItem}>
-                    <img src="../../../src/assets/trash.webp"/>
-                </a>
-            </span>)
+        if(role === "manager") {
+            deleteIcon = (<span className="trashCan">
+                    <a onClick={deleteItem}>
+                        <img src="../../../src/assets/trash.webp"/>
+                    </a>
+                </span>)
+        }
+
     }
 
     return (
@@ -125,8 +157,8 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
             <p><strong>Event Name:</strong> {name}</p>
             <div className="conditional">
                
-                {clearance && updateInfo}
-                {clearance && deleteIcon}
+                {updateInfo}
+                {deleteIcon}
                 <br/>
                  {rsvpInfo}
             </div>

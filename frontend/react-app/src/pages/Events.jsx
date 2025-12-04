@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { callBackend } from '../js/backend.js';
 import EventItem from "../components/EventItem/EventItem.jsx";
+import CreateEvent from "../components/CreateEvent/index.jsx";
+import { useUser } from "../components/UserContext/index.jsx";
 import "../styles/Events.css"
 
 export default function Events() {
@@ -11,15 +13,18 @@ export default function Events() {
     const loc = useLocation();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
+    const [eventId, setEventId] = useState("");
 
-    const [name, setName] = useState(null); // string, text
-    const [location, setLocation] = useState(null); //string, text
-    const [started, setStart] = useState(null); //boolean, checkbox
-    const [ended, setEnd] = useState(null); //boolean, checkbox  
-    const [published, setPublished] = useState(null); //boolean, checkbox
+    const {role} = useUser();
+
+    const [name, setName] = useState(""); // string, text
+    const [location, setLocation] = useState(""); //string, text
+    const [started, setStart] = useState(""); //boolean, checkbox
+    const [ended, setEnd] = useState(""); //boolean, checkbox  
+    const [published, setPublished] = useState(""); //boolean, checkbox
     const [limit, setLimit] = useState(5);
     const [order, setOrder] = useState(null);
-
+    const [query, setQuery] = useState("");
     const [totalPages, setTotalPages] = useState(1); //default only one page
     const [currentPage, setCurrentPage] = useState(1); //default starts on page 1
     // showFull, page: qpage, limit, 
@@ -42,25 +47,11 @@ export default function Events() {
 
 
         // if you get to this point then there must be at least one event that loaded
-        const eventId = document.getElementById("searchInput").value;
-        if(eventId.trim() !== "") {
-            // setName(null);
-            // setLocation(null);
-            // setStart(null);
-            // setEnd(null);
-            // setPublished(null);
-            // const filtername = document.getElementById("filterName");
-            // filtername.value = "";
-            // const filterloc = document.getElementById("filterLocation");
-            // filterloc.value = "";
-            // const filterstart = document.getElementById("filterStart");
-            // filterstart.checked = false;
-            // const filterend = document.getElementById("filterEnd");
-            // filterend.checked = false;
-            // const filterpub = document.getElementById("filterPublished");
-            // filterpub.checked = false;
+        // const eventId = document.getElementById("searchInput").value;
+        if(eventId && eventId.trim() !== "") {
 
             const res = await callBackend("GET", `/events/${eventId}`, {});
+            console.log(res.data);
             if(res.status === 404) {
                 setSearch(true);
                 setMessage("Event not found, please try again.");
@@ -74,26 +65,60 @@ export default function Events() {
           
     }
 
-    async function createEvent(e) {
-        e.preventDefault();
-        // redirect to create event page (form)
-        navigate(`/event-new`);
-    }
+    // async function createEvent(e) {
+    //     e.preventDefault();
+    //     // redirect to create event page (form)
+    //     navigate(`/event-new`);
+    // }
 
     // fetch user info
     async function load() {
         // Get all events data
-        let events = await callBackend('GET', '/events', {});
-        setEvents(events.data.results);
+        let res = await callBackend('GET', `/events?page=${currentPage}&limit=${limit}&${query}`, {});
+        // setEvents(res.data.results);
+        if(res.status !== 200) {
+                setSearch(false);
+                console.log(res.data.error);
+                setMessage("Event not found: " + res.data.error);
+            }
+        else {
+            setSearch(false);
+            console.log(res.data.count);
+            if(limit) {
+                setTotalPages(Math.ceil(res.data.count / limit)); // if total pages > 1, then show the navigation bar on the bottom of the page
+            }
+            setEvents(res.data.results); // put the single event in an array
+        }
+
     }
+
+    useEffect(() => {
+        if(!user) return;
+        load();
+    }, [user, currentPage, limit, query]);
 
     useEffect(() => {
         // when a user clicks on the events link in the navbar, loads all events again
         if (loc.pathname === "/events") {
-            setSearch(false);  // reset search state
-            load();
+            setSearch(false);
+            setMessage("");
+            setQuery("");
+            setCurrentPage(1);
+            setEventId("");
+            // load();
         }
-    }, [loc]);
+    }, [loc.key]);
+
+     async function goBack() {
+        setEventId("");
+        setSearch(false);
+        setMessage("");
+        setQuery("");
+        setCurrentPage(1);
+        
+        navigate("/events");
+        load();
+    };
 
     async function handleFilter(e) {
          e.preventDefault();
@@ -123,9 +148,6 @@ export default function Events() {
             params.append("published", published);
         }
 
-        if(limit !== null) { //when they first set the filter, just gives them the first page
-            params.append("limit", limit);
-        }
 
         if(order && order !== null) {
             params.append("order", order);
@@ -133,54 +155,40 @@ export default function Events() {
         
         console.log("the current limit is: " + limit);
         const query = params.toString();
+        setQuery(query);
+
         console.log(query);
 
-        const res = await callBackend("GET", `/events?${query}`, {});
-        if(res.status !== 200) {
-                setSearch(false);
-                console.log(res.data.error);
-                setMessage("Event not found: " + res.data.error);
-            }
-            else {
-                setSearch(false);
-                console.log(res.data.count);
-                if(limit) {
-                    setTotalPages(Math.ceil(res.data.count / limit)); // if total pages > 1, then show the navigation bar on the bottom of the page
-                }
-                setEvents(res.data.results); // put the single event in an array
-            }
-    }
+        setName("");
+        setLocation("");
+        setOrder("");
+        setStart("");
+        setEnd("");
+        setPublished("");
 
-    async function fetchPage(page) {
-        // after user clicks on < or > button, the currentPage changes, limit is still whatever was set from the filter
-        setCurrentPage(page);
-        const params = new URLSearchParams();
-        params.append("page", page);
-        params.append("limit", limit);
-        const query = params.toString();
-        const res = await callBackend("GET", `/events?${query}`, {});
-        if(res.status !== 200) {
-                setSearch(false);
-                console.log(res.data.error);
-                setMessage("Event not found: " + res.data.error);
-            }
-            else {
-                setSearch(false);
-                setEvents(res.data.results); // put the single event in an array
-            }
+        // const res = await callBackend("GET", `/events?${query}`, {});
+        
     }
 
 
     //clearance
-    let addEvent;
-    const clearance = user && user.role === "manager";
-    if(clearance) {
-        addEvent = <button onClick={createEvent}>Add event</button>
-    }
+    // let addEvent;
+    // const clearance = user && user.role === "manager";
+    // if(clearance) {
+    //     addEvent = <button onClick={createEvent}>Add event</button>
+    // }
+
+    // if(role === "manager") {
+    //     addEvent = <button onClick={createEvent}>Add event</button>
+    // }
 
     if (events === null) {
         return (
             <div>
+                {role === 'manager' && (
+                    <CreateEvent />
+                )}
+
                 <h1>All Events</h1>
                 <div>Loading...</div>
             </div>
@@ -191,6 +199,10 @@ export default function Events() {
     if (events.length === 0) {
         return (
             <div>
+                {role === 'manager' && (
+                    <CreateEvent />
+                )}
+
                 <h1>All Events</h1>
                 <div >No events at this time</div>
             </div>
@@ -201,44 +213,49 @@ if(!search) {
     return (
         
         <div>
+            {role === 'manager' && (
+                <CreateEvent />
+            )}
+
             <h1>All Events</h1>
             <div className="eventSearch">
                 <input
                     id="searchInput"
                     type="number"
                     placeholder="Search events by id..."
+                    value={eventId}
+                    onChange={(e) => {setEventId(e.target.value)}}
                 />
                 <input type="button" value="Search" onClick={handleSearch}/>
-                {addEvent}
+                {/* {addEvent} */}
             </div>
 
             {/* filter bar */}
             <div className="filterOptions">
                 
-                <input id="filterName" type="text" placeholder="Event name" onChange={(e) => {setName(e.target.value)}}></input>
-                <input id="filterLocation" type="text" placeholder="Event location" onChange={(e) => {setLocation(e.target.value)}}></input>
+                <input id="filterName" type="text" placeholder="Event name" value={name} onChange={(e) => {setName(e.target.value)}}></input>
+                <input id="filterLocation" type="text" placeholder="Event location" value={location} onChange={(e) => {setLocation(e.target.value)}}></input>
                 <div id="start">
-                    <input id="filterStart" type="checkbox" onChange={(e) => {setStart(e.target.checked)}}></input>
+                    <input id="filterStart" type="checkbox" checked={started} onChange={(e) => {setStart(e.target.checked)}}></input>
                     <label>Started</label>
                 </div>
                 <div id="end">
-                    <input id="filterEnd" type="checkbox" onChange={(e) => {setEnd(e.target.checked)}}></input>
+                    <input id="filterEnd" type="checkbox" checked={ended} onChange={(e) => {setEnd(e.target.checked)}}></input>
                     <label>Ended</label>
                 </div>
                 <div id="publish">
-                    <input id="filterPublished" type="checkbox" onChange={(e) => {setPublished(e.target.checked)}}></input>
+                    <input id="filterPublished" type="checkbox" checked={published} onChange={(e) => {setPublished(e.target.checked)}}></input>
                     <label>Published</label>
                 </div>
                 
-                <select onChange={(e) => {setOrder(e.target.value)}}>
+                <select value={order} onChange={(e) => {setOrder(e.target.value)}}>
                     <option disabled selected>Order By</option>
                     <option value={"name"}>Name</option>
                     <option value={"location"}>Location</option>
                     <option value={"description"}>Description</option>
                     <option value={"startTime"}>Start time</option>
                     <option value={"endTime"}>End time</option>
-                    {/* capacity?? */}
-                    <option value={"capacity"}>Capacity</option> 
+                    
                 </select>
 
                 {/* pagination */}
@@ -263,15 +280,17 @@ if(!search) {
                     endTime={event.endTime}
                     capacity={event.capacity} 
                     numGuests={event.numGuests} 
-                    published={event.published}    
+                    published={event.published}  
+                    organizer={(user && event.organizers) && event.organizers.some(org => org.id === user.id)}  
+                    profile={false}
                 />
             ))}
         
         {/* pagination navbar */}
         <div className="pagenav">
-            <button id="prevBtn" onClick={() => fetchPage(currentPage - 1)} disabled={currentPage === 1}>&lt;</button>
+            <button id="prevBtn" onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1}>&lt;</button>
             <span>{currentPage} of {totalPages}</span>
-            <button id="nextBtn" onClick={() => fetchPage(currentPage + 1)} disabled={currentPage === totalPages}>&gt;</button>
+            <button id="nextBtn" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>&gt;</button>
         </div>
     
         </div>
@@ -282,38 +301,23 @@ if(!search) {
 else if (search && !message) {
     return (
         <div>
+            {role === 'manager' && (
+                <CreateEvent />
+            )}
+
             <h1>{events[0].name}</h1>
 
             <div className="eventSearch">
                 <input
                     id="searchInput"
                     type="number"
+                    value={eventId}
                     placeholder="Search events..."
+                    onChange={(e) => {setEventId(e.target.value)}}
                 />
                 {/* search for a new event */}
                 <input type="button" value="Search" onClick={handleSearch}/> 
-                {addEvent}
-            </div>
-
-            {/* filter bar */}
-            <div className="filterOptions">
-                
-                <input type="text" placeholder="Event name" onChange={(e) => {setName(e.target.value)}}></input>
-                <input type="text" placeholder="Event location" onChange={(e) => {setLocation(e.target.value)}}></input>
-                <div id="start">
-                    <input type="checkbox" onChange={(e) => {setStart(e.target.checked)}}></input>
-                    <label>Started</label>
-                </div>
-                <div id="end">
-                    <input type="checkbox" onChange={(e) => {setEnd(e.target.checked)}}></input>
-                    <label>Ended</label>
-                </div>
-                <div id="publish">
-                    <input type="checkbox" onChange={(e) => {setPublished(e.target.checked)}}></input>
-                    <label>Published</label>
-                </div>
-
-                <input type="button" value="Filter" onClick={handleFilter}></input>
+                <input type="button" value="Go back" onClick={goBack}></input>
             </div>
 
             {events.map(event => (
@@ -325,7 +329,9 @@ else if (search && !message) {
                     endTime={event.endTime}
                     capacity={event.capacity} 
                     numGuests={event.numGuests}  
-                    published={event.published}   
+                    published={event.published} 
+                    organizer={user && event.organizers.some(org => org.id === user.id)}
+                    profile={false}
                 />
             ))}
         </div>
@@ -335,6 +341,10 @@ else if (search && !message) {
 else {
     return (
        <div>
+            {role === 'manager' && (
+                <CreateEvent />
+            )}
+            
             <h1>{events[0].name}</h1>
 
             <div className="eventSearch">
@@ -342,36 +352,21 @@ else {
                     id="searchInput"
                     type="number"
                     placeholder="Search events..."
+                    value={eventId}
+                    onChange={(e) => {setEventId(e.target.value)}}
                 />
                 {/* search for a new event */}
                 <input type="button" value="Search" onClick={handleSearch}/> 
-                {addEvent}
+                <input type="button" value="Go back" onClick={goBack}></input>
             </div>
 
-            {/* filter bar */}
-            <div className="filterOptions">
-                
-                <input type="text" placeholder="Event name" onChange={(e) => {setName(e.target.value)}}></input>
-                <input type="text" placeholder="Event location" onChange={(e) => {setLocation(e.target.value)}}></input>
-                <div id="start">
-                    <input type="checkbox" onChange={(e) => {setStart(e.target.checked)}}></input>
-                    <label>Started</label>
-                </div>
-                <div id="end">
-                    <input type="checkbox" onChange={(e) => {setEnd(e.target.checked)}}></input>
-                    <label>Ended</label>
-                </div>
-                <div id="publish">
-                    <input type="checkbox" onChange={(e) => {setPublished(e.target.checked)}}></input>
-                    <label>Published</label>
-                </div>
-
-                <input type="button" value="Filter" onClick={handleFilter}></input>
-            </div>
 
             <p className="error">{message}</p>
         </div> 
     )
 }
+
+
+
 
 }

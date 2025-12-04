@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { callBackend, resetPassword } from '../js/backend.js';
 import { jsonToQRUrl } from '../js/create_qr.js';
-import '../styles/LandingPage.css';
 import TransactionItem from "../components/TransactionItem";
-import CreateItem from "../components/CreateItem";
+import CreateItem from "../components/CreatePurchase/index.jsx";
 import ProcessRedemption from "../components/ProcessRedemption";
 import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
 import ImgKit from "../components/ImgKit";
+import EventItem from "../components/EventItem/EventItem.jsx"
+import Transfer from "../components/Transfer";
+import RedeemPoints from "../components/RedeemPoints";
 import { useUser } from "../components/UserContext";
-import UsersListing from "./UsersListing.jsx";
-import Promotions from "./Promotions.jsx";
+import '../styles/LandingPage.css';
 
 export default function LandingPage() {
   const [user, setUser] = useState(null);
@@ -23,8 +24,8 @@ export default function LandingPage() {
   const [edit, setEdit] = useState(false);
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
-  const { role, loadingRole, setPic } = useUser();
-  console.log("User role is ", role)
+  const { role, leadingRole } = useUser();
+  // console.log("User is ", role)
 
   // fetch user info
   async function load() {
@@ -44,16 +45,21 @@ export default function LandingPage() {
       password: me.data.password,
     };
 
-    jsonToQRUrl(userInfo).then(url => {
+    jsonToQRUrl({
+      name: userInfo.name,
+      utorid: userInfo.utorid,
+      email: userInfo.email      
+    }).then(url => {
       setQR(url);
     });
+    console.log(userInfo.birthday)
     setFormData(userInfo);
 
     const tx = await callBackend('GET', '/users/me/transactions', {});
     setTransactions(tx.data);
 
-    const r = await callBackend('GET', '/users/me/transactions?type=redemption&relatedId=null', {});
-    const filtered = r.data.results.filter(obj => obj.type === 'redemption');
+    const r = await callBackend('GET', '/transactions?type=redemption', {});
+    const filtered = r.data.results.filter(obj => obj.type === 'redemption' && !obj.processed);
     setRedemptions(filtered);
 
     // Get event data
@@ -109,9 +115,14 @@ export default function LandingPage() {
     }
 
     // setUser();
-    jsonToQRUrl(user).then(url => {
+    jsonToQRUrl({
+      name: user.name,
+      utorid: user.utorid,
+      email: user.email
+    }).then(url => {
       setQR(url);
     });
+    setUser(updates);
     setEdit(false);
     load();
   }
@@ -123,6 +134,10 @@ export default function LandingPage() {
     </div>
     );
   }
+
+  // if(redemptions !== []) {
+  //   console.log("redemptions: " + redemptions[0].processed)
+  // }
 
   return (
     <div className="page">
@@ -238,14 +253,32 @@ export default function LandingPage() {
             {transactions['results'].map((item) => 
             (
               <TransactionItem
-                id={item.id}
-                utorid={item.utorid}
-                amount={item.amount}
-                type={item.type}
-                spent={item.spent}
-                remark={item.remark}
+                  id={item.id}
+                  utorid={item.utorid}
+                  awarded={item.awarded} // for events
+                  amount={item.amount} // for adjustments, purchases, negative for redemption and sending transfers
+
+                  earned={item.earned} // for purchases 
+                  spent={item.spent} // for purchases
+                  
+                  sender={item.sender} // transfer
+                  type={item.type} // transfer
+                  remark={item.remark} 
+
+                  relatedEventId={item.relatedEventId} // for events and adjustments (related tx)
+                  relatedTxId={item.relatedTxId}
               />
             ))}
+          </div>
+
+          {/* create a transfer */}
+          <div>
+            <Transfer />
+          </div>
+
+          {/* create a transfer */}
+          <div>
+            <RedeemPoints />
           </div>
         </div>
       )}
@@ -255,9 +288,11 @@ export default function LandingPage() {
         <div className="row">
           <div className="col-8 offset-2">
             <CreateItem />
-            <h1>My Redemptions</h1>
+
+            <h1>Redemption requests</h1>
             {redemptions.map((item) => 
-            (
+            
+            ( 
               <ProcessRedemption
                 key={item.id}
                 id={item.id}
@@ -267,15 +302,11 @@ export default function LandingPage() {
                 spent={item.spent}
                 remark={item.remark}
               />
-            ))}
+            )
+          
+          )}
           </div>
         </div>
-      )}
-
-
-      {/* Overview of Users Listings */}
-      {(role === 'manager' || role === 'superuser') && (
-        <UsersListing />
       )}
 
       {/* Overview of events, promotions, and user management */}
@@ -299,8 +330,30 @@ export default function LandingPage() {
           <AdminDash />
         </div>
       )}
-      {/* Promotions Listing and Management */}
-      { user && <Promotions /> }
+
+
+      {/* if this user is an event organizer, show their events */}
+      {(role === 'event organizer' && user.organizer && (user.organizer.length !== 0)) && (
+        <div>
+          <h1>My organized events</h1>
+          {user.organizer.map((event) => 
+              <EventItem
+                  id={event.id}
+                  name={event.name}
+                  location={event.location}
+                  startTime={event.startTime} 
+                  endTime={event.endTime}
+                  capacity={event.capacity} 
+                  numGuests={event.guests.length}  
+                  published={event.published} 
+                  organizer={true}
+                  profile={true}
+              />
+
+          )}
+
+        </div>
+      )}
     </div>
   );
 }

@@ -27,15 +27,23 @@ input[type="checkbox"] {
    
 }
 
+.formButtons {
+    display: flex;
+    justify-content: right;
+    align-items: center;
+}
+
 .submitButton {
     grid-column: 2;
-    grid-row: 21;
-    justify-self: center;
+    grid-row: 24;
+    justify-self: left;
     padding: 5px;
     width: 100px;
     border-radius: 5px;
     border-color:gray;
     background-color:azure;
+    margin-right: 30px;
+    margin-top: 20px;
 }
 
 .submitButton:hover {
@@ -46,13 +54,15 @@ input[type="checkbox"] {
 
 .cancelButton {
     grid-column: 2;
-    grid-row: 21;
+    grid-row: 24;
     justify-self: right;
     padding: 5px;
     width: 100px;
     border-radius: 5px;
     border-color:gray;
     background-color:lightgrey;
+    margin-left: 30px;
+    margin-top: 20px;
 }
 
 .cancelButton:hover {
@@ -95,3 +105,12 @@ input[type="checkbox"] {
     gap: 8px;
 }
 
+/* #awardGuest {
+    grid-row: 21;
+    grid-column: 2;
+} */
+/* 
+h2 {
+    display: flex;
+    margin: 0 50px 50px 0;
+} */

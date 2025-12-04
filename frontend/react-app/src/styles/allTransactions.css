@@ -1,7 +1,8 @@
-.eventSearch {
+.txSearch {
     display: flex;
     justify-content: center;
     align-items: center;
+    margin-bottom: 20px;
 }
 
 input[type="number"] {
@@ -27,7 +28,7 @@ input[type="button"]:hover {
     display: flex;
     justify-content: center;
     align-items: center;
-     font-weight: bold;
+    font-weight: bold;
 }
 
 .filterOptions {
@@ -42,8 +43,20 @@ input[type="button"]:hover {
     margin: 6px;
 }
 
-#filterName, #filterLocation {
+#filterId, #filterPromo, #filterName, #filterCreatedBy {
     width: 120px;
+}
+
+#filterAmount {
+    width: 80px;
+}
+
+#suspicious {
+    margin: 8px;
+}
+
+#filterSuspicious {
+    margin-right: 5px;
 }
 
 .pagenav {
