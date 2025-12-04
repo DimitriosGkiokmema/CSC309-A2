@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { callBackend, resetPassword } from '../js/backend.js';
 import { jsonToQRUrl } from '../js/create_qr.js';
-import '../styles/LandingPage.css';
 import TransactionItem from "../components/TransactionItem";
 import CreateItem from "../components/CreatePurchase/index.jsx";
 import ProcessRedemption from "../components/ProcessRedemption";
@@ -9,8 +8,7 @@ import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
 import ImgKit from "../components/ImgKit";
 import { useUser } from "../components/UserContext";
-import UsersListing from "../components/UsersListing/UsersListing.jsx";
-import Promotions from "./Promotions.jsx";
+import '../styles/LandingPage.css';
 
 export default function LandingPage() {
   const [user, setUser] = useState(null);

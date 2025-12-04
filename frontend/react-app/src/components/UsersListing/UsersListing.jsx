@@ -130,8 +130,8 @@ export default function UsersListing() {
                                 <td>{user.name}</td>
                                 <td>{user.email}</td>
                                 <td>{user.birthday}</td>
-                                <td>{user.points}</td>
                                 <td>{user.role}</td>
+                                <td>{user.points}</td>
                                 <td>{user.verified ? "Yes" : "No"}</td>
                                 <td>{suspiciousLabel}</td>
                                 <td className="d-flex flex-column gap-1">
@@ -169,7 +169,6 @@ export default function UsersListing() {
                             </tr>
                         );
                     })}
-
                 </tbody>
             </table>
         </div>

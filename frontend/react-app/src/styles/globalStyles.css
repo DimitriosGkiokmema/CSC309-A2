@@ -163,6 +163,7 @@ form div input {
     text-align: center;
     background-color: rgb(223, 227, 230);
     padding: 50px;
+    margin: 50px;
     border-radius: 15px;
     font-size: 25px;
 }

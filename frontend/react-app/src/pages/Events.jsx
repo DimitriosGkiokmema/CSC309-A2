@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { callBackend } from '../js/backend.js';
 import EventItem from "../components/EventItem/EventItem.jsx";
 import CreateEvent from "../components/CreateEvent/index.jsx";
+import { useUser } from "../components/UserContext/index.jsx";
 import "../styles/Events.css"
 
 export default function Events() {
@@ -12,6 +13,7 @@ export default function Events() {
     const loc = useLocation();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
+    const { role } = useUser();
 
     const [name, setName] = useState(null); // string, text
     const [location, setLocation] = useState(null); //string, text
@@ -174,7 +176,7 @@ export default function Events() {
 
     //clearance
     let addEvent;
-    const clearance = user && user.role === "manager";
+    const clearance = user && role === "manager";
     if(clearance) {
         addEvent = <button onClick={createEvent}>Add event</button>
     }
@@ -182,7 +184,10 @@ export default function Events() {
     if (events === null) {
         return (
             <div>
-                <CreateEvent />
+                {role === 'manager' && (
+                    <CreateEvent />
+                )}
+
                 <h1>All Events</h1>
                 <div>Loading...</div>
             </div>
@@ -193,7 +198,10 @@ export default function Events() {
     if (events.length === 0) {
         return (
             <div>
-                <CreateEvent />
+                {role === 'manager' && (
+                    <CreateEvent />
+                )}
+
                 <h1>All Events</h1>
                 <div >No events at this time</div>
             </div>
@@ -204,7 +212,10 @@ if(!search) {
     return (
         
         <div>
-            <CreateEvent />
+            {role === 'manager' && (
+                <CreateEvent />
+            )}
+
             <h1>All Events</h1>
             <div className="eventSearch">
                 <input
@@ -286,7 +297,10 @@ if(!search) {
 else if (search && !message) {
     return (
         <div>
-            <CreateEvent />
+            {role === 'manager' && (
+                <CreateEvent />
+            )}
+
             <h1>{events[0].name}</h1>
 
             <div className="eventSearch">
@@ -340,7 +354,10 @@ else if (search && !message) {
 else {
     return (
        <div>
-            <CreateEvent />
+            {role === 'manager' && (
+                <CreateEvent />
+            )}
+            
             <h1>{events[0].name}</h1>
 
             <div className="eventSearch">
