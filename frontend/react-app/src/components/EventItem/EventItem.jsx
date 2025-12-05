@@ -156,7 +156,7 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         if(role === "manager") {
             deleteIcon = (<span className="trashCan">
                     <a onClick={deleteItem}>
-                        <img src="../../../src/assets/trash.webp"/>
+                        <img src="/assets/trash.webp"/>
                     </a>
                 </span>)
         }
