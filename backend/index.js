@@ -38,21 +38,24 @@ app.use(express.json());
 const port = process.env.PORT || 3000;
 
 // Set up cors to allow requests from your React frontend
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000'
-];
+// const allowedOrigins = [
+//   'http://localhost:5173',
+//   'http://localhost:3000'
+// ];
+
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
+//   origin: function (origin, callback) {
+//     // allow requests with no origin (like mobile apps or curl)
+//     if (!origin) return callback(null, true);
+//     if (allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     } else {
+//       return callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+  origin: FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
