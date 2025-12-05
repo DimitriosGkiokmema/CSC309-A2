@@ -171,7 +171,7 @@ export default function Navbar() {
                 </div>
                 <div>
                   <input type="text" className="log-input" id="username" required />
-                  <input type="text" className="log-input" id="password" required />
+                  <input type="password" className="log-input" id="password" required />
                 </div>
               </form>
             )}

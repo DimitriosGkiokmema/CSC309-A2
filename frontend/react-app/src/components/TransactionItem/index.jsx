@@ -22,14 +22,15 @@ function TransactionItem({ id, utorid, awarded, amount, earned, spent, sender, t
 
     async function handleUpdate(e) {
         e.preventDefault();
-        // redirect to event update page (form)
+        // redirect to update page (form)
         navigate(`/transaction-updates/${id}`, {state: {utorid, id}});
     }
 
-    console.log("amount: " + amount);
-    console.log("awarded points: " + awarded);
-    console.log("related id: " + relatedEventId);
+    // console.log("amount: " + amount);
+    // console.log("awarded points: " + awarded);
+    // console.log("related id: " + relatedEventId);
 
+    
     let updateInfo;
 
     // const clearance = user && user.role === "manager";

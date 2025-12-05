@@ -73,6 +73,18 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         setMessage("");
     }, [id]);
 
+
+    function formatDateTime(dateTimeStr) {
+        if (!dateTimeStr) return "N/A";
+        try {
+            const date = new Date(dateTimeStr);
+            return date.toLocaleString();
+        } catch (error) {
+            return dateTimeStr;
+        }
+    }
+
+
     //rsvp functionality
      let available;
      let spots;
@@ -118,7 +130,7 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
     const clearance = organizer;
     // if(role === "manager")      
     
-    console.log("user is an organizer: " + organizer + ", for event " + id);
+    //console.log("user is an organizer: " + organizer + ", for event " + id);
     
 
     // if(clearance && !over) {
@@ -172,11 +184,11 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
             </div>
             <div>
                 <p><strong>Start:</strong></p>
-                <p>{startTime}</p>
+                <p>{formatDateTime(startTime)}</p>
             </div>
             <div>
                 <p><strong>End:</strong></p>
-                <p>{endTime}</p>
+                <p>{formatDateTime(endTime)}</p>
             </div>
             <div>
                 <p><strong>Spots left:</strong></p>
