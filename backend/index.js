@@ -1,22 +1,24 @@
 #!/usr/bin/env node
 'use strict';
 
-const port = (() => {
-    const args = process.argv;
+// const port = (() => {
+//     const args = process.argv;
 
-    if (args.length !== 3) {
-        console.error("usage: node index.js port");
-        process.exit(1);
-    }
+//     if (args.length !== 3) {
+//         console.error("usage: node index.js port");
+//         process.exit(1);
+//     }
 
-    const num = parseInt(args[2], 10);
-    if (isNaN(num)) {
-        console.error("error: argument must be an integer.");
-        process.exit(1);
-    }
+//     const num = parseInt(args[2], 10);
+//     if (isNaN(num)) {
+//         console.error("error: argument must be an integer.");
+//         process.exit(1);
+//     }
 
-    return num;
-})();
+//     return num;
+// })();
+
+
 
 require('dotenv').config();
 const express = require("express");
@@ -32,6 +34,8 @@ const SECRET_KEY = process.env.JWT_SECRET;
 const resetRate = {};
 const ROLE_LEVELS = { "regular": 0, "cashier": 1, "manager": 2, "superuser": 3 };
 app.use(express.json());
+
+const port = process.env.PORT || 3000;
 
 // Set up cors to allow requests from your React frontend
 const allowedOrigins = [
