@@ -81,6 +81,11 @@ export default function Events() {
                 console.log(res.data.error);
                 setMessage("Event not found: " + res.data.error);
             }
+        else if (res.data.results.length === 0) {
+            //console.log("HELLO");
+            //console.log("there is a returned array but it is empty: " + res.data.results.length)
+            setMessage("Event not found");
+        }
         else {
             setSearch(false);
             console.log(res.data.count);
@@ -171,18 +176,7 @@ export default function Events() {
     }
 
 
-    //clearance
-    // let addEvent;
-    // const clearance = user && user.role === "manager";
-    // if(clearance) {
-    //     addEvent = <button onClick={createEvent}>Add event</button>
-    // }
-
-    // if(role === "manager") {
-    //     addEvent = <button onClick={createEvent}>Add event</button>
-    // }
-
-    if (events === null) {
+if (events === null) {
         return (
             <div>
                 {role === 'manager' && (
@@ -194,176 +188,164 @@ export default function Events() {
             </div>
         );
     }
-
-    // Loaded but empty
-    if (events.length === 0) {
+else {
+    // all events
+    if(!search) {
+        return (
+            
+            <div>
+                {role === 'manager' && (
+                    <CreateEvent />
+                )}
+    
+                <h1>All Events</h1>
+                <div className="eventSearch">
+                    <input
+                        id="searchInput"
+                        type="number"
+                        placeholder="Search events by id..."
+                        value={eventId}
+                        onChange={(e) => {setEventId(e.target.value)}}
+                    />
+                    <input type="button" value="Search" onClick={handleSearch}/>
+                    {/* {addEvent} */}
+                </div>
+    
+                {/* filter bar */}
+                <div className="filterOptions">
+                    
+                    <input id="filterName" type="text" placeholder="Event name" value={name} onChange={(e) => {setName(e.target.value)}}></input>
+                    <input id="filterLocation" type="text" placeholder="Event location" value={location} onChange={(e) => {setLocation(e.target.value)}}></input>
+                    <div id="start">
+                        <input id="filterStart" type="checkbox" checked={started} onChange={(e) => {setStart(e.target.checked)}}></input>
+                        <label>Started</label>
+                    </div>
+                    <div id="end">
+                        <input id="filterEnd" type="checkbox" checked={ended} onChange={(e) => {setEnd(e.target.checked)}}></input>
+                        <label>Ended</label>
+                    </div>
+                    <div id="publish">
+                        <input id="filterPublished" type="checkbox" checked={published} onChange={(e) => {setPublished(e.target.checked)}}></input>
+                        <label>Published</label>
+                    </div>
+                    
+                    <select value={order} onChange={(e) => {setOrder(e.target.value)}}>
+                        <option disabled selected>Order By</option>
+                        <option value={"name"}>Name</option>
+                        <option value={"location"}>Location</option>
+                        <option value={"description"}>Description</option>
+                        <option value={"startTime"}>Start time</option>
+                        <option value={"endTime"}>End time</option>
+                        
+                    </select>
+    
+                    {/* pagination */}
+                    <select onChange={(e) => {setLimit(Number(e.target.value))}}>
+                        <option value={1}>1 per page</option>
+                        <option value={2}>2 per page</option>
+                        <option value={5} selected>5 per page</option>
+                        <option value={10}>10 per page</option>
+                    </select>
+    
+                    <input type="button" value="Filter" onClick={handleFilter}></input>
+                </div>
+                
+                <p className="error">{message}</p>
+    
+                {events.map(event => (
+                    <EventItem
+                        id={event.id}
+                        name={event.name}
+                        location={event.location}
+                        startTime={event.startTime} 
+                        endTime={event.endTime}
+                        capacity={event.capacity} 
+                        numGuests={event.numGuests} 
+                        published={event.published}  
+                        organizer={(user && event.organizers) && event.organizers.some(org => org.id === user.id)}  
+                        profile={false}
+                    />
+                ))}
+            
+            {/* pagination navbar */}
+            <div className="pagenav">
+                <button id="prevBtn" onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1}>&lt;</button>
+                <span>{currentPage} of {totalPages}</span>
+                <button id="nextBtn" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>&gt;</button>
+            </div>
+        
+            </div>
+        
+            );
+    }
+    // single event
+    else if (search && !message) {
         return (
             <div>
                 {role === 'manager' && (
                     <CreateEvent />
                 )}
-
-                <h1>All Events</h1>
-                <div >No events at this time</div>
+    
+                <h1>{events[0].name}</h1>
+    
+                <div className="eventSearch">
+                    <input
+                        id="searchInput"
+                        type="number"
+                        value={eventId}
+                        placeholder="Search events..."
+                        onChange={(e) => {setEventId(e.target.value)}}
+                    />
+                    {/* search for a new event */}
+                    <input type="button" value="Search" onClick={handleSearch}/> 
+                    <input type="button" value="Go back" onClick={goBack}></input>
+                </div>
+    
+                {events.map(event => (
+                    <EventItem
+                        id={event.id}
+                        name={event.name}
+                        location={event.location}
+                        startTime={event.startTime} 
+                        endTime={event.endTime}
+                        capacity={event.capacity} 
+                        numGuests={event.numGuests}  
+                        published={event.published} 
+                        organizer={user && event.organizers.some(org => org.id === user.id)}
+                        profile={false}
+                    />
+                ))}
             </div>
-        );
+        )
     }
-// all events
-if(!search) {
-    return (
-        
-        <div>
-            {role === 'manager' && (
-                <CreateEvent />
-            )}
-
-            <h1>All Events</h1>
-            <div className="eventSearch">
-                <input
-                    id="searchInput"
-                    type="number"
-                    placeholder="Search events by id..."
-                    value={eventId}
-                    onChange={(e) => {setEventId(e.target.value)}}
-                />
-                <input type="button" value="Search" onClick={handleSearch}/>
-                {/* {addEvent} */}
-            </div>
-
-            {/* filter bar */}
-            <div className="filterOptions">
+    // no event found, error message
+    else {
+        return (
+           <div>
+                {role === 'manager' && (
+                    <CreateEvent />
+                )}
                 
-                <input id="filterName" type="text" placeholder="Event name" value={name} onChange={(e) => {setName(e.target.value)}}></input>
-                <input id="filterLocation" type="text" placeholder="Event location" value={location} onChange={(e) => {setLocation(e.target.value)}}></input>
-                <div id="start">
-                    <input id="filterStart" type="checkbox" checked={started} onChange={(e) => {setStart(e.target.checked)}}></input>
-                    <label>Started</label>
-                </div>
-                <div id="end">
-                    <input id="filterEnd" type="checkbox" checked={ended} onChange={(e) => {setEnd(e.target.checked)}}></input>
-                    <label>Ended</label>
-                </div>
-                <div id="publish">
-                    <input id="filterPublished" type="checkbox" checked={published} onChange={(e) => {setPublished(e.target.checked)}}></input>
-                    <label>Published</label>
-                </div>
-                
-                <select value={order} onChange={(e) => {setOrder(e.target.value)}}>
-                    <option disabled selected>Order By</option>
-                    <option value={"name"}>Name</option>
-                    <option value={"location"}>Location</option>
-                    <option value={"description"}>Description</option>
-                    <option value={"startTime"}>Start time</option>
-                    <option value={"endTime"}>End time</option>
-                    
-                </select>
-
-                {/* pagination */}
-                <select onChange={(e) => {setLimit(Number(e.target.value))}}>
-                    <option value={1}>1 per page</option>
-                    <option value={2}>2 per page</option>
-                    <option value={5} selected>5 per page</option>
-                    <option value={10}>10 per page</option>
-                </select>
-
-                <input type="button" value="Filter" onClick={handleFilter}></input>
-            </div>
-            
-            <p className="error">{message}</p>
-
-            {events.map(event => (
-                <EventItem
-                    id={event.id}
-                    name={event.name}
-                    location={event.location}
-                    startTime={event.startTime} 
-                    endTime={event.endTime}
-                    capacity={event.capacity} 
-                    numGuests={event.numGuests} 
-                    published={event.published}  
-                    organizer={(user && event.organizers) && event.organizers.some(org => org.id === user.id)}  
-                    profile={false}
-                />
-            ))}
-        
-        {/* pagination navbar */}
-        <div className="pagenav">
-            <button id="prevBtn" onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1}>&lt;</button>
-            <span>{currentPage} of {totalPages}</span>
-            <button id="nextBtn" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>&gt;</button>
-        </div>
+                <h1>{events[0].name}</h1>
     
-        </div>
+                <div className="eventSearch">
+                    <input
+                        id="searchInput"
+                        type="number"
+                        placeholder="Search events..."
+                        value={eventId}
+                        onChange={(e) => {setEventId(e.target.value)}}
+                    />
+                    {/* search for a new event */}
+                    <input type="button" value="Search" onClick={handleSearch}/> 
+                    <input type="button" value="Go back" onClick={goBack}></input>
+                </div>
     
-        );
-}
-// single event
-else if (search && !message) {
-    return (
-        <div>
-            {role === 'manager' && (
-                <CreateEvent />
-            )}
-
-            <h1>{events[0].name}</h1>
-
-            <div className="eventSearch">
-                <input
-                    id="searchInput"
-                    type="number"
-                    value={eventId}
-                    placeholder="Search events..."
-                    onChange={(e) => {setEventId(e.target.value)}}
-                />
-                {/* search for a new event */}
-                <input type="button" value="Search" onClick={handleSearch}/> 
-                <input type="button" value="Go back" onClick={goBack}></input>
-            </div>
-
-            {events.map(event => (
-                <EventItem
-                    id={event.id}
-                    name={event.name}
-                    location={event.location}
-                    startTime={event.startTime} 
-                    endTime={event.endTime}
-                    capacity={event.capacity} 
-                    numGuests={event.numGuests}  
-                    published={event.published} 
-                    organizer={user && event.organizers.some(org => org.id === user.id)}
-                    profile={false}
-                />
-            ))}
-        </div>
-    )
-}
-// no event found, error message
-else {
-    return (
-       <div>
-            {role === 'manager' && (
-                <CreateEvent />
-            )}
-            
-            <h1>{events[0].name}</h1>
-
-            <div className="eventSearch">
-                <input
-                    id="searchInput"
-                    type="number"
-                    placeholder="Search events..."
-                    value={eventId}
-                    onChange={(e) => {setEventId(e.target.value)}}
-                />
-                {/* search for a new event */}
-                <input type="button" value="Search" onClick={handleSearch}/> 
-                <input type="button" value="Go back" onClick={goBack}></input>
-            </div>
-
-
-            <p className="error">{message}</p>
-        </div> 
-    )
+    
+                <p className="error">{message}</p>
+            </div> 
+        )
+    }
 }
 
 

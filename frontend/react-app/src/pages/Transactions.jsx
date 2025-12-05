@@ -398,7 +398,7 @@ export default function Transactions() {
                             </select>
         
                             <div id="suspicious">
-                                <input id="filterSuspicious" type="checkbox" value={suspicious} onChange={(e) => {setSuspicious(e.target.checked)}}></input>
+                                <input id="filterSuspicious" type="checkbox" checked={suspicious} onChange={(e) => {setSuspicious(e.target.checked)}}></input>
                                 <label>Suspicious</label>
                             </div>
                             
@@ -521,18 +521,6 @@ export default function Transactions() {
             }
         }
 
-    }
-
-
-
-    // Loaded but empty
-    if (transactions.length === 0) {
-        return (
-            <div>
-                <h1>All Transactions</h1>
-                <div >No transactions at this time</div>
-            </div>
-        );
     }
 
 };
