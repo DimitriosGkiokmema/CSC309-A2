@@ -19,13 +19,13 @@
     - QR code scanning capability is NOT required.
 
 **Managers**
-- [ ] A page that displays all users with filters, order-by, and pagination.
-- [ ] A page that allows managers to update users, e.g., make a user verified, promote a user to cashier, etc.
+- [x] A page that displays all users with filters, order-by, and pagination.
+- [x] A page that allows managers to update users, e.g., make a user verified, promote a user to cashier, etc.
 - [x] A page that displays ALL transactions (with filters, order-by, and pagination).
 - [x] A page that displays a specific transaction, with the option of creating an adjustment transaction for it, and marking it as suspicious.
-- [ ] A page that allows managers to create new promotions.
-- [ ] A page that displays all promotions (with filters, order-by, and pagination).
-- [ ] A page that allows managers to view/edit/delete a specific promotion.
+- [x] A page that allows managers to create new promotions.
+- [x] A page that displays all promotions (with filters, order-by, and pagination).
+- [x] A page that allows managers to view/edit/delete a specific promotion.
 - [x] A page that allows managers to create new events.
 - [x] A page that displays all events (with filters, order-by, and pagination).
 - [x] A page that allows managers to view/edit/delete a specific event.
@@ -38,7 +38,7 @@
 - [x] A page that allows awarding points to a single guest, or to all guests who have RSVPed.
 
 **Superuser**
-- [ ] The ability to promote any user to managers or superusers.
+- [x] The ability to promote any user to managers or superusers.
 
 # Required Pages
 **Landing Page (10 marks)**
@@ -58,7 +58,7 @@
     - Users can update their account information and passwords.
 - [x] Password Reset (5 marks):
     - Users can reset their password if they have forgotten.
-- [ ] Interface Switching (15 marks):
+- [x] Interface Switching (15 marks):
     - Users can switch between different interfaces (e.g., cashier, event organizer, manager).
     - For example, a manager can switch to the regular user interface to accumulate points, while a regular user who is also an event organizer can switch to the organizer interface to manage events.
 - [x] User Listing (15 marks): Managers can view a list of users.
@@ -79,15 +79,15 @@
 
 **Events (45 marks)**
 - [x] Event Management (15 marks):
-    - Managers can create, update, and delete events. (DONE)
-    - Managers can add event organizers. (DONE)
+    - Managers can create, update, and delete events.
+    - Managers can add event organizers.
     - Event organizers can update events.
 - [x] Event Listing (15 marks):
-    - All logged in users can view the list of events. (DONE)
+    - All logged in users can view the list of events.
 - [x] RSVP and Attendance (10 marks):
-    - Users can RSVP to events. (DONE)
+    - Users can RSVP to events.
     - Managers and event organizers can add guests to an event. (only managers rn)
-    - Managers can remove guests from an event. (DONE)
+    - Managers can remove guests from an event.
 - [x] Point Allocation (5 marks):
     - Managers and event organizers can award points to guests.
 
@@ -99,4 +99,7 @@
 
 
 # Feature Ideas
-- Need to find  online prisma db
+- [x] Need to find  online prisma db
+
+# Security (TODO)
+
