@@ -169,6 +169,16 @@ export default function UsersListing() {
 
     }
 
+    function formatDateTime(dateTimeStr) {
+        if (!dateTimeStr) return "N/A";
+        try {
+            const date = new Date(dateTimeStr);
+            return date.toLocaleString();
+        } catch (error) {
+            return dateTimeStr;
+        }
+    }
+
     const roleOptions = getRoleOptionsForCurrentUser();
 
     if (loading) {
@@ -318,7 +328,7 @@ export default function UsersListing() {
                                             <td>{user.utorid}</td>
                                             <td>{user.name}</td>
                                             <td>{user.email}</td>
-                                            <td>{user.birthday}</td>
+                                            <td>{formatDateTime(user.birthday)}</td>
                                             <td>{user.points}</td>
                                             <td>{user.role}</td>
                                             <td>{user.verified ? "Yes" : "No"}</td>

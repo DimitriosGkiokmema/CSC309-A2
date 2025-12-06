@@ -66,7 +66,7 @@ export default function HomePage() {
                             309 St George St <br></br>
                             Toronto, Ontario
                         </p>
-                        <img className="martPic" src="../src/assets/Varsity_Mart.png"></img>
+                        <img className="martPic" src="/assets/Varsity_Mart.png"></img>
                     </div>
 
                     <div className="col-6" id="map"></div>

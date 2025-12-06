@@ -90,7 +90,7 @@ export default function Navbar() {
   function getProfilePic() {
     // const pic = (await callBackend("GET", "/users/me", {})).data.avatarUrl;
     if (!loggedIn || pic === "" || pic === undefined || pic === null) {
-      return  "../src/assets/profile.png";
+      return  "/assets/profile.png";
     }
 
     return pic;
@@ -103,7 +103,7 @@ export default function Navbar() {
   return (
     <header>
       <div onClick={() => navigate("/")}>
-        <img className="navLogo" src="../src/assets/varsity_logo.png" />
+        <img className="navLogo" src="/assets/varsity_logo.png" />
         <h1 className="websiteTitle">Varsity Mart</h1>
       </div>
 
@@ -171,7 +171,7 @@ export default function Navbar() {
                 </div>
                 <div>
                   <input type="text" className="log-input" id="username" required />
-                  <input type="text" className="log-input" id="password" required />
+                  <input type="password" className="log-input" id="password" required />
                 </div>
               </form>
             )}

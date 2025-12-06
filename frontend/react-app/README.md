@@ -19,7 +19,7 @@
     - QR code scanning capability is NOT required.
 
 **Managers**
-- [ ] A page that displays all users with filters, order-by, and pagination.
+- [x] A page that displays all users with filters, order-by, and pagination.
 - [x] A page that allows managers to update users, e.g., make a user verified, promote a user to cashier, etc.
 - [x] A page that displays ALL transactions (with filters, order-by, and pagination).
 - [x] A page that displays a specific transaction, with the option of creating an adjustment transaction for it, and marking it as suspicious.
@@ -79,15 +79,15 @@
 
 **Events (45 marks)**
 - [x] Event Management (15 marks):
-    - Managers can create, update, and delete events. (DONE)
-    - Managers can add event organizers. (DONE)
+    - Managers can create, update, and delete events.
+    - Managers can add event organizers.
     - Event organizers can update events.
 - [x] Event Listing (15 marks):
-    - All logged in users can view the list of events. (DONE)
+    - All logged in users can view the list of events.
 - [x] RSVP and Attendance (10 marks):
-    - Users can RSVP to events. (DONE)
+    - Users can RSVP to events.
     - Managers and event organizers can add guests to an event. (only managers rn)
-    - Managers can remove guests from an event. (DONE)
+    - Managers can remove guests from an event.
 - [x] Point Allocation (5 marks):
     - Managers and event organizers can award points to guests.
 
@@ -99,4 +99,7 @@
 
 
 # Feature Ideas
-- Need to find  online prisma db
+- [x] Need to find  online prisma db
+
+# Security (TODO)
+
