@@ -25,6 +25,7 @@ export default function LandingPage() {
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
   const { role, leadingRole, loggedIn, setLoggedIn } = useUser();
+  const [passwordVisible, setVisible] = useState(false);
   // console.log("User is ", role)
 
   // fetch user info
@@ -94,28 +95,30 @@ export default function LandingPage() {
     let goodRes = false;
 
     // only return changed values
-    for (const key in formData) {
+    for (const key in user) {
       if (formData[key] !== user[key] && formData[key] !== "" && formData[key] !== null) {
         updates[key] = formData[key];
 
         if (key === 'birthday') {
           updates[key] = new Date(formData[key]).toISOString();
         }
+      } else {
+        updates[key] = user[key];
       }
     }
     console.log("Updating user stats:", updates);
 
-    if (Object.keys(updates).length !== 0) {
-      goodRes = (await callBackend('PATCH', '/users/me', updates)).ok;
-    }
-
     if (updates.password !== undefined) {
-      resetPassword(user.utorid, updates['password']).then(res => {
-        console.log(res.data);
-      })
+      await resetPassword(user.utorid, updates['password']);
     }
 
-    // setUser();
+    if (Object.keys(updates).length !== 0) {
+      const res = await callBackend('PATCH', '/users/me', updates);
+      // console.log("Setting user: ", res.data)
+      goodRes = res.ok;
+      setUser(res.data);
+    }
+
     jsonToQRUrl({
       name: user.name,
       utorid: user.utorid,
@@ -128,10 +131,14 @@ export default function LandingPage() {
       handleLogout();
     }
 
-    setUser(updates);
     setEdit(false);
-    load();
   }
+
+  // Used for testing
+  // useEffect(() => {
+  //   console.log("User changed:", user);
+  // }, [user]);
+
 
   function handleLogout() {
     sessionStorage.setItem("token", "");
@@ -147,10 +154,6 @@ export default function LandingPage() {
     </div>
     );
   }
-
-  // if(redemptions !== []) {
-  //   console.log("redemptions: " + redemptions[0].processed)
-  // }
 
   return (
     <div className="page">
@@ -169,7 +172,18 @@ export default function LandingPage() {
             </div>
             <div>
               <p><strong>Password:</strong></p>
-              <p>{user.password}</p>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <p>{passwordVisible ? user.password : "*".repeat(user.password.length)}</p>
+
+                <button
+                  type="button"
+                  onClick={() => setVisible(v => !v)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {passwordVisible ? <i class="fa-solid fa-eye-slash"></i> : <i class="fa-solid fa-eye"></i>}
+                </button>
+              </div>
             </div>
             <div>
               <p><strong>Email:</strong></p>

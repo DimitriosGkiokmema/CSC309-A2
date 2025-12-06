@@ -436,6 +436,7 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
             id: updated_user.id,
             utorid: updated_user.utorid,
             name: updated_user.name,
+            password: updated_user.password,
             email: updated_user.email,
             birthday: bday,
             role: updated_user.role,
@@ -471,6 +472,7 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         id: user.id,
         utorid: user.utorid,
         name: user.name,
+        password: user.password,
         email: user.email,
         birthday: user.birthday,
         role: user.role,
@@ -889,9 +891,10 @@ app.post('/auth/resets', async (req, res) => {
             }
         }
 
-        if (resetRate[ip] && (now - resetRate[ip]) < 60000) {
-            return res.status(429).json({ message: "Too many requests" });
-        }
+        // Hindered our dev
+        // if (resetRate[ip] && (now - resetRate[ip]) < 60000) {
+        //     return res.status(429).json({ message: "Too many requests" });
+        // }
 
         resetRate[ip] = now; // update timestamp
 
