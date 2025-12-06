@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { callBackend } from '../../js/backend.js';
+import { jsonToQRUrl } from "../../js/create_qr.js";
 import "./style.css";
 
 export default function CreateItem({ id, utorid, amount, type, spent, remark }) {
     const [visible, setVisible] = useState(true);
+    const [qr_url, setQR] = useState('');
+
+    jsonToQRUrl({
+        utorid,
+        type,
+        amount
+    }).then(url => setQR(url));
 
     if (!visible) return null;
 
@@ -23,16 +31,23 @@ export default function CreateItem({ id, utorid, amount, type, spent, remark }) 
 
     return (
         <div className="transaction-item row">
-            <div className="col userInfo">
+            <div className="col-3">
                 <p><strong>Transaction {id}:</strong></p>
                 <p><strong>Utorid: {utorid}</strong></p>
                 <div className="redeem-container">
-                    <input
-                        type="checkbox"
-                        id="redeem"
-                        onChange={handleRedeem}
-                    />
+                    <div className="checkboxContainer">
+                        <input
+                            type="checkbox"
+                            id="redeem"
+                            onChange={handleRedeem}
+                        />
+                    </div>
                     <label htmlFor="redeem">Redeem Transaction</label>
+                </div>
+            </div>
+            <div className="col-3">
+                <div className="qrContainer">
+                    <img className="qrCode" src={qr_url} />
                 </div>
             </div>
 
@@ -53,7 +68,9 @@ export default function CreateItem({ id, utorid, amount, type, spent, remark }) 
                 {remark !== "" && (
                     <div>
                         <p><strong>Remark:</strong></p>
-                        <p>{remark}</p>
+                        <div className="remark">
+                            <p>{remark}</p>
+                        </div>
                     </div>
                 )}
             </div>
