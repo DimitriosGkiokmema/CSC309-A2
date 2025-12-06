@@ -15,7 +15,7 @@
 **Cashiers**
 - [x] A page that allows the cashier to create a transaction.
     - QR code scanning capability is NOT required.
-- [ ] A page that allows the cashier to manually enter a transaction ID to process redemption requests.
+- [x] A page that allows the cashier to manually enter a transaction ID to process redemption requests.
     - QR code scanning capability is NOT required.
 
 **Managers**
@@ -102,4 +102,7 @@
 - [x] Need to find  online prisma db
 
 # Security (TODO)
+- [ ] The website should use HTTPS to ensure secure data transmission.
+- [x] Sensitive data (such as passwords, tokens, or API keys) must not be exposed in the codebase or client-side storage.
+- [ ] Inputs should be validated and sanitized to prevent common security issues such as SQL injection or XSS.
 
