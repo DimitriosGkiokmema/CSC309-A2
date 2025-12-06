@@ -57,7 +57,7 @@ export default function LandingPage() {
     }).then(url => {
       setQR(url);
     });
-    console.log(userInfo.birthday)
+    // console.log(userInfo.birthday)
     setFormData(userInfo);
 
     const tx = await callBackend('GET', '/users/me/transactions', {});
@@ -106,7 +106,7 @@ export default function LandingPage() {
         updates[key] = user[key];
       }
     }
-    console.log("Updating user stats:", updates);
+    // console.log("Updating user stats:", updates);
 
     if (updates.password !== undefined) {
       await resetPassword(user.utorid, updates['password']);
