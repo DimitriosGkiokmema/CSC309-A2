@@ -362,7 +362,7 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
      "avatarUrl": "/uploads/avatars/johndoe1.png" 
      }
     */
-    const { name, email, birthday, avatarUrl } = req.body;
+    const { name, utorid, email, birthday, avatarUrl } = req.body;
     const data = {};
 
     if (!name && !email && !birthday && !avatarUrl) {
@@ -375,6 +375,18 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
         }
 
         data.name = name;
+    }
+
+    if (utorid) {
+        let RegEx = /^[a-z0-9]+$/i;
+        let Valid = RegEx.test(utorid);
+
+        // Validate length and alphanumeric-ness of utorid
+        if (utorid.length < 7 || utorid.length > 8 || !Valid) {
+            return res.status(400).json({ error: "utorid entered incorrect" });
+        }
+
+        data.utorid = utorid;
     }
 
     if (email) {

@@ -10,9 +10,11 @@ import EventItem from "../components/EventItem/EventItem.jsx"
 import Transfer from "../components/Transfer";
 import RedeemPoints from "../components/RedeemPoints";
 import { useUser } from "../components/UserContext";
+import { Link, useNavigate  } from 'react-router-dom';
 import '../styles/LandingPage.css';
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState(null);
   const [startedEvents, setStartedE] = useState(0);
@@ -22,13 +24,17 @@ export default function LandingPage() {
   const [edit, setEdit] = useState(false);
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
-  const { role, leadingRole } = useUser();
+  const { role, leadingRole, loggedIn, setLoggedIn } = useUser();
   // console.log("User is ", role)
 
   // fetch user info
   async function load() {
     const me = await callBackend('GET', '/users/me', {});
-    if (!me.ok) return; // user not logged in or error
+    if (!me.ok) {
+      setUser(null);
+      setLoggedIn(false);
+      return; // user not logged in or error
+    }
     setUser(me.data);
 
     const bday = me.data.birthday
@@ -83,8 +89,9 @@ export default function LandingPage() {
     }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     const updates = {};
+    let goodRes = false;
 
     // only return changed values
     for (const key in formData) {
@@ -99,7 +106,7 @@ export default function LandingPage() {
     console.log("Updating user stats:", updates);
 
     if (Object.keys(updates).length !== 0) {
-      callBackend('PATCH', '/users/me', updates);
+      goodRes = (await callBackend('PATCH', '/users/me', updates)).ok;
     }
 
     if (updates.password !== undefined) {
@@ -116,12 +123,24 @@ export default function LandingPage() {
     }).then(url => {
       setQR(url);
     });
+
+    if (goodRes && updates.utorid !== undefined && user.utorid != updates.utorid) {
+      handleLogout();
+    }
+
     setUser(updates);
     setEdit(false);
     load();
   }
 
-  if (!user || !transactions) {
+  function handleLogout() {
+    sessionStorage.setItem("token", "");
+    setLoggedIn(false);
+    navigate('/');
+    alert("Username updated successfully, please log back in!");
+  }
+
+  if (!loggedIn ||!user || !transactions) {
     return (
     <div className="loggedOut">
       <h1>Please Log In!</h1>
