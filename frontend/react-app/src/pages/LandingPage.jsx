@@ -3,7 +3,6 @@ import { callBackend, resetPassword } from '../js/backend.js';
 import { jsonToQRUrl } from '../js/create_qr.js';
 import TransactionItem from "../components/TransactionItem";
 import CreateItem from "../components/CreatePurchase/index.jsx";
-import ProcessRedemption from "../components/ProcessRedemption";
 import PieChart from "../components/PieChart";
 import AdminDash from "../components/AdminDash";
 import ImgKit from "../components/ImgKit";
@@ -16,7 +15,6 @@ import '../styles/LandingPage.css';
 export default function LandingPage() {
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState(null);
-  const [redemptions, setRedemptions] = useState([]);
   const [startedEvents, setStartedE] = useState(0);
   const [endedEvents, setEndedE] = useState(0);
   const [startedPromos, setStartedP] = useState(0);
@@ -57,10 +55,6 @@ export default function LandingPage() {
 
     const tx = await callBackend('GET', '/users/me/transactions', {});
     setTransactions(tx.data);
-
-    const r = await callBackend('GET', '/transactions?type=redemption', {});
-    const filtered = r.data.results.filter(obj => obj.type === 'redemption' && !obj.processed);
-    setRedemptions(filtered);
 
     // Get event data
     let started = await callBackend('GET', '/events?started=true', {});
@@ -288,13 +282,13 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* Transaction Creation, Redemption Processing */}
+      {/* Transaction Creation*/}
       {role === 'cashier' && (
         <div className="row">
           <div className="col-8 offset-2">
             <CreateItem />
 
-            <h1>Redemption requests</h1>
+            {/* <h1>Redemption requests</h1>
             {redemptions.map((item) => 
             
             ( 
@@ -309,7 +303,7 @@ export default function LandingPage() {
               />
             )
           
-          )}
+          )} */}
           </div>
         </div>
       )}

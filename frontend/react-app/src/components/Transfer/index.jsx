@@ -46,7 +46,7 @@ export default function Transfer() {
                 <input
                     className="formInput"
                     value={userId}
-                    type="text"
+                    type="number"
                     onChange={e => setRecipientId(e.target.value)}
                     placeholder="20"
                     required
