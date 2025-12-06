@@ -320,16 +320,20 @@ export default function LandingPage() {
           <div className="col-6 offset-3 chartContainer">
             <h1>Event & Promotion Overview</h1>
             <div>
-              <PieChart
-                title="Events"
-                started={startedEvents}
-                ended={endedEvents}
-              />
-              <PieChart
-                title="Promotions"
-                started={startedPromos}
-                ended={endedPromos}
-              />
+              {(startedEvents + endedEvents > 0) && (
+                <PieChart
+                  title="Events"
+                  started={startedEvents}
+                  ended={endedEvents}
+                />
+              )}
+              {(startedPromos + endedPromos > 0) && (
+                <PieChart
+                  title="Promotions"
+                  started={startedPromos}
+                  ended={endedPromos}
+                />
+              )}
             </div>
           </div>
           <AdminDash />
