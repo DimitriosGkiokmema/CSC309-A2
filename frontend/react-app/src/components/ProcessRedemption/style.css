@@ -1,11 +1,6 @@
-#redeem {
-    margin-right: 10px;
-}
-
 .redeem-container {
-    display: flex;
-    flex-direction:row;
-    justify-content: center;
+    display: grid !important;
+    grid-template-columns: 1fr 7fr !important;
     align-items: center;
 }
 
@@ -15,45 +10,8 @@
   align-items: left;
 }
 
-.redeem-container label {
-  margin-right: 220px;           /* remove default margin */
-  padding: 0;          /* remove default padding */
-}
-
-.transaction-item {
-}
-
-/* .userInfo {
-    padding: 0;
-} */
-
-.userInfo, .transInfo {
+.transInfo {
     padding: 5px 20px;
-}
-
-.userInfo input {
-    margin: 0 15px 0 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5em;
-    background-color: white;
-    margin: 10px auto;
-    border-radius: 20px;
-    /* border: 3px solid rgb(103, 181, 245); */
-    padding: 20px;
-    width: 100vh;
-}
-
-.userInfo {
-    margin-left: 40px;
-}
-
-.userInfo p {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1em;
 }
 
 .transInfo {
@@ -61,6 +19,15 @@
     margin-right: 200px;
 }
 
+.qrContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.qrCode {
+    width: 150px !important;
+}
 
 .updateButton:hover {
     background-color: grey;
@@ -91,4 +58,13 @@ button:hover {
 #typeColour {
     color:crimson;
     font-weight: bold;
+}
+
+.remark {
+    position: absolute;
+    padding-left: 75px;
+}
+
+.remark p {
+    width: 200px !important;
 }
