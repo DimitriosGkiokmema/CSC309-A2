@@ -10,7 +10,8 @@ import EventItem from "../components/EventItem/EventItem.jsx"
 import Transfer from "../components/Transfer";
 import RedeemPoints from "../components/RedeemPoints";
 import { useUser } from "../components/UserContext";
-import { Link, useNavigate  } from 'react-router-dom';
+import { useNavigate, useResolvedPath  } from 'react-router-dom';
+import UpdatePassword from "../components/UpdatePassword/index.jsx";
 import '../styles/LandingPage.css';
 
 export default function LandingPage() {
@@ -25,7 +26,7 @@ export default function LandingPage() {
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
   const { role, leadingRole, loggedIn, setLoggedIn } = useUser();
-  const [passwordVisible, setVisible] = useState(false);
+  const [updatePassword, setUpdatePassword] = useState(false);
   // console.log("User is ", role)
 
   // fetch user info
@@ -46,8 +47,7 @@ export default function LandingPage() {
       name: me.data.name,
       utorid: me.data.utorid,
       email: me.data.email,
-      birthday: bday,
-      password: me.data.password,
+      birthday: bday
     };
 
     jsonToQRUrl({
@@ -108,9 +108,9 @@ export default function LandingPage() {
     }
     // console.log("Updating user stats:", updates);
 
-    if (updates.password !== undefined) {
-      await resetPassword(user.utorid, updates['password']);
-    }
+    // if (updates.password !== undefined) {
+    //   await resetPassword(user.utorid, updates['password']);
+    // }
 
     if (Object.keys(updates).length !== 0) {
       const res = await callBackend('PATCH', '/users/me', updates);
@@ -134,11 +134,21 @@ export default function LandingPage() {
     setEdit(false);
   }
 
+  async function resetPass(oldPassword, newPassword) {
+    if (user) {
+      const temp = await resetPassword(user.utorid, oldPassword, newPassword);
+      console.log("password update request: ", temp)
+    }
+  }
+
   // Used for testing
   // useEffect(() => {
   //   console.log("User changed:", user);
   // }, [user]);
 
+  function handlePasswordWindow() {
+    setUpdatePassword(false);
+  }
 
   function handleLogout() {
     sessionStorage.setItem("token", "");
@@ -170,7 +180,8 @@ export default function LandingPage() {
               <p><strong>Username:</strong></p>
               <p>{user.utorid}</p>
             </div>
-            <div>
+            {/* We used to show the password on the frontend, but later found that it is not safe to do so */}
+            {/* <div>
               <p><strong>Password:</strong></p>
 
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -184,7 +195,7 @@ export default function LandingPage() {
                   {passwordVisible ? <i class="fa-solid fa-eye-slash"></i> : <i class="fa-solid fa-eye"></i>}
                 </button>
               </div>
-            </div>
+            </div> */}
             <div>
               <p><strong>Email:</strong></p>
               <p> {user.email}</p>
@@ -208,6 +219,10 @@ export default function LandingPage() {
                 <div>Edit</div>
                 <i className="fa-regular fa-pen-to-square"></i>
               </div>
+              <div className="editBtn" onClick={() => setUpdatePassword(true)}>
+                <div>Reset Password</div>
+                <i class="fa-solid fa-key"></i>
+              </div>
               <div></div>
             </div>
           </div>
@@ -218,6 +233,13 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {updatePassword && (
+        <UpdatePassword 
+          onClose={handlePasswordWindow}
+          onSubmit={resetPass}
+        />
+      )}
 
       {/* Edit Profile Info */}
       {edit && (
@@ -236,13 +258,6 @@ export default function LandingPage() {
             <input
               name="utorid"
               value={formData.utorid}
-              onChange={handleChange}
-            />
-
-            <label>Password:</label>
-            <input
-              name="password"
-              value={formData.password}
               onChange={handleChange}
             />
 

@@ -436,7 +436,6 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
             id: updated_user.id,
             utorid: updated_user.utorid,
             name: updated_user.name,
-            password: updated_user.password,
             email: updated_user.email,
             birthday: bday,
             role: updated_user.role,
@@ -472,7 +471,6 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         id: user.id,
         utorid: user.utorid,
         name: user.name,
-        password: user.password,
         email: user.email,
         birthday: user.birthday,
         role: user.role,
@@ -937,13 +935,13 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     o 410 Gone if the reset token expired.
     */
     const resetToken = req.params.resetToken;
-    const { utorid, password } = req.body;
+    const { utorid, oldPass, newPass } = req.body;
 
-    if (!resetToken || !utorid || !password) {
+    if (!resetToken || !utorid || !oldPass || !newPass) {
         return res.status(400).json({ error: "Must provide a reset token,utorid, and password" });
     }
 
-    if (!validPassword(password)) {
+    if (!validPassword(newPass)) {
         return res.status(400).json({ error: "password given was incorrect" });
     }
 
@@ -965,10 +963,14 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
             return res.status(401).json({ message: "Utorid token pairing wrong" });
         }
 
+        if (existing.password !== oldPass) {
+            return res.status(401).json({ message: "Old password does not match current" });
+        }
+
         const updated_user = await prisma.user.update({
             where: { token: resetToken },
             data: {
-                password: password
+                password: newPass
             }
         });
 

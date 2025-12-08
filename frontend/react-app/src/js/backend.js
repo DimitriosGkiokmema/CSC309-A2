@@ -36,9 +36,9 @@ export async function log_in(body) {
     return result;
 }
 
-export async function resetPassword(utorid, password) {
+export async function resetPassword(utorid, oldPass, newPass) {
     const resetToken = (await callBackend("POST", "/auth/resets", {utorid})).data.resetToken;
-    return await callBackend('POST', `/auth/resets/${resetToken}`, {utorid, password});
+    return await callBackend('POST', `/auth/resets/${resetToken}`, {utorid, oldPass, newPass});
 }
 
 export async function updateProfilePic(url) {
