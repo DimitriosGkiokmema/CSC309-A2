@@ -11,6 +11,12 @@
     width: 100vh;
 }
 
+.info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 
 .transInfo div {
     display: flex;
