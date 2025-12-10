@@ -463,6 +463,7 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         include: { promotion: true },
     });
 
+    //fixed bug
     return res.status(200).json({
         id: user.id,
         utorid: user.utorid,
