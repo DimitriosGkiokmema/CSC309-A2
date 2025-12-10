@@ -445,11 +445,7 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         verified: user.verified,
         avatarUrl: user.avatarUrl,
         promotions: promos,
-<<<<<<< HEAD
         organizer: findUser.organizer
-=======
-        organizer: user.organizer
->>>>>>> 2aa3056723b7c7badcac95150ba139437a5acad5
     });
 });
 
