@@ -434,7 +434,8 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         lastLogin: user.lastLogin,
         verified: user.verified,
         avatarUrl: user.avatarUrl,
-        promotions: promos
+        promotions: promos,
+        organizer: user.organizer
     });
 });
 
