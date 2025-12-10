@@ -907,19 +907,19 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
         });
 
         if (!existing) {
-            return res.status(404).json({ message: "A user with that utorid does not exist" });
+            return res.status(404).json({ error: "A user with that utorid does not exist" });
         }
 
         if (existing.expiresAt.toISOString() < curr_time) {
-            return res.status(410).json({ message: "Token has expired" });
+            return res.status(410).json({ error: "Token has expired" });
         }
 
         if (existing.utorid !== utorid) {
-            return res.status(401).json({ message: "Utorid token pairing wrong" });
+            return res.status(401).json({ error: "Utorid token pairing wrong" });
         }
 
         if (existing.password !== oldPass) {
-            return res.status(401).json({ message: "Old password does not match current" });
+            return res.status(401).json({ error: "Old password does not match current" });
         }
 
         const updated_user = await prisma.user.update({
@@ -933,7 +933,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
         return res.status(200).json({ "success": "password created" })
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Database error" });
+        res.status(500).json({ error: "Database error" });
     }
 });
 

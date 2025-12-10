@@ -10,8 +10,9 @@ import EventItem from "../components/EventItem/EventItem.jsx"
 import Transfer from "../components/Transfer";
 import RedeemPoints from "../components/RedeemPoints";
 import { useUser } from "../components/UserContext";
-import { useNavigate, useResolvedPath  } from 'react-router-dom';
+import { useNavigate  } from 'react-router-dom';
 import UpdatePassword from "../components/UpdatePassword/index.jsx";
+import TopNotification from "../components/Notification/index.jsx";
 import '../styles/LandingPage.css';
 
 export default function LandingPage() {
@@ -25,8 +26,9 @@ export default function LandingPage() {
   const [edit, setEdit] = useState(false);
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
-  const { role, leadingRole, loggedIn, setLoggedIn } = useUser();
+  const { role, loggedIn, setLoggedIn } = useUser();
   const [updatePassword, setUpdatePassword] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   // console.log("User is ", role)
 
   // fetch user info
@@ -116,7 +118,13 @@ export default function LandingPage() {
       const res = await callBackend('PATCH', '/users/me', updates);
       // console.log("Setting user: ", res.data)
       goodRes = res.ok;
-      setUser(res.data);
+
+      if (goodRes) {
+        setUser(res.data);
+        addNotification("✅ User info updated");
+      } else {
+        addNotification(`❌ ${res.data.error}`);
+      }
     }
 
     jsonToQRUrl({
@@ -137,9 +145,23 @@ export default function LandingPage() {
   async function resetPass(oldPassword, newPassword) {
     if (user) {
       const temp = await resetPassword(user.utorid, oldPassword, newPassword);
-      console.log("password update request: ", temp)
+
+      if (temp.ok) {
+        setUser(temp.data);
+        addNotification("✅ User info updated");
+      } else {
+        addNotification(`❌ ${temp.data.error}`);
+      }
     }
   }
+
+  const addNotification = (msg) => {
+    setNotifications((prev) => [...prev, msg]);
+  };
+
+  const removeNotification = (msg) => {
+    setNotifications((prev) => prev.filter((m) => m !== msg));
+  };
 
   // Used for testing
   // useEffect(() => {
@@ -167,6 +189,14 @@ export default function LandingPage() {
 
   return (
     <div className="page">
+      {notifications.map((msg, index) => (
+        <TopNotification
+          key={index}
+          message={msg}
+          onDone={() => removeNotification(msg)}
+        />
+      ))}
+
       <h1>User Profile</h1>
 
       <div className="row">
