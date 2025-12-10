@@ -370,16 +370,6 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
                 return res.status(400).json({ "error": "Birthday cannot be in the past" });
             }
 
-            // const [datePart] = birthday.split("T"); // "2025-11-28"
-            // const [year, month, day] = birthday.split("-").map(Number);
-
-            // if (!(
-            //     bday.getUTCFullYear() === year &&
-            //     bday.getUTCMonth() + 1 === month &&
-            //     bday.getUTCDate() === day)) {
-            //     return res.status(400).json({ "error": "Invalid birthday format" });
-            // }
-
             data.birthday = bday.toISOString();
         } else {
             return res.status(400).json({ "error": "Birthday entered incorrectly" });
@@ -1606,16 +1596,6 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
                 return res.status(400).json({ "error": "Invalid payload" });
             }
         }
-        // else if (type === "promotion") {
-        //     if (relatedId !== undefined && !NaN(relatedId)) {
-        //         where.type = type;
-        //         where.relatedId = relatedId;
-
-        //     }
-        //     else {
-        //         return res.status(400).json({ "error": "Invalid payload" });
-        //     }
-        // }
         else if (type === "event") {
             if (relatedId !== undefined && !NaN(relatedId)) {
 
