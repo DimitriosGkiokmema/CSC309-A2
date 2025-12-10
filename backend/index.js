@@ -26,7 +26,7 @@ app.use(cors({
 }));
 
 // ImageKit Functions
-const imagekit = new ImageKit({                  // from ImageKit dashboard
+const imagekit = new ImageKit({
     urlEndpoint: process.env.IMAGEKIT_ENDPOINT,
     publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
     privateKey: process.env.IMAGEKIT_PRIVATE_KEY

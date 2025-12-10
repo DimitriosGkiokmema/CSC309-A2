@@ -307,7 +307,7 @@ export default function LandingPage() {
             />
 
             {/* Allows users to upload an image to ImageKit */}
-            <ImgKit />
+            <ImgKit result={addNotification}/>
 
             <div className="editActions">
               <button onClick={() => setEdit(false)}>Cancel</button>
