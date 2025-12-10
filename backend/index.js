@@ -1,25 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 
-// const port = (() => {
-//     const args = process.argv;
-
-//     if (args.length !== 3) {
-//         console.error("usage: node index.js port");
-//         process.exit(1);
-//     }
-
-//     const num = parseInt(args[2], 10);
-//     if (isNaN(num)) {
-//         console.error("error: argument must be an integer.");
-//         process.exit(1);
-//     }
-
-//     return num;
-// })();
-
-
-
 require('dotenv').config();
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
@@ -36,25 +17,9 @@ const ROLE_LEVELS = { "regular": 0, "cashier": 1, "manager": 2, "superuser": 3 }
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
-
-// Set up cors to allow requests from your React frontend
-// const allowedOrigins = [
-//   'http://localhost:5173',
-//   'http://localhost:3000'
-// ];
-
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 app.use(cors({
-//   origin: function (origin, callback) {
-//     // allow requests with no origin (like mobile apps or curl)
-//     if (!origin) return callback(null, true);
-//     if (allowedOrigins.includes(origin)) {
-//       return callback(null, true);
-//     } else {
-//       return callback(new Error('Not allowed by CORS'));
-//     }
-//   },
   origin: FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -62,9 +27,9 @@ app.use(cors({
 
 // ImageKit Functions
 const imagekit = new ImageKit({                  // from ImageKit dashboard
-    urlEndpoint: "https://ik.imagekit.io/dimi",
-    publicKey: "public_Ezy+fEYaGELwaZbrca1PEAsLYH8=",
-    privateKey: "private_ZOpakAqQw0hN35OGs99WiOgubW0="
+    urlEndpoint: process.env.IMAGEKIT_ENDPOINT,
+    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY
 });
 
 app.get('/img/auth', function (req, res) {
