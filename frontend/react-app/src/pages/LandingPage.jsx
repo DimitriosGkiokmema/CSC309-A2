@@ -12,6 +12,7 @@ import RedeemPoints from "../components/RedeemPoints";
 import { useUser } from "../components/UserContext";
 import { useNavigate, useResolvedPath  } from 'react-router-dom';
 import UpdatePassword from "../components/UpdatePassword/index.jsx";
+import TopNotification from "../components/Notification/index.jsx";
 import '../styles/LandingPage.css';
 
 export default function LandingPage() {
@@ -25,8 +26,9 @@ export default function LandingPage() {
   const [edit, setEdit] = useState(false);
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
-  const { role, leadingRole, loggedIn, setLoggedIn } = useUser();
+  const { role, loggedIn, setLoggedIn } = useUser();
   const [updatePassword, setUpdatePassword] = useState(false);
+  const [notifs, setNotif] = useState([]);
   // console.log("User is ", role)
 
   // fetch user info
@@ -106,17 +108,18 @@ export default function LandingPage() {
         updates[key] = user[key];
       }
     }
-    // console.log("Updating user stats:", updates);
-
-    // if (updates.password !== undefined) {
-    //   await resetPassword(user.utorid, updates['password']);
-    // }
 
     if (Object.keys(updates).length !== 0) {
       const res = await callBackend('PATCH', '/users/me', updates);
       // console.log("Setting user: ", res.data)
       goodRes = res.ok;
       setUser(res.data);
+
+      if (goodRes) {
+        addNotification("✅ User info updated");
+      } else {
+        addNotification(`❌ ${res.data.error}`);
+      }
     }
 
     jsonToQRUrl({
@@ -132,12 +135,32 @@ export default function LandingPage() {
     }
 
     setEdit(false);
+    resetForm();
+  }
+
+  function resetForm() {
+    const bday = user.data.birthday
+      ? new Date(user.data.birthday).toISOString().slice(0, 16)
+      : "";
+
+    const userInfo = {
+      name: user.name,
+      utorid: user.utorid,
+      email: bday
+    };
+    
+    setFormData(userInfo);
   }
 
   async function resetPass(oldPassword, newPassword) {
     if (user) {
-      const temp = await resetPassword(user.utorid, oldPassword, newPassword);
-      console.log("password update request: ", temp)
+      const res = await resetPassword(user.utorid, oldPassword, newPassword);
+
+      if (res.ok) {
+        addNotification("✅ Password updated");
+      } else {
+        addNotification(`❌ ${res.data.message}`)
+      }
     }
   }
 
@@ -157,6 +180,14 @@ export default function LandingPage() {
     alert("Username updated successfully, please log back in!");
   }
 
+  const addNotification = (msg) => {
+    setNotif((prev) => [...prev, msg]);
+  };
+
+  const removeNotification = (msg) => {
+    setNotif((prev) => prev.filter((m) => m !== msg));
+  };
+
   if (!loggedIn ||!user || !transactions) {
     return (
     <div className="loggedOut">
@@ -167,6 +198,14 @@ export default function LandingPage() {
 
   return (
     <div className="page">
+      {notifs.map((msg, index) => (
+        <TopNotification
+          key={index}
+          message={msg}
+          onDone={() => removeNotification(msg)}
+        />
+      ))}
+
       <h1>User Profile</h1>
 
       <div className="row">
@@ -277,7 +316,7 @@ export default function LandingPage() {
             />
 
             {/* Allows users to upload an image to ImageKit */}
-            <ImgKit />
+            <ImgKit result={addNotification}/>
 
             <div className="editActions">
               <button onClick={() => setEdit(false)}>Cancel</button>
@@ -400,9 +439,7 @@ export default function LandingPage() {
                   organizer={true}
                   profile={true}
               />
-
           )}
-
         </div>
       )}
     </div>
