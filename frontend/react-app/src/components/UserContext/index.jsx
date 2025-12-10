@@ -7,6 +7,7 @@ export const UserContext = createContext();
 export function UserProvider({ children }) {
   const [role, setRole] = useState("regular");
   const [loadingRole, setLoadingRole] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [pic, setPic] = useState("");
 
   async function initRoleFromBackend() {
@@ -16,17 +17,20 @@ export function UserProvider({ children }) {
       if (!token) {
         setRole("regular");
         setLoadingRole(false);
+        setLoggedIn(false);
         return;
       };
 
       const response = await callBackend('GET', '/users/me', {});
       if (response.ok) {
+        setLoggedIn(true);
         setRole(response.data.role);
         setPic(response.data.avatarUrl);
       } else {
         sessionStorage.setItem("token", "");
-        sessionStorage.setItem("loggedIn", "false");
+        setLoggedIn(false);
         setRole("regular");
+        setPic("");
       }
       setLoadingRole(false);
     } catch (error) {
@@ -47,7 +51,7 @@ export function UserProvider({ children }) {
   }, []);
 
   return (
-    <UserContext.Provider value={{ role, setRole, loadingRole, pic, setPic }}>
+    <UserContext.Provider value={{ role, setRole, loadingRole, pic, setPic, loggedIn, setLoggedIn }}>
       {children}
     </UserContext.Provider>
   );

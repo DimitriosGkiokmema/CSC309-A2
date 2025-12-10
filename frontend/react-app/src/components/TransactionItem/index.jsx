@@ -2,12 +2,20 @@ import "./style.css";
 import { useEffect, useState } from "react";
 import { callBackend } from "../../js/backend"; 
 import {useNavigate} from "react-router-dom";
+import { jsonToQRUrl } from "../../js/create_qr.js";
 import { useUser } from "../UserContext";
 
 function TransactionItem({ id, utorid, awarded, amount, earned, spent, sender, type, remark, relatedEventId, relatedTxId }) {
     const [user, setUser] = useState(null); // check the user's role
     const navigate = useNavigate();
     const {role} = useUser();
+    const [qr_url, setQR] = useState('');
+
+    jsonToQRUrl({
+        utorid,
+        type,
+        amount
+    }).then(url => setQR(url));
 
     useEffect(() => {
                 // fetch user info
@@ -150,22 +158,27 @@ function TransactionItem({ id, utorid, awarded, amount, earned, spent, sender, t
                 <p><strong>Utorid: {utorid}</strong></p>
                 {updateInfo}
             </div>
-            <div className="col-4 transInfo">
-                <div>
-                    <p><strong>Type:</strong></p>
-                    <p className="typeRedemption">{type}</p>
+            <div className="col info">
+                <div className="qrContainer">
+                    <img className="qrCode" src={qr_url} />
                 </div>
-                <div>
-                    
-                    <p><strong>Redeemed points:</strong></p>
-                    <p>{amount}</p>
-                </div>
-                {remark !== "" && (
+                <div className="col-4 transInfo">
                     <div>
-                        <p><strong>Remark:</strong></p>
-                        <p>{remark}</p>
+                        <p><strong>Type:</strong></p>
+                        <p className="typeRedemption">{type}</p>
                     </div>
-                )}
+                    <div>
+                        
+                        <p><strong>Redeemed points:</strong></p>
+                        <p>{amount}</p>
+                    </div>
+                    {remark !== "" && (
+                        <div>
+                            <p><strong>Remark:</strong></p>
+                            <p>{remark}</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
       )

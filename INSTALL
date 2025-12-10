@@ -5,3 +5,38 @@
 # 1. All the packages you need to install
 # 2. How to configure various servers (e.g., Nginx, Apache, etc)
 
+Clone Github Project:
+https://github.com/DimitriosGkiokmema/CSC309-A2.git
+
+Install Dependencies:
+cd backend
+npm install
+npx prisma generate
+cd ../frontend/react-app
+npm install
+
+Create ENV Files
+FRONTEND .env -> place in backend directory
+VITE_IMAGEKIT_PUBLIC_KEY ='public_Ezy+fEYaGELwaZbrca1PEAsLYH8='
+VITE_IMAGEKIT_ENDPOINT='https://ik.imagekit.io/dimi/309_Project'
+VITE_BACKEND_URL='http://localhost:3000'
+
+BACKEND .env -> place in react-app directory
+JWT_SECRET='N8e3KYm41Q9bYFOpLSEkKlyk1EsDBURPJ72edLgsuFv'
+IMAGEKIT_PRIVATE_KEY='private_ZOpakAqQw0hN35OGs99WiOgubW0='
+IMAGEKIT_PUBLIC_KEY ='public_Ezy+fEYaGELwaZbrca1PEAsLYH8='
+IMAGEKIT_ENDPOINT='https://ik.imagekit.io/dimi'
+DATABASE_URL="postgresql://neondb_owner:npg_BFQOK74XPkau@ep-bitter-block-ahuo89rk-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+
+Launch Site Locally
+TERMINAL 1:
+cd backend
+node .\index.js 3000
+
+TERMINAL 2:
+cd ./frontend/react-app
+npm run dev
+
+That's it! There is no other setup required. While we do use external APIs and a cloud db, everything
+you need is already in package.json and our .evn files. Follow the steps above and you should be able 
+to run our site locally!

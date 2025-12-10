@@ -1,0 +1,17 @@
+AI Usage:
+
+We used AI mainly to teach us concepts we struggled with and help with styling (css) of 
+some components.
+
+As we are relatively new to React, we found AI useful at explaining concepts like components, 
+states, and routing. These were a bit difficult for us to understand at first, so we used AI
+to teach us the basics.
+
+Additionally, we found it useful at generating aesthetic styling that we applied to the site.
+For instance, we were stuck on what to put in the home page, so Dimitrios gave Chat GPT a breakdown of
+the site's theme, and instructed it to populate the homepage as such. The blue Varsity Mart element
+and the What We Offer section was what the AI produced.
+
+In short, AI was used to:
+1) help teach us difficult/new concepts
+2) Complete trivial tasks like style/create html elements

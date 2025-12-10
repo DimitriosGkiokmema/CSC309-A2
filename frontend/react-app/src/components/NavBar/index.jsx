@@ -5,12 +5,9 @@ import { callBackend, log_in } from '../../js/backend.js';
 import { useUser } from "../UserContext";
 
 export default function Navbar() {
-  const { role, setRole, pic, setPic, loadingRole } = useUser();
+  const { role, setRole, pic, setPic, loadingRole, loggedIn, setLoggedIn } = useUser();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const [loggedIn, setLoggedIn] = useState(
-    sessionStorage.getItem("loggedIn") === "true"
-  );
   const [allowedRoles, setRoles] = useState(['superuser', 'manager', 'cashier', 'regular']);
   const [username, setUsername] = useState(null);
 
@@ -52,8 +49,6 @@ export default function Navbar() {
     setRole(curr_user.role);
 
     if (ok) {
-      sessionStorage.setItem("loggedIn", "true");
-
       if (curr_user.organizer && (curr_user.organizer.length !== 0)) {
         allRoles.push('event organizer');
       }
@@ -67,7 +62,7 @@ export default function Navbar() {
 
       navigate('/profile');
     } else {
-      sessionStorage.setItem("loggedIn", "false");
+      setLoggedIn(false);
       alert("Invalid Credentials");
       setPic("");
     }
@@ -75,7 +70,6 @@ export default function Navbar() {
 
   function handleLogout() {
     sessionStorage.setItem("token", "");
-    sessionStorage.setItem("loggedIn", "false");
     setLoggedIn(false);
     setRole("");
     setPic("");

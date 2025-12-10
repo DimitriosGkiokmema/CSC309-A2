@@ -10,9 +10,13 @@ import EventItem from "../components/EventItem/EventItem.jsx"
 import Transfer from "../components/Transfer";
 import RedeemPoints from "../components/RedeemPoints";
 import { useUser } from "../components/UserContext";
+import { useNavigate  } from 'react-router-dom';
+import UpdatePassword from "../components/UpdatePassword/index.jsx";
+import TopNotification from "../components/Notification/index.jsx";
 import '../styles/LandingPage.css';
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState(null);
   const [startedEvents, setStartedE] = useState(0);
@@ -22,13 +26,19 @@ export default function LandingPage() {
   const [edit, setEdit] = useState(false);
   const [qr_url, setQR] = useState('');
   const [formData, setFormData] = useState({});
-  const { role, leadingRole } = useUser();
+  const { role, loggedIn, setLoggedIn } = useUser();
+  const [updatePassword, setUpdatePassword] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   // console.log("User is ", role)
 
   // fetch user info
   async function load() {
     const me = await callBackend('GET', '/users/me', {});
-    if (!me.ok) return; // user not logged in or error
+    if (!me.ok) {
+      setUser(null);
+      setLoggedIn(false);
+      return; // user not logged in or error
+    }
     setUser(me.data);
 
     const bday = me.data.birthday
@@ -39,8 +49,7 @@ export default function LandingPage() {
       name: me.data.name,
       utorid: me.data.utorid,
       email: me.data.email,
-      birthday: bday,
-      password: me.data.password,
+      birthday: bday
     };
 
     jsonToQRUrl({
@@ -50,7 +59,7 @@ export default function LandingPage() {
     }).then(url => {
       setQR(url);
     });
-    console.log(userInfo.birthday)
+    // console.log(userInfo.birthday)
     setFormData(userInfo);
 
     const tx = await callBackend('GET', '/users/me/transactions', {});
@@ -83,32 +92,41 @@ export default function LandingPage() {
     }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     const updates = {};
+    let goodRes = false;
 
     // only return changed values
-    for (const key in formData) {
+    for (const key in user) {
       if (formData[key] !== user[key] && formData[key] !== "" && formData[key] !== null) {
         updates[key] = formData[key];
 
         if (key === 'birthday') {
           updates[key] = new Date(formData[key]).toISOString();
         }
+      } else {
+        updates[key] = user[key];
       }
     }
-    console.log("Updating user stats:", updates);
+    // console.log("Updating user stats:", updates);
+
+    // if (updates.password !== undefined) {
+    //   await resetPassword(user.utorid, updates['password']);
+    // }
 
     if (Object.keys(updates).length !== 0) {
-      callBackend('PATCH', '/users/me', updates);
+      const res = await callBackend('PATCH', '/users/me', updates);
+      // console.log("Setting user: ", res.data)
+      goodRes = res.ok;
+
+      if (goodRes) {
+        setUser(res.data);
+        addNotification("✅ User info updated");
+      } else {
+        addNotification(`❌ ${res.data.error}`);
+      }
     }
 
-    if (updates.password !== undefined) {
-      resetPassword(user.utorid, updates['password']).then(res => {
-        console.log(res.data);
-      })
-    }
-
-    // setUser();
     jsonToQRUrl({
       name: user.name,
       utorid: user.utorid,
@@ -116,12 +134,52 @@ export default function LandingPage() {
     }).then(url => {
       setQR(url);
     });
-    setUser(updates);
+
+    if (goodRes && updates.utorid !== undefined && user.utorid != updates.utorid) {
+      handleLogout();
+    }
+
     setEdit(false);
-    load();
   }
 
-  if (!user || !transactions) {
+  async function resetPass(oldPassword, newPassword) {
+    if (user) {
+      const temp = await resetPassword(user.utorid, oldPassword, newPassword);
+
+      if (temp.ok) {
+        setUser(temp.data);
+        addNotification("✅ User info updated");
+      } else {
+        addNotification(`❌ ${temp.data.error}`);
+      }
+    }
+  }
+
+  const addNotification = (msg) => {
+    setNotifications((prev) => [...prev, msg]);
+  };
+
+  const removeNotification = (msg) => {
+    setNotifications((prev) => prev.filter((m) => m !== msg));
+  };
+
+  // Used for testing
+  // useEffect(() => {
+  //   console.log("User changed:", user);
+  // }, [user]);
+
+  function handlePasswordWindow() {
+    setUpdatePassword(false);
+  }
+
+  function handleLogout() {
+    sessionStorage.setItem("token", "");
+    setLoggedIn(false);
+    navigate('/');
+    alert("Username updated successfully, please log back in!");
+  }
+
+  if (!loggedIn ||!user || !transactions) {
     return (
     <div className="loggedOut">
       <h1>Please Log In!</h1>
@@ -129,12 +187,16 @@ export default function LandingPage() {
     );
   }
 
-  // if(redemptions !== []) {
-  //   console.log("redemptions: " + redemptions[0].processed)
-  // }
-
   return (
     <div className="page">
+      {notifications.map((msg, index) => (
+        <TopNotification
+          key={index}
+          message={msg}
+          onDone={() => removeNotification(msg)}
+        />
+      ))}
+
       <h1>User Profile</h1>
 
       <div className="row">
@@ -148,10 +210,22 @@ export default function LandingPage() {
               <p><strong>Username:</strong></p>
               <p>{user.utorid}</p>
             </div>
-            <div>
+            {/* We used to show the password on the frontend, but later found that it is not safe to do so */}
+            {/* <div>
               <p><strong>Password:</strong></p>
-              <p>{user.password}</p>
-            </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <p>{passwordVisible ? user.password : "*".repeat(user.password.length)}</p>
+
+                <button
+                  type="button"
+                  onClick={() => setVisible(v => !v)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {passwordVisible ? <i class="fa-solid fa-eye-slash"></i> : <i class="fa-solid fa-eye"></i>}
+                </button>
+              </div>
+            </div> */}
             <div>
               <p><strong>Email:</strong></p>
               <p> {user.email}</p>
@@ -175,6 +249,10 @@ export default function LandingPage() {
                 <div>Edit</div>
                 <i className="fa-regular fa-pen-to-square"></i>
               </div>
+              <div className="editBtn" onClick={() => setUpdatePassword(true)}>
+                <div>Reset Password</div>
+                <i class="fa-solid fa-key"></i>
+              </div>
               <div></div>
             </div>
           </div>
@@ -185,6 +263,13 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {updatePassword && (
+        <UpdatePassword 
+          onClose={handlePasswordWindow}
+          onSubmit={resetPass}
+        />
+      )}
 
       {/* Edit Profile Info */}
       {edit && (
@@ -206,13 +291,6 @@ export default function LandingPage() {
               onChange={handleChange}
             />
 
-            <label>Password:</label>
-            <input
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-            />
-
             <label>Email:</label>
             <input
               name="email"
@@ -229,7 +307,7 @@ export default function LandingPage() {
             />
 
             {/* Allows users to upload an image to ImageKit */}
-            <ImgKit />
+            <ImgKit result={addNotification}/>
 
             <div className="editActions">
               <button onClick={() => setEdit(false)}>Cancel</button>

@@ -1,0 +1,71 @@
+.popup-overlay {
+    position: absolute;
+    top: 25%;
+    left: 35%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1rem;
+    border-radius: 15px;
+}
+
+.popup-window {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  padding: 24px;
+  width: 25vw;
+}
+
+.form-grid {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.closeWindow {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.block {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.input-field {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.requirements-list {
+  margin-top: 8px;
+  list-style: none;
+  padding: 0;
+  font-size: 14px;
+}
+
+.submit-btn {
+  padding: 10px;
+  border-radius: 6px;
+  color: white;
+  border: none;
+}
+
+.submit-enabled {
+  background: rgb(103, 181, 245);
+}
+
+.submit-enabled:hover {
+    background: rgb(68, 171, 254) !important;
+}
+
+.submit-disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+}

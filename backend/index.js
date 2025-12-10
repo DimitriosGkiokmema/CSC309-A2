@@ -1,25 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 
-// const port = (() => {
-//     const args = process.argv;
-
-//     if (args.length !== 3) {
-//         console.error("usage: node index.js port");
-//         process.exit(1);
-//     }
-
-//     const num = parseInt(args[2], 10);
-//     if (isNaN(num)) {
-//         console.error("error: argument must be an integer.");
-//         process.exit(1);
-//     }
-
-//     return num;
-// })();
-
-
-
 require('dotenv').config();
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
@@ -36,35 +17,19 @@ const ROLE_LEVELS = { "regular": 0, "cashier": 1, "manager": 2, "superuser": 3 }
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
-
-// Set up cors to allow requests from your React frontend
-// const allowedOrigins = [
-//   'http://localhost:5173',
-//   'http://localhost:3000'
-// ];
-
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 app.use(cors({
-//   origin: function (origin, callback) {
-//     // allow requests with no origin (like mobile apps or curl)
-//     if (!origin) return callback(null, true);
-//     if (allowedOrigins.includes(origin)) {
-//       return callback(null, true);
-//     } else {
-//       return callback(new Error('Not allowed by CORS'));
-//     }
-//   },
   origin: FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // ImageKit Functions
-const imagekit = new ImageKit({                  // from ImageKit dashboard
-    urlEndpoint: "https://ik.imagekit.io/dimi",
-    publicKey: "public_Ezy+fEYaGELwaZbrca1PEAsLYH8=",
-    privateKey: "private_ZOpakAqQw0hN35OGs99WiOgubW0="
+const imagekit = new ImageKit({
+    urlEndpoint: process.env.IMAGEKIT_ENDPOINT,
+    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY
 });
 
 app.get('/img/auth', function (req, res) {
@@ -362,7 +327,7 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
      "avatarUrl": "/uploads/avatars/johndoe1.png" 
      }
     */
-    const { name, email, birthday, avatarUrl } = req.body;
+    const { name, utorid, email, birthday, avatarUrl } = req.body;
     const data = {};
 
     if (!name && !email && !birthday && !avatarUrl) {
@@ -375,6 +340,18 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
         }
 
         data.name = name;
+    }
+
+    if (utorid) {
+        let RegEx = /^[a-z0-9]+$/i;
+        let Valid = RegEx.test(utorid);
+
+        // Validate length and alphanumeric-ness of utorid
+        if (utorid.length < 7 || utorid.length > 8 || !Valid) {
+            return res.status(400).json({ error: "utorid entered incorrect" });
+        }
+
+        data.utorid = utorid;
     }
 
     if (email) {
@@ -391,15 +368,6 @@ app.patch('/users/me', get_logged_in, check_clearance("regular"), async (req, re
         if (!isNaN(bday.getTime())) {
             if (bday < Date()) {
                 return res.status(400).json({ "error": "Birthday cannot be in the past" });
-            }
-
-            const [year, month, day] = birthday.split("-").map(Number);
-
-            if (!(
-                bday.getUTCFullYear() === year &&
-                bday.getUTCMonth() + 1 === month &&
-                bday.getUTCDate() === day)) {
-                return res.status(400).json({ "error": "Invalid birthday format" });
             }
 
             data.birthday = bday.toISOString();
@@ -477,7 +445,11 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         verified: user.verified,
         avatarUrl: user.avatarUrl,
         promotions: promos,
+<<<<<<< HEAD
         organizer: findUser.organizer
+=======
+        organizer: user.organizer
+>>>>>>> 2aa3056723b7c7badcac95150ba139437a5acad5
     });
 });
 
@@ -887,9 +859,10 @@ app.post('/auth/resets', async (req, res) => {
             }
         }
 
-        if (resetRate[ip] && (now - resetRate[ip]) < 60000) {
-            return res.status(429).json({ message: "Too many requests" });
-        }
+        // Hindered our dev
+        // if (resetRate[ip] && (now - resetRate[ip]) < 60000) {
+        //     return res.status(429).json({ message: "Too many requests" });
+        // }
 
         resetRate[ip] = now; // update timestamp
 
@@ -932,13 +905,13 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
     o 410 Gone if the reset token expired.
     */
     const resetToken = req.params.resetToken;
-    const { utorid, password } = req.body;
+    const { utorid, oldPass, newPass } = req.body;
 
-    if (!resetToken || !utorid || !password) {
+    if (!resetToken || !utorid || !oldPass || !newPass) {
         return res.status(400).json({ error: "Must provide a reset token,utorid, and password" });
     }
 
-    if (!validPassword(password)) {
+    if (!validPassword(newPass)) {
         return res.status(400).json({ error: "password given was incorrect" });
     }
 
@@ -949,21 +922,25 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
         });
 
         if (!existing) {
-            return res.status(404).json({ message: "A user with that utorid does not exist" });
+            return res.status(404).json({ error: "A user with that utorid does not exist" });
         }
 
         if (existing.expiresAt.toISOString() < curr_time) {
-            return res.status(410).json({ message: "Token has expired" });
+            return res.status(410).json({ error: "Token has expired" });
         }
 
         if (existing.utorid !== utorid) {
-            return res.status(401).json({ message: "Utorid token pairing wrong" });
+            return res.status(401).json({ error: "Utorid token pairing wrong" });
+        }
+
+        if (existing.password !== oldPass) {
+            return res.status(401).json({ error: "Old password does not match current" });
         }
 
         const updated_user = await prisma.user.update({
             where: { token: resetToken },
             data: {
-                password: password
+                password: newPass
             }
         });
 
@@ -971,7 +948,7 @@ app.post('/auth/resets/:resetToken', async (req, res) => {
         return res.status(200).json({ "success": "password created" })
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Database error" });
+        res.status(500).json({ error: "Database error" });
     }
 });
 
@@ -1634,16 +1611,6 @@ app.get('/users/me/transactions', get_logged_in, async (req, res) => {
                 return res.status(400).json({ "error": "Invalid payload" });
             }
         }
-        // else if (type === "promotion") {
-        //     if (relatedId !== undefined && !NaN(relatedId)) {
-        //         where.type = type;
-        //         where.relatedId = relatedId;
-
-        //     }
-        //     else {
-        //         return res.status(400).json({ "error": "Invalid payload" });
-        //     }
-        // }
         else if (type === "event") {
             if (relatedId !== undefined && !NaN(relatedId)) {
 
