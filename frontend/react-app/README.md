@@ -4,7 +4,7 @@
 - [x] A page that displays the user's QR code for the purpose of initiating a transaction.
 - [x] A page that allows the user to manually enter a user ID to transfer points (QR code scanning capability is NOT required.)
 - [x] A page that allows the user to make a point redemption request
-- [ ] A page that displays the QR code of an unprocessed redemption request.
+- [x] A page that displays the QR code of an unprocessed redemption request.
 - [x] A page that displays all available promotions.
 - [x] A page that displays all published events.
 - [x] A page that displays a specific event and allows a user to RSVP to an event.
@@ -102,7 +102,7 @@
 - [x] Need to find  online prisma db
 
 # Security (TODO)
-- [ ] The website should use HTTPS to ensure secure data transmission.
+- [x] The website should use HTTPS to ensure secure data transmission.
 - [x] Sensitive data (such as passwords, tokens, or API keys) must not be exposed in the codebase or client-side storage.
 - [ ] Inputs should be validated and sanitized to prevent common security issues such as SQL injection or XSS.
 

@@ -1,0 +1,4 @@
+# FRONTEND .env
+VITE_IMAGEKIT_PUBLIC_KEY='public_Ezy+fEYaGELwaZbrca1PEAsLYH8='
+VITE_IMAGEKIT_ENDPOINT='https://ik.imagekit.io/dimi/309_Project'
+VITE_BACKEND_URL='http://localhost:3000'

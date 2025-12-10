@@ -12,7 +12,7 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
     const [guests, setGuests] = useState(numGuests);
     const navigate = useNavigate();
     const loc = useLocation();
-    //const [organizer, setOrganizer] = useState(false);
+   
 
     const {role} = useUser();
 
@@ -93,8 +93,7 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         spots = "Unlimited";
     }
     else {
-        console.log("numGuests: " + numGuests);
-        console.log("capacity :" + capacity);
+        
         spots = capacity - guests;
         available = spots > 0;
     }
@@ -127,15 +126,7 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
     // event update/edit functionality, only for managers (TODO: need to add condition for organizers later)
     let updateInfo;
     
-    const clearance = organizer;
-    // if(role === "manager")      
-    
-    //console.log("user is an organizer: " + organizer + ", for event " + id);
-    
-
-    // if(clearance && !over) {
-    //     updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
-    // }
+ 
 
     if(role === "manager" && !over)
     {
@@ -146,9 +137,6 @@ function EventItem({ id, name, location, startTime, endTime, capacity, numGuests
         updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
     }
 
-    // if(clearance) {
-    //     updateInfo = <button className="updateButton" onClick={handleUpdate}>Edit</button>
-    // }
 
     let deleteIcon;
     

@@ -287,23 +287,6 @@ export default function LandingPage() {
         <div className="row">
           <div className="col-8 offset-2">
             <CreateItem />
-
-            {/* <h1>Redemption requests</h1>
-            {redemptions.map((item) => 
-            
-            ( 
-              <ProcessRedemption
-                key={item.id}
-                id={item.id}
-                utorid={item.utorid}
-                amount={item.amount}
-                type={item.type}
-                spent={item.spent}
-                remark={item.remark}
-              />
-            )
-          
-          )} */}
           </div>
         </div>
       )}

@@ -114,9 +114,7 @@ export default function Transactions() {
         else {
             res = await callBackend('GET', `/users/me/transactions?page=${currentPage}&limit=${limit}`, {});
         }
-        //console.log("there is a returned array but it is empty: " + res.data.results.length === 0)
-        // console.log(query);
-        // console.log(res.status);
+        
         if(res.status !== 200) {
             setSearch(false);
             if(role !== "manager") {
@@ -164,7 +162,7 @@ export default function Transactions() {
             setMessage("");
     
             // if you get to this point then there must be at least one transaction that loaded
-            // const txId = document.getElementById("searchInput").value;
+           
             if(txId && txId.trim() !== "") {
                 setTxId(txId);
                 const res = await callBackend("GET", `/transactions/${txId}`, {});

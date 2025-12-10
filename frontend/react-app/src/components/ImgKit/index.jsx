@@ -2,8 +2,12 @@ import { IKContext, IKUpload } from 'imagekitio-react';
 import { updateProfilePic } from '../../js/backend.js';
 import { useUser } from "../UserContext/index.jsx";
 
-const urlEndpoint = import.meta.env.VITE_IMAGEKIT_ENDPOINT;
-const publicKey = import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY; 
+const urlEndpoint = "https://ik.imagekit.io/dimi/309_Project";
+const publicKey = "public_Ezy+fEYaGELwaZbrca1PEAsLYH8=";
+console.log(publicKey);
+console.log(urlEndpoint);
+
+
 const authenticator =  async () => {
     try {
         const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/img/auth`);

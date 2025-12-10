@@ -75,20 +75,19 @@ export default function Events() {
     async function load() {
         // Get all events data
         let res = await callBackend('GET', `/events?page=${currentPage}&limit=${limit}&${query}`, {});
-        // setEvents(res.data.results);
+       
         if(res.status !== 200) {
                 setSearch(false);
                 console.log(res.data.error);
                 setMessage("Event not found: " + res.data.error);
             }
         else if (res.data.results.length === 0) {
-            //console.log("HELLO");
-            //console.log("there is a returned array but it is empty: " + res.data.results.length)
+            
             setMessage("Event not found");
         }
         else {
             setSearch(false);
-            console.log(res.data.count);
+           
             if(limit) {
                 setTotalPages(Math.ceil(res.data.count / limit)); // if total pages > 1, then show the navigation bar on the bottom of the page
             }
@@ -110,7 +109,7 @@ export default function Events() {
             setQuery("");
             setCurrentPage(1);
             setEventId("");
-            // load();
+            
         }
     }, [loc.key]);
 
