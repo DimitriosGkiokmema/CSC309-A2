@@ -21,15 +21,15 @@ const authenticator =  async () => {
     }
 };
 
-export default function ImgKit({ result }) {
+export default function ImgKit() {
   const { setPic } = useUser();
 
   const onError = err => {
-      result("❌ Error uploading pic to ImageKit", err);
+      console.log("Error uploading pic to ImageKit", err);
   };
 
   const onSuccess = res => {
-      result("✅ Successfully uploaded pic to ImageKit", res);
+      console.log("Successfully uploaded pic to ImageKit", res);
       updateProfilePic(res.url);
       setPic(res.url);
   };
