@@ -448,6 +448,15 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
     · Response: { "id": 1, "utorid": "johndoe1", "name": "John Doe", "email": "john.doe@mail.utoronto.ca", "birthday": "2000-01-01", "role": "regular", "points": 0, "createdAt": "2025-02-22T00:00:00.000Z", "lastLogin": "2025-02-22T00:00:00.000Z", "verified": true, "avatarUrl": "/uploads/avatars/johndoe1.png", "promotions": [] }
     */
     const user = req.user;
+    
+    const findUser = await prisma.user.findUnique({
+        where: {id: user.id},
+        include: {organizer: {
+                include: {
+                    guests: true, organizers: true
+                }
+        }}
+    })
 
     const promos = await prisma.usage.findMany({
         where: { userId: user.id },
@@ -466,7 +475,8 @@ app.get('/users/me', get_logged_in, check_clearance("regular"), async (req, res)
         lastLogin: user.lastLogin,
         verified: user.verified,
         avatarUrl: user.avatarUrl,
-        promotions: promos
+        promotions: promos,
+        organizer: findUser.organizer
     });
 });
 
